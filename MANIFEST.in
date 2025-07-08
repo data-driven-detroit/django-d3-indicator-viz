@@ -1,0 +1,2 @@
+recursive-include django_d3_indicator_viz/static *
+recursive-include django_d3_indicator_viz/templates *

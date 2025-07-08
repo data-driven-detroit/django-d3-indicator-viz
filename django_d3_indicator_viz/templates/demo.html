@@ -1,0 +1,71 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Data Visuals Demo</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins&display=swap">
+        <style>
+            h1 {
+                font-family: 'Poppins', sans-serif;
+                font-size: 24px;
+                color: #333;
+            }
+            .line-chart-container {
+                height: 200px;
+            }
+            .column-chart-container {
+                height: 300px;
+            }
+            .donut-chart-container {
+                height: 200px;
+            }
+        </style>
+    </head>
+    <body>
+        {% for section in sections %}
+            <h1>{{ section.name }}</h1>
+            {% for category in categories %}
+                {% if category.section_id == section.id %}
+                    <h2>{{ category.name }}</h2>
+                    {% for indicator in indicators %}
+                        {% if indicator.category_id == category.id %}
+                            <h3>{{ indicator.name }}</h3>
+                            {% for data_visual in data_visuals %}
+                                {% if data_visual.indicator_id == indicator.id %}
+                                    <h4>{{ data_visual.data_visual_type }}</h4>
+                                    <div id="indicator-{{ data_visual.indicator_id }}-{{ data_visual.data_visual_type }}-container">
+                                        <!-- Placeholder for the chart -->
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+        <script type="module">
+            import Visuals from "/static/visuals.js";
+            console.log({{ indicator_values_json|safe }});
+            const visuals = new Visuals(
+                {{ data_visuals_json|safe }},
+                {{ location_id|safe }},
+                {{ indicators_json|safe }},
+                {{ locations_json|safe }},
+                {{ parent_locations_json|safe }},
+                {{ location_types_json|safe }},
+                {{ filter_options_json|safe }},
+                {{ indicator_values_json|safe }},
+                {
+                    animation: false,
+                    color: ['#F89768', '#60E1BA', '#60C9E1', '#E9E669', '#E9BF62', '#525F8D', '#D582DA', '#94A4DC'],
+                    textStyle: {
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        color: '#000'
+                    },
+                    //TODO: pending feedback, we may allow for more top-level configuration options here so devs can customize the look and feel of the charts without in-depth knowledge of ECharts
+                }
+            );
+        </script>
+    </body>
+</html>
