@@ -33,21 +33,48 @@ export default class Ban {
         this.container.innerHTML = '';
         this.container.classList.add('ban-container');
         this.container.style.fontFamily = this.chartOptions.textStyle?.fontFamily;
-        let valueEl = document.createElement('div');
+        let valueContainerEl = document.createElement('div');
+        valueContainerEl.className = 'ban-value-container';
+        let valueEl = document.createElement('span');
         valueEl.className = 'ban-value';
         valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
         valueEl.textContent = formatData(this.indicatorData, this.visual.value_field);
-        let indicatorEl = document.createElement('div');
-        indicatorEl.className = 'ban-indicator';
-        indicatorEl.textContent = this.indicator.name;
-        this.container.appendChild(indicatorEl);
-        this.container.appendChild(valueEl);
+        valueContainerEl.appendChild(valueEl);
+        if (this.indicatorData[this.visual.value_field + '_moe']) {
+            let moePlusMinusEl = document.createElement('span');
+            moePlusMinusEl.className = 'ban-moe';
+            moePlusMinusEl.innerHTML = '&plusmn;';
+            valueContainerEl.appendChild(moePlusMinusEl);
+            let moeEl = document.createElement('span');
+            moeEl.className = 'ban-moe';
+            moeEl.textContent = formatData(this.indicatorData, this.visual.value_field + '_moe');
+            valueContainerEl.appendChild(moeEl);
+        }
+        this.container.appendChild(valueContainerEl);
         if (this.visual.location_comparison_type) {
             this.compareLocations.forEach((loc, index) => {
                 let compareEl = document.createElement('div');
                 compareEl.className = 'ban-compare';
                 compareEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16)  * 0.75 + 'px';
-                compareEl.textContent = loc.name + ": " + formatData(this.compareData.find(d => d.location_id === loc.id), this.visual.value_field);
+                let compareLocEl = document.createElement('strong');
+                compareLocEl.className = 'ban-compare-location';
+                compareLocEl.textContent = loc.name + ': ';
+                compareEl.appendChild(compareLocEl);
+                let compareValEl = document.createElement('span');
+                compareValEl.className = 'ban-compare-value';
+                let locCompareData = this.compareData.find(d => d.location_id === loc.id)
+                compareValEl.textContent = formatData(locCompareData, this.visual.value_field);
+                compareEl.appendChild(compareValEl);
+                if (locCompareData[this.visual.value_field + '_moe']) {
+                    let compareMoePlusMinusEl = document.createElement('span');
+                    compareMoePlusMinusEl.className = 'ban-compare-moe';
+                    compareMoePlusMinusEl.innerHTML = '&plusmn;';
+                    compareEl.appendChild(compareMoePlusMinusEl);
+                    let compareMoeEl = document.createElement('span');
+                    compareMoeEl.className = 'ban-compare-moe';
+                    compareMoeEl.textContent = formatData(locCompareData, this.visual.value_field + '_moe');
+                    compareEl.appendChild(compareMoeEl);
+                }
                 this.container.appendChild(compareEl);
             });
         }

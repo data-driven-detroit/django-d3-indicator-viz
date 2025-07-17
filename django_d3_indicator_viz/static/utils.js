@@ -21,10 +21,19 @@ function formatData(data, value_field) {
     }
     switch (value_field) {
         case 'percentage':
+        case 'percentage_moe':
             return data[value_field] + '%';
         case 'dollars':
+        case 'dollars_moe':
             return '$' + Number(data[value_field]).toLocaleString();
         case 'count':
+        case 'count_moe':
+        case 'universe':
+        case 'universe_moe':
+        case 'rate':
+        case 'rate_moe':
+        case 'index':
+        case 'index_moe':
             return Number(data[value_field]).toLocaleString();
         default:
             return data[value_field];

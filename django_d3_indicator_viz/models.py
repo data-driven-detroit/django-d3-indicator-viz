@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Section(models.Model):
     """
@@ -125,8 +126,8 @@ class Indicator(models.Model):
     # The name of the indicator
     name = models.TextField()
 
-    # A description of the universe for this indicator, such as "All children under 18 years old"
-    universe_description = models.TextField(null=True, blank=True)
+    # A qualifier, such as "All children under 18 years old" (universe) or " D3 Open Data Portal, State of Michigan, Department of Heath and Human Services data" (source)
+    qualifier = models.TextField(null=True, blank=True)
 
     # The sort order for the indicator
     sort_order = models.PositiveIntegerField(
@@ -363,6 +364,11 @@ class IndicatorDataVisual(models.Model):
 
     # The value field to display in the data visual, such as "count", "universe", "percentage", etc.
     value_field = models.TextField(choices=ValueField.choices)
+
+    # The number of columns the data visual will span in a grid layout
+    columns = models.IntegerField(
+        default=12, null=False, blank=False, db_index=True, validators=[MinValueValidator(1), MaxValueValidator(12)]
+    )
 
     def __str__(self):
         return (
