@@ -1,7 +1,7 @@
-import { formatData } from "./utils.js";
+import { formatData, buildTooltipContent } from "./utils.js";
 
 export default class LineChart {
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, colorScales, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -11,6 +11,7 @@ export default class LineChart {
         this.compareData = compareData;
         this.filterOptions = filterOptions;
         this.locationTypes = locationTypes;
+        this.colorScales = colorScales;
         this.chartOptions = chartOptions;
         this.chart = null;
         this.draw();
@@ -28,13 +29,6 @@ export default class LineChart {
         let seriesNames = [this.location.name];
         let seriesData = {};
         seriesData[this.location.id] = [].concat(this.indicatorData);
-        this.compareData.forEach(item => {
-            if (!seriesData[item.location_id]) {
-                seriesData[item.location_id] = []
-                seriesNames.push(this.compareLocations.find(loc => loc.id === item.location_id).name);
-            }
-            seriesData[item.location_id].push(item);
-        });
         seriesData = Object.values(seriesData);
 
         // set up the container
@@ -48,6 +42,7 @@ export default class LineChart {
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let option = {
             ...this.chartOptions,
+            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: {
                 left: 0,
                 right: 0,
@@ -61,6 +56,17 @@ export default class LineChart {
                 selectedMode: false,
                 textStyle: {
                     fontWeight: 'bold',
+                }
+            },
+            tooltip: {
+                show: 'true',
+                trigger: 'axis',
+                triggerOn: 'mousemove',
+                axisPointer: {
+                    type: 'none'
+                },
+                formatter: params => {
+                    return buildTooltipContent(params[0].name.substring(0, 4), params[0].data, this.visual.value_field, this.compareLocations, this.compareData);
                 }
             },
             xAxis: {

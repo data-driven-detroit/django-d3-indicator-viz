@@ -1,7 +1,7 @@
-import { formatData } from "./utils.js";
+import { formatData, buildTooltipContent } from "./utils.js";
 
 export default class DonutChart {
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, colorScales, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -11,8 +11,8 @@ export default class DonutChart {
         this.compareData = compareData;
         this.filterOptions = filterOptions;
         this.locationTypes = locationTypes;
+        this.colorScales = colorScales;
         this.chartOptions = chartOptions;
-        console.log(this.chartOptions);
         this.chart = null;
         this.lastSelectedIndex = null; // keep track of the last selected index for hover events
         this.option = null; // store the chart option for events
@@ -48,7 +48,7 @@ export default class DonutChart {
                 title: {
                     text: [
                         '{normal|' + this.option.series[0].data[params.selected[0].dataIndex[0]].name + '}',
-                        '{bold|' + formatData(this.option.series[0].data[params.selected[0].dataIndex[0]], this.visual.value_field) + '}'
+                        '{bold|' + formatData(this.option.series[0].data[params.selected[0].dataIndex[0]], this.visual.value_field, true) + '}'
                     ].join(' '),
                 },
                 legend: {
@@ -111,7 +111,7 @@ export default class DonutChart {
             title: {
                 text: [
                     '{normal|' + dataItem.name + '}',
-                    '{bold|' + formatData(dataItem, this.visual.value_field) + '}'
+                    '{bold|' + formatData(dataItem, this.visual.value_field, true) + '}'
                 ].join(' '),
             },
             legend: {
@@ -173,6 +173,7 @@ export default class DonutChart {
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         this.option = {
             ...this.chartOptions,
+            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: {
                 left: 0,
                 right: '80px',
@@ -213,6 +214,21 @@ export default class DonutChart {
                         }
                     }
                 }),
+                tooltip: {
+                    show: 'true',
+                    formatter: params => {
+                        let data = this.chart.getOption().series[0].data.find(d => d.name === params.name);
+                        return buildTooltipContent(params.name, data, this.visual.value_field, this.compareLocations, this.compareData);
+                    }
+                }
+            },
+            tooltip: {
+                show: 'true',
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                formatter: params => {
+                    return buildTooltipContent(params.name, params.data, this.visual.value_field, this.compareLocations, this.compareData);
+                }
             },
             yAxis: {
                 type: 'value',

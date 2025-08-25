@@ -1,17 +1,19 @@
-import { getVisualContainer, DataVisualLocationComparisonType } from "./utils.js";
+import { getVisualContainer, getTableContainer, DataVisualLocationComparisonType } from "./utils.js";
 import Ban from "./ban.js";
 import ColumnChart from "./columnchart.js";
 import LineChart from "./linechart.js";
 import MinMedMaxChart from "./minmedmaxchart.js";
 import DonutChart from "./donutchart.js";
+import DataTable from "./datatable.js";
 
 export default class Visuals {
-    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, options = {}) {
+    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, colorScales, options = {}) {
         this.dataVisuals = dataVisuals;
         this.locationId = locationId;
         this.indicators = indicators;
         this.locations = locations;
         this.parentLocations = parentLocations;
+        this.colorScales = colorScales;
         this.locationTypes = locationTypes;
         this.filterOptions = filterOptions;
         this.data = data;
@@ -24,6 +26,7 @@ export default class Visuals {
 
     _draw(visual) {
         let container = getVisualContainer(visual.indicator_id, visual.data_visual_type);
+        let tableContainer = getTableContainer(visual.indicator_id);
         if (!container) {
             console.error("Container not found for indicatorId:", visual.indicator_id);
             return;
@@ -54,14 +57,14 @@ export default class Visuals {
             }
             if (visual.location_comparison_type && compareLocations.length === 0) {
                 console.warn("No comparison locations found for visual:", visual);
-                return;
+                //return;
             }
             compareLocations.forEach((location, index) => {
                 compareData = compareData.concat(this._filterData(location.id, visual));
             });
             if (visual.location_comparison_type && compareData.length === 0) {
                 console.warn("No comparison data found for visual:", visual);
-                return;
+                //return;
             }
         }
 
@@ -70,16 +73,25 @@ export default class Visuals {
                 new Ban(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.options);
                 break;
             case 'column':
-                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.colorScales, this.options);
+                if (tableContainer) {
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                }
                 break;
             case 'line':
-                new LineChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.options);
+                new LineChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.colorScales, this.options);
+                if (tableContainer) {
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                }
                 break;
             case 'min_med_max':
                 new MinMedMaxChart(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.locationTypes, this.options);
                 break;
             case 'donut':
-                new DonutChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.options);
+                new DonutChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.colorScales, this.options);
+                if (tableContainer) {
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                }
                 break;
             default:
                 console.error("Unknown data visual type:", visual.data_visual_type);

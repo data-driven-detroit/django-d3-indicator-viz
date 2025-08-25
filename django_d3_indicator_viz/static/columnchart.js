@@ -1,7 +1,7 @@
-import { formatData } from "./utils.js";
+import { formatData, buildTooltipContent } from "./utils.js";
 
 export default class ColumnChart {
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, colorScales, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -10,6 +10,7 @@ export default class ColumnChart {
         this.compareLocations = compareLocations;
         this.compareData = compareData;
         this.filterOptions = filterOptions;
+        this.colorScales = colorScales;
         this.chartOptions = chartOptions;
         this.chart = null;
         this.draw();
@@ -95,6 +96,7 @@ export default class ColumnChart {
         }
         let option = {
             ...this.chartOptions,
+            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
                 show: seriesData.length > 1,
@@ -108,12 +110,21 @@ export default class ColumnChart {
                 },
                 orient: window.innerWidth >= 768 ? 'horizontal' : 'vertical'
             },
+            tooltip: {
+                show: 'true',
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                formatter: params => {
+                    return buildTooltipContent(params.name, params.data, this.visual.value_field);
+                }
+            },
             xAxis: window.innerWidth < 1200 ? valueAxis : categoryAxis,
             yAxis: window.innerWidth < 1200 ? categoryAxis : valueAxis,
             series: seriesData.map((data, index) => {
                 return {
                     name: seriesNames[index],
                     type: 'bar',
+                    colorBy: 'data',
                     data: data.map(item => { return { ...item, value: item[this.visual.value_field] } }),
                     label: {
                         show: true,
