@@ -29,10 +29,10 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     ordering = ["sort_order"]
 admin.site.register(Category, CategoryAdmin)
 
-class LocationTypeAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ["id", "name"]
+class LocationTypeAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
+    list_display = ["id", "name", "sort_order"]
     readonly_fields = ("id",)
-    ordering = ["name"]
+    ordering = ["sort_order"]
 admin.site.register(LocationType, LocationTypeAdmin)
 
 class LocationAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -70,6 +70,12 @@ class IndicatorValueAdmin(ImportExportMixin, admin.ModelAdmin):
     readonly_fields = ("id",)
     ordering = ["indicator", "location", "start_date", "end_date", "source"]
 admin.site.register(IndicatorValue, IndicatorValueAdmin)
+
+class ColorScaleAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ["id", "name", "colors"]
+    readonly_fields = ("id",)
+    ordering = ["name"]
+admin.site.register(ColorScale, ColorScaleAdmin)
 
 class IndicatorDataVisualAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ["id", "indicator", "data_visual_type", "start_date", "end_date", "source"]

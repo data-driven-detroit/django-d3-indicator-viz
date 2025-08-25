@@ -20,6 +20,9 @@ class Section(models.Model):
     # An image URL or path associated with the section
     image = models.TextField(null=True, blank=True)
 
+    # An anchor for linking to this category in a web page
+    anchor = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return self.name
 
@@ -55,6 +58,9 @@ class Category(models.Model):
         Section, on_delete=models.CASCADE, null=True, blank=True
     )
 
+    # An anchor for linking to this category in a web page
+    anchor = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return self.name
 
@@ -72,17 +78,27 @@ class LocationType(models.Model):
     # The name of the location type
     name = models.TextField()
 
+    # The parent location types
+    parent_location_types = models.ManyToManyField("LocationType", related_name="child_location_types", blank=True)
+
+    # The sort order for the location type
+    sort_order = models.PositiveIntegerField(
+        default=0, null=False, blank=False, db_index=True
+    )
+
     def __str__(self):
         return self.name
 
     class Meta:
         db_table = "location_type"
 
-
 class Location(models.Model):
     """
     Represents a geographical location, such as a city, county, or state.
     """
+
+    # The unique identifier for the location (e.g., FIPS code)
+    id = models.CharField(max_length=50, primary_key=True)
 
     # The name of the location
     name = models.TextField()
@@ -278,7 +294,6 @@ class IndicatorValue(models.Model):
             "location",
         )
 
-
 class DataVisualType(models.TextChoices):
     """
     Represents the type of data visualizations that can be created for indicators.
@@ -329,6 +344,23 @@ class ValueField(models.TextChoices):
     class Meta:
         db_table = "value_field"
 
+class ColorScale(models.Model):
+    """
+    Represents a color scale for data visualizations.
+    """
+
+    # The name of the color scale
+    name = models.CharField(max_length=100)
+
+    # The colors in the color scale as a JSON array of hex color codes
+    colors = models.JSONField()
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "color_scale"
+
 class IndicatorDataVisual(models.Model):
     """
     Represents a data visual for an indicator, including its type, source, date range, and other attributes.
@@ -369,6 +401,9 @@ class IndicatorDataVisual(models.Model):
     columns = models.IntegerField(
         default=12, null=False, blank=False, db_index=True, validators=[MinValueValidator(1), MaxValueValidator(12)]
     )
+
+    # The color scale to use for the data visual
+    color_scale = models.ForeignKey(ColorScale, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return (
