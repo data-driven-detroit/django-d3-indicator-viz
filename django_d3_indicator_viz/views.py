@@ -8,10 +8,14 @@ from .models import Section, Category, ColorScale, IndicatorDataVisual, Indicato
 import json
 
 def build_profile_context(request, location_slug=None):
-    print("Building profile context for location:", location_slug)
+    """
+    Build the context for the profile page.
+    """
+
     sections = Section.objects.all().order_by('sort_order').values()
     categories = Category.objects.all().order_by('sort_order').values()
     indicators = Indicator.objects.all().order_by('sort_order').values()
+    
     location = Location.objects.get(id__iexact=location_slug.split('-')[0])
     parent_location_types = location.location_type.parent_location_types.all()
     # parent locations are of a different type than the profile location, set up as a parent type of the profile location's type, have a larger area, and contain the profile location's center point
@@ -30,8 +34,10 @@ def build_profile_context(request, location_slug=None):
     locations = Location.objects.filter(Q(location_type_id=location.location_type.id) | Q(id__in=[loc['id'] for loc in parent_locations])).order_by('location_type__name', 'name').values('id', 'location_type_id', 'name')
     locations_geojson = serialize("geojson", Location.objects.filter(Q(location_type_id=location.location_type.id) | Q(id__in=[loc['id'] for loc in parent_locations])), geometry_field='geometry', fields=('id', 'name', 'location_type'))
     location_types = LocationType.objects.all().values()
+    
     color_scales = ColorScale.objects.all().order_by('name').values()
     data_visuals = IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False).order_by('indicator__sort_order').values()
+    
     # indicator values are all values for the profile location
     # additional values for the profile location's parents or siblings are included if the data visual's location comparison type is set
     # values are filtered by the corresponding data visual's source and start date (start date is ignored if the data visual type is 'line')

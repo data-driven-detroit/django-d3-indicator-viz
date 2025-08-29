@@ -6,7 +6,25 @@ import MinMedMaxChart from "./minmedmaxchart.js";
 import DonutChart from "./donutchart.js";
 import DataTable from "./datatable.js";
 
+/**
+ * The main visualization class that handles the rendering of different data visualizations.
+ */
 export default class Visuals {
+
+    /**
+     * Constructor for the Visuals class.
+     * 
+     * @param {Array} dataVisuals the data visuals to be rendered
+     * @param {String} locationId the ID of the location
+     * @param {Array} indicators the indicators
+     * @param {Array} locations the locations
+     * @param {Array} parentLocations the parent locations
+     * @param {Array} locationTypes the location types
+     * @param {Array} filterOptions the filter options
+     * @param {Array} data the indicator data
+     * @param {Array} colorScales the color scales
+     * @param {Object} options additional options for echarts
+     */
     constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, colorScales, options = {}) {
         this.dataVisuals = dataVisuals;
         this.locationId = locationId;
@@ -19,33 +37,45 @@ export default class Visuals {
         this.data = data;
         this.options = options;
 
+        // draw the visualizations
         dataVisuals.forEach(visual => {
             this._draw(visual);
         });
     }
 
+    /**
+     * Draw the visualization for a specific visual object.
+     * 
+     * @param {Object} visual the data visual object
+     */
     _draw(visual) {
+        // get the visual container (required)
         let container = getVisualContainer(visual.indicator_id, visual.data_visual_type);
-        let tableContainer = getTableContainer(visual.indicator_id);
         if (!container) {
             console.error("Container not found for indicatorId:", visual.indicator_id);
             return;
         }
+        // get the table container (not required for all data visual types)
+        let tableContainer = getTableContainer(visual.indicator_id);
+        // get the indicator (required)
         let indicator = this.indicators.find(ind => ind.id === visual.indicator_id);
         if (!indicator) {
             console.error("Indicator not found for indicatorId:", visual.indicator_id);
             return;
         }
+        // get the location (required)
         let location = this.locations.find(loc => loc.id === this.locationId);
         if (!location) {
             console.error("Location not found for locationId:", this.locationId);
             return;
         }
+        // get the visual data (required)
         let indicatorData = this._filterData(this.locationId, visual);
         if (!indicatorData) {
             console.error("Data not found for visual:", visual);
             return;
         }
+        // get the locations and data for comparison
         let compareLocations = [];
         let compareData = [];
         if (visual.location_comparison_type) {
@@ -57,17 +87,16 @@ export default class Visuals {
             }
             if (visual.location_comparison_type && compareLocations.length === 0) {
                 console.warn("No comparison locations found for visual:", visual);
-                //return;
             }
             compareLocations.forEach((location, index) => {
                 compareData = compareData.concat(this._filterData(location.id, visual));
             });
             if (visual.location_comparison_type && compareData.length === 0) {
                 console.warn("No comparison data found for visual:", visual);
-                //return;
             }
         }
 
+        // create the visual
         switch (visual.data_visual_type) {
             case 'ban':
                 new Ban(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.options);
@@ -99,8 +128,9 @@ export default class Visuals {
     }
 
     /**
-     * Filter data for a specific location ID.
-     * @param {number} locationId - The ID of the location to filter data for.
+     * Filter data for a specific location ID and data visual.
+     * 
+     * @param {String} locationId - The ID of the location to filter data for.
      * @param {Object} visual - The data visual object.
      * @returns {Array} - The filtered data for the specified location ID.
      */

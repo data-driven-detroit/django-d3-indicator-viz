@@ -3,7 +3,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Section(models.Model):
     """
-    Represents a section for categories.
+    Represents a section for categories, such as "Youth & Family Demographics".
+    Sections group related categories together and are the top level of the data hierarchy.
     """
 
     # The name of the section
@@ -33,7 +34,8 @@ class Section(models.Model):
 
 class Category(models.Model):
     """
-    Represents a category for indicators, such as "Health", "Education", etc.
+    Represents a category for indicators, such as "Youth population, sex & age".
+    Categories group related indicators together and are the second level of the data hierarchy.
     """
 
     # The name of the category
@@ -94,7 +96,7 @@ class LocationType(models.Model):
 
 class Location(models.Model):
     """
-    Represents a geographical location, such as a city, county, or state.
+    Represents a geographical location, such as a Detroit, Wayne County, or Michigan.
     """
 
     # The unique identifier for the location (e.g., FIPS code)
@@ -137,6 +139,7 @@ class IndicatorSource(models.Model):
 class Indicator(models.Model):
     """
     Represents an indicator, which is a measurable value that provides information about a specific aspect of a location.
+    Indicators are the third level of the data hierarchy.
     """
 
     # The name of the indicator
@@ -165,7 +168,7 @@ class Indicator(models.Model):
 
 class IndicatorFilterType(models.Model):
     """
-    Represents a type of filter that can be applied to indicators.
+    Represents a type of filter that can be applied to indicators, such as Age.
     """
 
     # The name of the filter type
@@ -181,7 +184,7 @@ class IndicatorFilterType(models.Model):
 
 class IndicatorFilterOption(models.Model):
     """
-    Represents an option for a specific indicator filter type.
+    Represents an option for a specific indicator filter type, such as Under 18 or 65 and Older.
     """
 
     # The name of the filter option
@@ -315,6 +318,7 @@ class DataVisualLocationComparisonType(models.TextChoices):
     """
     Represents the type of location comparison for data visualizations.
     """
+    
     PARENTS = "parents",
     SIBLINGS = "siblings"
 

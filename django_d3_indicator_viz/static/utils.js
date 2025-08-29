@@ -55,6 +55,15 @@ function formatData(data, value_field, round = false) {
     }
 }
 
+/**
+ * Build the content for a tooltip.
+ * 
+ * @param {string} name - The name to be displayed in the tooltip.
+ * @param {Object} data - The data to be displayed in the tooltip.
+ * @param {string} value_field - The field in the data to be shown as the value.
+ * @param {Array} compareLocations - An array of locations to compare against.
+ * @param {Array} compareData - The data for the locations to compare against.
+ */
 function buildTooltipContent(name, data, value_field, compareLocations, compareData) {
     let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data, value_field)}</div>`;
     if (compareLocations) {
@@ -77,6 +86,13 @@ function buildTooltipContent(name, data, value_field, compareLocations, compareD
     return tooltipContent;
 }
 
+/**
+ * Get comparison phrases based on the base and comparison values.
+ *
+ * @param {Number} baseValue the base value
+ * @param {Number} comparisonValue the comparison value
+ * @returns {Array} An array containing the comparison phrases.
+ */
 function getComparisonPhrases(baseValue, comparisonValue) {
     let phrases = {
         206: ["more than double", ""],
@@ -112,11 +128,17 @@ function getComparisonPhrases(baseValue, comparisonValue) {
     return phrases[Object.keys(phrases).findLast(key => index >= key)]
 }
 
+/**
+ * Represents the types of location comparisons that can be made in the data visualization.
+ */
 const DataVisualLocationComparisonType = {
     PARENTS: 'parents',
     SIBLINGS: 'siblings'
 }
 
+/**
+ * Exports utility functions for data visualization.
+ */
 export {
     getVisualContainer,
     getTableContainer,

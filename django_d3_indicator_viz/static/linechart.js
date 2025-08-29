@@ -1,6 +1,25 @@
 import { formatData, buildTooltipContent } from "./utils.js";
 
+/**
+ * The Line chart visualization.
+ */
 export default class LineChart {
+
+    /**
+     * Creates a Line chart visualization.
+     * 
+     * @param {Object} visual the visual object
+     * @param {Element} container the container element
+     * @param {Object} indicator the indicator object
+     * @param {Object} location the location object
+     * @param {Array} indicatorData the indicator data object
+     * @param {Array} compareLocations the comparison locations
+     * @param {Array} compareData the comparison data
+     * @param {Array} filterOptions the filter options
+     * @param {Array} locationTypes the location types
+     * @param {Array} colorScales the color scales
+     * @param {Object} chartOptions the chart options for echarts
+     */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, colorScales, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
@@ -14,8 +33,10 @@ export default class LineChart {
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
         this.chart = null;
+
         this.draw();
 
+        // redraw the visualization on window resize
         window.addEventListener('resize', () => {
             this.draw();
         });
@@ -34,11 +55,12 @@ export default class LineChart {
         // set up the container
         this.container.classList.add('line-chart-container');
 
-        // configure the chart
+        // dispose the old chart (if redrawing)
         if (this.chart) {
             this.chart.dispose();
-            //this.container.innerHTML = '';
         }
+
+        // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let option = {
             ...this.chartOptions,

@@ -1,6 +1,23 @@
 import { formatData } from "./utils.js";
 
+/**
+ * The DataTable visualization.
+ */
 export default class DataTable {
+
+    /**
+     * Creates a DataTable visualization.
+     * 
+     * @param {Object} visual the visual object
+     * @param {Element} container the container element
+     * @param {Object} indicator the indicator object
+     * @param {Object} location the location object
+     * @param {Array} indicatorData the indicator data object
+     * @param {Array} compareLocations the comparison locations
+     * @param {Array} compareData the comparison data
+     * @param {Array} filterOptions the filter options
+     * @param {Object} chartOptions the chart options for echarts
+     */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
@@ -11,23 +28,16 @@ export default class DataTable {
         this.compareData = compareData;
         this.filterOptions = filterOptions;
         this.chartOptions = chartOptions;
+
         this.draw();
     }
 
     /**
      * Draws a DataTable visual.
-     *
-     * @param {Object} visual - The data visual this data table is based on.
-     * @param {Element} container - The data table container element.
-     * @param {Object} location - The location.
-     * @param {Array} indicatorData - The indicator data.
-     * @param {Array} compareLocations - The comparison locations.
-     * @param {Array} compareData - The comparison data.
-     * @param {Array} filterOptions - The filter options.
      */
     draw() {
+        // set up the table and header
         let table = this.container.querySelector('table');
-        
         let thead = document.createElement('thead');
         let headerRow = document.createElement('tr');
         let headers = ['Column', this.location.name, ...this.compareLocations.map(loc => loc.name)];
@@ -41,7 +51,8 @@ export default class DataTable {
         });
         thead.appendChild(headerRow);
         table.appendChild(thead);
-        
+
+        // set up the table body
         let tbody = document.createElement('tbody');
         let filterOptions = this.indicatorData.map(item => {
             let option = this.filterOptions.find(o => o.id === item.filter_option_id)?.name;

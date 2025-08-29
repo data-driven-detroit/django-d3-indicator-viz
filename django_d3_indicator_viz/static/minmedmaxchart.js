@@ -1,6 +1,24 @@
 import { formatData } from "./utils.js";
 
+/**
+ * The Min/Median/Max chart visualization.
+ */
 export default class MinMedMaxChart {
+
+    /**
+     * Creates a Min/Median/Max chart visualization.
+     * 
+     * @param {Object} visual the visual object
+     * @param {Element} container the container element
+     * @param {Object} indicator the indicator object
+     * @param {Object} location the location object
+     * @param {Object} indicatorData the indicator data object
+     * @param {Array} compareLocations the comparison locations
+     * @param {Array} compareData the comparison data
+     * @param {Array} filterOptions the filter options
+     * @param {Array} locationTypes the location types
+     * @param {Object} chartOptions the chart options for echarts
+     */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
@@ -13,8 +31,10 @@ export default class MinMedMaxChart {
         this.locationTypes = locationTypes;
         this.chartOptions = chartOptions;
         this.chart = null;
+        
         this.draw();
 
+        // redraw the visualization on window resize
         window.addEventListener('resize', () => {
             this.draw();
         });
@@ -24,6 +44,7 @@ export default class MinMedMaxChart {
      * Draws a min med max chart visual.
      */
     draw() {
+        // set up the container
         this.container.classList.add('min-med-max-container');
         this.container.style.height = '48px';
 
@@ -38,11 +59,13 @@ export default class MinMedMaxChart {
             minMedMax.push(sortedValues[mid]);
         }
         minMedMax.push(Math.max(...values));
-        
-        // configure the chart
+
+        // dispose the old chart (if redrawing)
         if (this.chart) {
             this.chart.dispose();
         }
+
+        // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let option = {
             ...this.chartOptions,

@@ -1,6 +1,23 @@
 import { formatData, getComparisonPhrases } from "./utils.js";
 
+/**
+ * The BAN (Big Ass Number) visualization.
+ */
 export default class Ban {
+
+    /**
+     * Creates a BAN visualization.
+     * 
+     * @param {Object} visual the visual object
+     * @param {Element} container the container element
+     * @param {Object} indicator the indicator object
+     * @param {Object} location the location object
+     * @param {Object} indicatorData the indicator data object
+     * @param {Array} compareLocations the comparison locations
+     * @param {Array} compareData the comparison data
+     * @param {Array} filterOptions the filter options
+     * @param {Object} chartOptions the chart options for echarts
+     */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
@@ -11,8 +28,10 @@ export default class Ban {
         this.compareData = compareData;
         this.filterOptions = filterOptions;
         this.chartOptions = chartOptions;
-        this.draw();
         
+        this.draw();
+
+        // redraw the visualization on window resize
         window.addEventListener('resize', () => {
             this.draw();
         });
@@ -20,19 +39,14 @@ export default class Ban {
 
     /**
      * Draws a BAN visual.
-     * 
-     * @param {Object} visual - The data visual.
-     * @param {Element} container - The data visual container element.
-     * @param {Object} location - The location.
-     * @param {Array} indicatorData - The indicator data.
-     * @param {Array} compareLocations - The comparison locations.
-     * @param {Array} compareData - The comparison data.
-     * @param {Array} filterOptions - The filter options.
      */
     draw() {
+        // set up the container
         this.container.innerHTML = '';
         this.container.classList.add('ban-container');
         this.container.style.fontFamily = this.chartOptions.textStyle?.fontFamily;
+        
+        // draw the value
         let valueContainerEl = document.createElement('div');
         valueContainerEl.className = 'ban-value-container';
         let valueEl = document.createElement('span');
@@ -66,7 +80,8 @@ export default class Ban {
             moeContainers.push(moeContainerEl);
         }
         this.container.appendChild(valueContainerEl);
-        
+
+        // draw the comparisons
         if (this.visual.location_comparison_type) {
             this.compareLocations.forEach((loc, index) => {
                 let locCompareData = this.compareData.find(d => d.location_id === loc.id)
@@ -131,6 +146,8 @@ export default class Ban {
                 this.container.appendChild(compareEl);
             });
         }
+
+        // set up the event listeners for the MOE containers to show/hide on hover and touch
         if (moeContainers.length > 0) {
             moeContainers.forEach(moeContainerEl => {
                 moeContainerEl.style.display = 'none';
