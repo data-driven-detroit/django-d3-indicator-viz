@@ -24,7 +24,7 @@ class ProfileView(TemplateView):
         if not self.location_slug:
             raise Http404("No location_slug provided.")
 
-        return super(NewGeographyDetailView, self).dispatch(*args, **kwargs)
+        return super(ProfileView, self).dispatch(*args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         return d3_views.build_profile_context(self.request, self.location_slug)
