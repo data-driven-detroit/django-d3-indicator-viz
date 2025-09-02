@@ -67,7 +67,7 @@ For example,
 ```<div id="indicator-17-column-container"></div>```
 
 #### JavaScript
-To populate the data visual containers, simply create a new ```visuals``` instance, passing in the context variables from the view.
+To populate the data visual containers, simply create a new ```Visuals``` instance, passing in the context variables from the view.
 ```javascript
 import Visuals from "../visuals.js";
 const visuals = new Visuals(
