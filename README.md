@@ -50,7 +50,7 @@ path(
 ### Templates
 
 #### HTML
-To build the view template, simply loop through the sections, categories, and indicators. Create elements as needed, such as headings with the section/category/indicator names. For the data visuals, the package depends on a naming convention for the ID attribuate on all data visual DOM elements:
+To build the view template, simply loop through the sections, categories, and indicators. Create elements as needed, such as headings with the section/category/indicator names. For the data visuals, the package depends on a naming convention for the ID attribute on all data visual DOM elements:
 
 ```indicator-{indicatorId}-{dataVisualType}-container```
 
