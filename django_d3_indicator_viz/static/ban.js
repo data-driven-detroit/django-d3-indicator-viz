@@ -88,26 +88,32 @@ export default class Ban {
                 let compareEl = document.createElement('div');
                 compareEl.className = 'ban-compare';
                 compareEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16)  * 0.75 + 'px';
-                if (this.visual.value_field === 'percentage') {
-                    let phrases = getComparisonPhrases(this.indicatorData[this.visual.value_field], locCompareData[this.visual.value_field]);
+                let comparePhraseValueTypes = ['percentage', 'rate', 'index', 'dollars'];
+                let useComparisonPhrase = comparePhraseValueTypes.includes(this.visual.value_field);
+                if (useComparisonPhrase) {
+                    let phrases = getComparisonPhrases(
+                        this.indicatorData[this.visual.value_field], 
+                        locCompareData[this.visual.value_field], 
+                        this.visual.value_field
+                    );
                     let comparePhraseEl = document.createElement('strong');
                     comparePhraseEl.className = 'ban-compare-phrase';
                     comparePhraseEl.textContent = phrases[0];
                     compareEl.appendChild(comparePhraseEl);
-                    if (phrases[1]) {
+                    if (phrases[1] !== '') {
                         let comparePhraseEl2 = document.createElement('span');
                         comparePhraseEl2.className = 'ban-compare-phrase';
-                        comparePhraseEl2.textContent = phrases[1];
+                        comparePhraseEl2.textContent = ' ' + phrases[1];
                         comparePhraseEl.appendChild(comparePhraseEl2);
                         compareEl.appendChild(comparePhraseEl2);
                     }
                     let comparePhraseEl3 = document.createElement('span');
                     comparePhraseEl3.className = 'ban-compare-phrase';
-                    comparePhraseEl3.textContent = ' the rate in ';
+                    comparePhraseEl3.textContent = ' ' + phrases[2];
                     compareEl.appendChild(comparePhraseEl3);
                 }
                 let compareLocEl;
-                if (this.visual.value_field === 'percentage') {
+                if (useComparisonPhrase) {
                     compareLocEl = document.createElement('span');
                 } else {
                     compareLocEl = document.createElement('strong');
