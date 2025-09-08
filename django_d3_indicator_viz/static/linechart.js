@@ -46,6 +46,11 @@ export default class LineChart {
      * Draws a column chart visual.
      */
     draw() {
+        if (!this.indicatorData || !this.indicatorData.length) {
+            this.container.innerHTML = 'No data';
+            return;
+        }
+
         // create a series for each location
         let seriesNames = [this.location.name];
         let seriesData = {};
@@ -104,7 +109,7 @@ export default class LineChart {
                     alignMaxLabel: 'right',
                     formatter: (value) => {
                         let label = '{bold|' + value.substring(0, 4) + ': ' + '}';
-                        return label + '{normal|' + formatData(seriesData[0].find(item => item.end_date === value), this.visual.value_field) + '}';
+                        return label + '{normal|' + formatData(seriesData[0].find(item => item.end_date === value), this.visual.value_field, true) + '}';
                     },
                     rich: {
                         normal: {

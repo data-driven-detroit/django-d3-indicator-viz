@@ -169,13 +169,22 @@ export default class DonutChart {
      * Draws a donut chart visual.
      */
     draw() {
+        if (!this.indicatorData || !this.indicatorData.length) {
+            this.container.innerHTML = 'No data';
+            return;
+        }
+
         // set up the container
         this.container.classList.add('donut-chart-container');
         this.container.style.height = null;
         let computedStyleHeight = window.getComputedStyle(this.container).height;
         computedStyleHeight = Number(computedStyleHeight.substring(0, computedStyleHeight.length - 2));
+
+        // override the container height if on smaller screens or the legend items exceed the chart height
         if (window.innerWidth < 1200) {
             this.container.style.height = computedStyleHeight + (30 * this.indicatorData.length) + 30 + 'px';
+        } else if ((30 * this.indicatorData.length) + 60 > computedStyleHeight) {
+            this.container.style.height = (30 * this.indicatorData.length) + 60 + 'px';
         }
 
         // transform the data for the chart
@@ -211,11 +220,11 @@ export default class DonutChart {
                     rich: {
                         normal: {
                             fontWeight: 'normal',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 1.25
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
                         },
                         bold: {
                             fontWeight: 'bold',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 1.25
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
                         }
                     }
                 },
@@ -229,6 +238,9 @@ export default class DonutChart {
                 left: window.innerWidth >= 1200  ? computedStyleHeight + 'px' : 0,
                 icon: 'rect',
                 selectedMode: 'series',
+                textStyle: {
+                    fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px'
+                },
                 data: data.map(item => {
                     return {
                         ...item,
@@ -263,7 +275,7 @@ export default class DonutChart {
                     type: 'pie',
                     width: computedStyleHeight + 'px',
                     height: computedStyleHeight + 'px',
-                    radius: ['60%', '80%'],
+                    radius: ['62.5%', '87.5%'],
                     center: [computedStyleHeight / 2 + 'px', '50%'],
                     label: {
                         show: false

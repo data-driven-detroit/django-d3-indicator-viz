@@ -44,6 +44,11 @@ export default class MinMedMaxChart {
      * Draws a min med max chart visual.
      */
     draw() {
+        if (!this.indicatorData) {
+            this.container.innerHTML = 'No data';
+            return;
+        }
+        
         // set up the container
         this.container.classList.add('min-med-max-container');
         this.container.style.height = '48px';
@@ -93,7 +98,7 @@ export default class MinMedMaxChart {
                         let label = '{bold|' + (value === minMedMax[0] ? 'Min: ' : value === minMedMax[1] ? 'Median: ' : 'Max: ') + '}';
                         let data = {};
                         data[this.visual.value_field] = value;
-                        return label + '{normal|' + formatData(data, this.visual.value_field) + '}';
+                        return label + '{normal|' + formatData(data, this.visual.value_field, true) + '}';
                     },
                     rich: {
                         normal: {

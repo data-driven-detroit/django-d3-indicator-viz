@@ -45,6 +45,18 @@ export default class Ban {
         this.container.innerHTML = '';
         this.container.classList.add('ban-container');
         this.container.style.fontFamily = this.chartOptions.textStyle?.fontFamily;
+
+        if (!this.indicatorData) {
+            let valueContainerEl = document.createElement('div');
+            valueContainerEl.className = 'ban-value-container';
+            let valueEl = document.createElement('span');
+            valueEl.className = 'ban-value';
+            valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
+            valueEl.textContent = 'No data';
+            valueContainerEl.appendChild(valueEl);
+            this.container.appendChild(valueContainerEl);
+            return;
+        }
         
         // draw the value
         let valueContainerEl = document.createElement('div');
@@ -52,7 +64,7 @@ export default class Ban {
         let valueEl = document.createElement('span');
         valueEl.className = 'ban-value';
         valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
-        valueEl.textContent = formatData(this.indicatorData, this.visual.value_field);
+        valueEl.textContent = formatData(this.indicatorData, this.visual.value_field, true);
         valueContainerEl.appendChild(valueEl);
         let moeContainers = [];
         if (this.indicatorData[this.visual.value_field + '_moe']) {
@@ -61,7 +73,7 @@ export default class Ban {
             let moePlusMinusEl = document.createElement('span');
             moePlusMinusEl.innerHTML = '&plusmn;';
             let moeEl = document.createElement('span');
-            moeEl.textContent = formatData(this.indicatorData, this.visual.value_field + '_moe');
+            moeEl.textContent = formatData(this.indicatorData, this.visual.value_field + '_moe', true);
             moeContainerEl.appendChild(moePlusMinusEl);
             moeContainerEl.appendChild(moeEl);
             valueContainerEl.appendChild(moeContainerEl);
@@ -69,11 +81,11 @@ export default class Ban {
                 let countContainerEl = document.createElement('span');
                 let countEl = document.createElement('span');
                 countEl.className = 'ban-moe';
-                countEl.textContent = '(' + formatData(this.indicatorData, 'count');
+                countEl.textContent = '(' + formatData(this.indicatorData, 'count', true) + ')';
                 countContainerEl.appendChild(countEl);
                 let countMoeEl = document.createElement('span');
                 countMoeEl.className = 'ban-compare-moe';
-                countMoeEl.textContent = ' ± ' + formatData(this.indicatorData, 'count_moe') + ')';
+                countMoeEl.textContent = ' ± ' + formatData(this.indicatorData, 'count_moe', true) + ')';
                 countContainerEl.appendChild(countMoeEl);
                 moeContainerEl.appendChild(countContainerEl);
             }
@@ -123,7 +135,7 @@ export default class Ban {
                 compareEl.appendChild(compareLocEl);
                 let compareValEl = document.createElement('span');
                 compareValEl.className = 'ban-compare-value';
-                compareValEl.textContent = formatData(locCompareData, this.visual.value_field);
+                compareValEl.textContent = formatData(locCompareData, this.visual.value_field, true);
                 compareEl.appendChild(compareValEl);
                 if (locCompareData[this.visual.value_field + '_moe']) {
                     let compareMoeContainer = document.createElement('span');
@@ -132,18 +144,18 @@ export default class Ban {
                     compareMoePlusMinusEl.innerHTML = '&plusmn;';
                     compareMoeContainer.appendChild(compareMoePlusMinusEl);
                     let compareMoeEl = document.createElement('span');
-                    compareMoeEl.textContent = formatData(locCompareData, this.visual.value_field + '_moe');
+                    compareMoeEl.textContent = formatData(locCompareData, this.visual.value_field + '_moe', true);
                     compareMoeContainer.appendChild(compareMoeEl);
                     compareEl.appendChild(compareMoeContainer);
                     if (this.visual.value_field === 'percentage') {
                         let countContainerEl = document.createElement('span');
                         let countEl = document.createElement('span');
                         countEl.className = 'ban-moe';
-                        countEl.textContent = '(' + formatData(locCompareData, 'count');
+                        countEl.textContent = '(' + formatData(locCompareData, 'count', true) + ')';
                         countContainerEl.appendChild(countEl);
                         let countMoeEl = document.createElement('span');
                         countMoeEl.className = 'ban-compare-moe';
-                        countMoeEl.textContent = ' ± ' + formatData(locCompareData, 'count_moe') + ')';
+                        countMoeEl.textContent = ' ± ' + formatData(locCompareData, 'count_moe', true) + ')';
                         countContainerEl.appendChild(countMoeEl);
                         compareMoeContainer.appendChild(countContainerEl);
                     }

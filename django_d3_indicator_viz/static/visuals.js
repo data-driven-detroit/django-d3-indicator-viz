@@ -23,18 +23,20 @@ export default class Visuals {
      * @param {Array} filterOptions the filter options
      * @param {Array} data the indicator data
      * @param {Array} colorScales the color scales
+     * @param {Object} dataVisualComparisonMode the mode for displaying data visual comparisons
      * @param {Object} options additional options for echarts
      */
-    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, colorScales, options = {}) {
+    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, colorScales, dataVisualComparisonMode, options = {}) {
         this.dataVisuals = dataVisuals;
         this.locationId = locationId;
         this.indicators = indicators;
         this.locations = locations;
         this.parentLocations = parentLocations;
-        this.colorScales = colorScales;
         this.locationTypes = locationTypes;
         this.filterOptions = filterOptions;
         this.data = data;
+        this.colorScales = colorScales;
+        this.dataVisualComparisonMode = dataVisualComparisonMode;
         this.options = options;
 
         // draw the visualizations
@@ -102,7 +104,7 @@ export default class Visuals {
                 new Ban(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.options);
                 break;
             case 'column':
-                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.colorScales, this.options);
+                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.colorScales, this.dataVisualComparisonMode, this.options);
                 if (tableContainer) {
                     new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
                 }

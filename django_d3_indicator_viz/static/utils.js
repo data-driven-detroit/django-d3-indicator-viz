@@ -27,7 +27,7 @@ function getTableContainer(indicatorId) {
  * @param {boolean} [round=false] - Whether to round the value.
  */
 function formatData(data, value_field, round = false) {
-    if (!data || !data[value_field]) {
+    if (!data || data[value_field] === null) {
         return 'No data';
     }
     switch (value_field) {
@@ -65,7 +65,7 @@ function formatData(data, value_field, round = false) {
  * @param {Array} compareData - The data for the locations to compare against.
  */
 function buildTooltipContent(name, data, value_field, compareLocations, compareData) {
-    let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data, value_field)}</div>`;
+    let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data, value_field, true)}</div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
             let locationData = compareData.find(d => d.location_id === location.id 
@@ -73,7 +73,7 @@ function buildTooltipContent(name, data, value_field, compareLocations, compareD
                 && data.end_date === d.end_date);
             if (locationData) {
                 let comparisonPhrases = getComparisonPhrases(data[value_field], locationData[value_field], value_field);
-                tooltipContent += `<div class='tooltip-comparison'><strong>${comparisonPhrases[0]}</strong> ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: ${formatData(locationData, value_field)}</div>`;
+                tooltipContent += `<div class='tooltip-comparison'><strong>${comparisonPhrases[0]}</strong> ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: ${formatData(locationData, value_field, true)}</div>`;
             } else {
                 tooltipContent += `<div class='tooltip-comparison'><strong>No comparison available</strong> for ${location.name}</div>`;
             }
@@ -151,6 +151,14 @@ const DataVisualLocationComparisonType = {
 }
 
 /**
+ * Represents the modes for displaying data visual comparisons.
+ */
+const DataVisualComparisonMode = {
+    DATA_VISUAL: 'data_visual',
+    TOOLTIP: 'tooltip'
+}
+
+/**
  * Exports utility functions for data visualization.
  */
 export {
@@ -159,5 +167,6 @@ export {
     formatData,
     buildTooltipContent,
     getComparisonPhrases,
-    DataVisualLocationComparisonType 
+    DataVisualLocationComparisonType,
+    DataVisualComparisonMode
 };

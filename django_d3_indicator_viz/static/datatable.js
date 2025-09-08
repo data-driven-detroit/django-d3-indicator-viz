@@ -36,6 +36,11 @@ export default class DataTable {
      * Draws a DataTable visual.
      */
     draw() {
+        if (!this.indicatorData || !this.indicatorData.length) {
+            this.container.innerHTML = 'No data';
+            return;
+        }
+
         // set up the table and header
         let table = this.container.querySelector('table');
         let thead = document.createElement('thead');

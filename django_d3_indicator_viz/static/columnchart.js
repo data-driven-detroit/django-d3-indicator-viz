@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent } from "./utils.js";
+import { formatData, buildTooltipContent, DataVisualComparisonMode } from "./utils.js";
 
 /**
  * The Column chart visualization.
@@ -17,9 +17,10 @@ export default class ColumnChart {
      * @param {Array} compareData the comparison data
      * @param {Array} filterOptions the filter options
      * @param {Array} colorScales the color scales
+     * @param {String} dataVisualComparisonMode the mode for displaying data visual comparisons
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, colorScales, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, colorScales, dataVisualComparisonMode, chartOptions = {}) {
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -30,6 +31,7 @@ export default class ColumnChart {
         this.filterOptions = filterOptions;
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
+        this.dataVisualComparisonMode = dataVisualComparisonMode;
         this.chart = null;
 
         this.draw();
@@ -44,17 +46,24 @@ export default class ColumnChart {
      * Draws a column chart visual.
      */
     draw() {
+        if (!this.indicatorData || !this.indicatorData.length) {
+            this.container.innerHTML = 'No data';
+            return;
+        }
+
         // create a series for each location
         let seriesNames = [this.location.name];
         let seriesData = {};
         seriesData[this.location.id] = [].concat(this.indicatorData);
-        this.compareData.forEach(item => {
-            if (!seriesData[item.location_id]) {
-                seriesData[item.location_id] = []
-                seriesNames.push(this.compareLocations.find(loc => loc.id === item.location_id).name);
-            }
-            seriesData[item.location_id].push(item);
-        });
+        if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
+            this.compareData.forEach(item => {
+                if (!seriesData[item.location_id]) {
+                    seriesData[item.location_id] = []
+                    seriesNames.push(this.compareLocations.find(loc => loc.id === item.location_id).name);
+                }
+                seriesData[item.location_id].push(item);
+            });
+        }
         seriesData = Object.values(seriesData);
 
         // set up the container
@@ -81,7 +90,6 @@ export default class ColumnChart {
             show: window.innerWidth >= 768 ? true : false,
             boundaryGap: true,
             axisLabel: {
-                fontWeight: 'bold',
                 fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                 interval: 0,
                 width: window.innerWidth >= 768 ? 110 : 0,
@@ -137,7 +145,11 @@ export default class ColumnChart {
                 trigger: 'item',
                 triggerOn: 'mousemove',
                 formatter: params => {
-                    return buildTooltipContent(params.name, params.data, this.visual.value_field);
+                    if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
+                        return buildTooltipContent(params.name, params.data, this.visual.value_field);
+                    } else {
+                        return buildTooltipContent(params.seriesName, params.data, this.visual.value_field, this.compareLocations, this.compareData);
+                    }
                 }
             },
             xAxis: window.innerWidth < 1200 ? valueAxis : categoryAxis,
@@ -151,8 +163,9 @@ export default class ColumnChart {
                     label: {
                         show: true,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
+                        fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
-                            return formatData(params.data, this.visual.value_field);
+                            return formatData(params.data, this.visual.value_field, true);
                         }
                     },
                     emphasis: {
@@ -172,7 +185,7 @@ export default class ColumnChart {
                     show: true,
                     position: 'right',
                     distance: 0,
-                    fontWeight: 'bold',
+                    fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                     formatter: function(params) {
                         return params.name;
                     },

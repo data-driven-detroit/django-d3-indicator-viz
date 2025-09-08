@@ -84,3 +84,31 @@ const visuals = new Visuals(
 );
 ```
 
+#### CSS
+The following CSS classes are automatically added to data visual containers. These CSS classes may be used to apply styles to the containers, such as the container height.
+
+|Data Visual Type|CSS Class|
+|-|-|
+|ban|```ban-container```|
+|column|```column-chart-container```|
+|donut|```donut-chart-container```|
+|line|```line-chart-container```|
+|min_med_max|```min-med-max-container```|
+
+Additionally, the following CSS classes are applied to elements within HTML-rendered data visuals:
+
+|Data Visual Type|CSS Class|Notes|
+|-|-|-|
+|ban|```ban-value-container```|Contains the BAN value and MOE|
+|ban|```ban-value```|The BAN value|
+|ban|```ban-moe```|The BAN MOE|
+|ban|```ban-compare```|Contains the location comparison name, value, and MOE|
+|ban|```ban-compare-moe```|The location comparison MOE|
+|ban|```ban-compare-phrase```|The comparison phrase (e.g., 'about half of ')|
+|ban|```ban-compare-location```|The compared location|
+|ban|```ban-compare-value```|The compared location's value|
+|datatable|```name```|The first cell in each row containing the name (e.g., 'Female')|
+|datatable|```value```|The second cell in each row containing the value.|
+|datatable|```context```|The third cell in each row containing the MOE|
+
+
