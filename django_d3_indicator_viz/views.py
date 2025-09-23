@@ -57,7 +57,9 @@ def __build_common_profile_context(location_type, parent_locations):
     location_types = LocationType.objects.all().values()
     
     color_scales = ColorScale.objects.all().order_by('name').values()
-    data_visuals = IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False).order_by('indicator__sort_order').values()
+    data_visuals = IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False).order_by('indicator__sort_order').values(
+        'id', 'source_id', 'source__name', 'start_date', 'end_date', 'indicator_id', 'data_visual_type', 'location_comparison_type', 'columns', 'color_scale_id'
+    )
     filter_options = IndicatorFilterOption.objects.all().order_by('sort_order').values()
 
     return sections, categories, indicators, location_types, color_scales, data_visuals, filter_options
