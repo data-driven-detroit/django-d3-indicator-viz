@@ -75,7 +75,7 @@ export default class DataTable {
             
             let valueCell = document.createElement('td');
             valueCell.className = 'value';
-            valueCell.textContent = formatData(this.indicatorData[index], this.visual.value_field);
+            valueCell.textContent = formatData(this.indicatorData[index].value, this.indicator.formatter);
             row.appendChild(valueCell);
             let valueMoeCell = document.createElement('td');
             valueMoeCell.className = 'context';
@@ -83,12 +83,12 @@ export default class DataTable {
             valueMoePlusMinus.innerHTML = '&plusmn;';
             valueMoeCell.appendChild(valueMoePlusMinus);
             let valueMoe = document.createElement('span');
-            valueMoe.textContent = formatData(this.indicatorData[index], this.visual.value_field + '_moe');
+            valueMoe.textContent = formatData(this.indicatorData[index].value_moe, this.indicator.formatter);
             valueMoeCell.appendChild(valueMoe);
             row.appendChild(valueMoeCell);
 
             let countCell = document.createElement('td');
-            countCell.textContent = formatData(this.indicatorData[index], 'count');
+            countCell.textContent = formatData(this.indicatorData[index].count, this.indicator.formatter);
             row.appendChild(countCell);
             let countMoeCell = document.createElement('td');
             countMoeCell.className = 'context';
@@ -96,7 +96,7 @@ export default class DataTable {
             countMoePlusMinus.innerHTML = '&plusmn;';
             countMoeCell.appendChild(countMoePlusMinus);
             let countMoe = document.createElement('span');
-            countMoe.textContent = formatData(this.indicatorData[index], 'count_moe');
+            countMoe.textContent = formatData(this.indicatorData[index].count_moe, this.indicator.formatter);
             countMoeCell.appendChild(countMoe);
             row.appendChild(countMoeCell);
 
@@ -107,7 +107,7 @@ export default class DataTable {
                     && ((!d.filter_option_id  || d.filter_option_id === this.indicatorData[index].filter_option_id)
                     && d.end_date === this.indicatorData[index].end_date)
                 );
-                valueCell.textContent = formatData(compareDataItem, this.visual.value_field);
+                valueCell.textContent = formatData(compareDataItem.value, this.indicator.formatter);
                 row.appendChild(valueCell);
                 let valueMoeCell = document.createElement('td');
                 valueMoeCell.className = 'context';
@@ -115,11 +115,11 @@ export default class DataTable {
                 valueMoePlusMinus.innerHTML = '&plusmn;';
                 valueMoeCell.appendChild(valueMoePlusMinus);
                 let valueMoe = document.createElement('span');
-                valueMoe.textContent = formatData(compareDataItem, this.visual.value_field + '_moe');
+                valueMoe.textContent = formatData(compareDataItem.value_moe, this.indicator.formatter);
                 valueMoeCell.appendChild(valueMoe);
                 row.appendChild(valueMoeCell);
                 let countCell = document.createElement('td');
-                countCell.textContent = formatData(compareDataItem, 'count');
+                countCell.textContent = formatData(compareDataItem.count, this.indicator.formatter);
                 row.appendChild(countCell);
                 let countMoeCell = document.createElement('td');
                 countMoeCell.className = 'context';
@@ -127,7 +127,7 @@ export default class DataTable {
                 countMoePlusMinus.innerHTML = '&plusmn;';
                 countMoeCell.appendChild(countMoePlusMinus);
                 let countMoe = document.createElement('span');
-                countMoe.textContent = formatData(compareDataItem, 'count_moe');
+                countMoe.textContent = formatData(compareDataItem.count_moe, this.indicator.formatter);
                 countMoeCell.appendChild(countMoe);
                 row.appendChild(countMoeCell);
             });

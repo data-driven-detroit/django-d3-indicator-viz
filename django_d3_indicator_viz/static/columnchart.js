@@ -146,9 +146,9 @@ export default class ColumnChart {
                 triggerOn: 'mousemove',
                 formatter: params => {
                     if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
-                        return buildTooltipContent(params.name, params.data, this.visual.value_field);
+                        return buildTooltipContent(params.name, params.data, this.indicator);
                     } else {
-                        return buildTooltipContent(params.seriesName, params.data, this.visual.value_field, this.compareLocations, this.compareData);
+                        return buildTooltipContent(params.seriesName, params.data, this.indicator, this.compareLocations, this.compareData);
                     }
                 }
             },
@@ -159,13 +159,13 @@ export default class ColumnChart {
                     name: seriesNames[index],
                     type: 'bar',
                     colorBy: 'data',
-                    data: data.map(item => { return { ...item, value: item[this.visual.value_field] } }),
+                    data: data.map(item => { return { ...item, value: item.value } }),
                     label: {
                         show: true,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
-                            return formatData(params.data, this.visual.value_field, true);
+                            return formatData(params.data.value, this.indicator.formatter, true);
                         }
                     },
                     emphasis: {

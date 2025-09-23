@@ -54,10 +54,10 @@ export default class MinMedMaxChart {
         this.container.style.height = '48px';
 
         // get the min, median, and max values
-        let values = [this.indicatorData[this.visual.value_field]].concat(this.compareData.map(d => d[this.visual.value_field]));
+        let values = [this.indicatorData.value].concat(this.compareData.map(d => d.value));
         let minMedMax = [Math.min(...values)];
         let mid = Math.floor(values.length / 2);
-        let sortedValues = this.compareData.map(d => d[this.visual.value_field]).sort((a, b) => a - b);
+        let sortedValues = this.compareData.map(d => d.value).sort((a, b) => a - b);
         if (sortedValues.length % 2 === 0) {
             minMedMax.push((sortedValues[mid - 1] + sortedValues[mid]) / 2);
         } else {
@@ -96,9 +96,7 @@ export default class MinMedMaxChart {
                     alignMaxLabel: 'right',
                     formatter: (value) => {
                         let label = '{bold|' + (value === minMedMax[0] ? 'Min: ' : value === minMedMax[1] ? 'Median: ' : 'Max: ') + '}';
-                        let data = {};
-                        data[this.visual.value_field] = value;
-                        return label + '{normal|' + formatData(data, this.visual.value_field, true) + '}';
+                        return label + '{normal|' + formatData(value, this.indicator.formatter, true) + '}';
                     },
                     rich: {
                         normal: {
@@ -135,7 +133,7 @@ export default class MinMedMaxChart {
                 show: false
             },
             series: [{
-                data: [[this.indicatorData[this.visual.value_field], 0]],
+                data: [[this.indicatorData.value, 0]],
                 type: 'scatter',
                 symbolSize: 15,
                 itemStyle: {

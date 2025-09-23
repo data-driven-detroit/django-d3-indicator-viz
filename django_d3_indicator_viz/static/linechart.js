@@ -93,7 +93,7 @@ export default class LineChart {
                     type: 'none'
                 },
                 formatter: params => {
-                    return buildTooltipContent(params[0].name.substring(0, 4), params[0].data, this.visual.value_field, this.compareLocations, this.compareData);
+                    return buildTooltipContent(params[0].name.substring(0, 4), params[0].data, this.indicator, this.compareLocations, this.compareData);
                 }
             },
             xAxis: {
@@ -109,7 +109,7 @@ export default class LineChart {
                     alignMaxLabel: 'right',
                     formatter: (value) => {
                         let label = '{bold|' + value.substring(0, 4) + ': ' + '}';
-                        return label + '{normal|' + formatData(seriesData[0].find(item => item.end_date === value), this.visual.value_field, true) + '}';
+                        return label + '{normal|' + formatData(seriesData[0].find(item => item.end_date === value).value, this.indicator.formatter, true) + '}';
                     },
                     rich: {
                         normal: {
@@ -147,7 +147,7 @@ export default class LineChart {
                                 ? this.compareLocations.find(l => l.id === data[0].location_id).name
                                 : 'Other ' + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name + 's',
                         type: 'line',
-                        data: data.map(item => { return { ...item, value: item[this.visual.value_field] } }),
+                        data: data.map(item => { return { ...item, value: item.value } }),
                         // make sure the location being viewed sits above the other locations
                         z: data[0].location_id === this.location.id ? 3 : 2,
                         // only show a symbol for the location being viewed on the last data point
@@ -157,7 +157,7 @@ export default class LineChart {
                             symbolSize: data[0].location_id === this.location.id  ? 10 : 0,
                             data: [{
                                 type: 'coordinate',
-                                coord: [data[data.length-1].end_date, data[data.length-1][this.visual.value_field]]
+                                coord: [data[data.length-1].end_date, data[data.length-1].value]
                             }]
                         },
                         lineStyle: {

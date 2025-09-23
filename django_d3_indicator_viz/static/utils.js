@@ -19,39 +19,22 @@ function getTableContainer(indicatorId) {
 }
 
 /**
- * Format data based on the value field.
+ * Format a number.
  * 
- * @param {Object} data - The data to be formatted.
- * @param {string} value_field - The field in the data to be used as the value.
- * @returns {string} The formatted value.
+ * @param {number} number - The number to be formatted.
+ * @param {string} formatter - The formatter string.
  * @param {boolean} [round=false] - Whether to round the value.
+ * @returns {string} The formatted value.
  */
-function formatData(data, value_field, round = false) {
-    if (!data || data[value_field] === null) {
+function formatData(number, formatter, round = false) {
+    if (number === null) {
         return 'No data';
     }
-    switch (value_field) {
-        case 'percentage':
-        case 'percentage_moe':
-            let formattedValue = (round ? Math.round(data[value_field]) : data[value_field]) + '%';
-            if (value_field === 'percentage' && data.count_moe && data.count && data.count_moe > (data.count / 10)) {
-                formattedValue += '†';
-            }
-            return formattedValue;
-        case 'dollars':
-        case 'dollars_moe':
-            return '$' + Number(data[value_field]).toLocaleString();
-        case 'count':
-        case 'count_moe':
-        case 'universe':
-        case 'universe_moe':
-        case 'rate':
-        case 'rate_moe':
-        case 'index':
-        case 'index_moe':
-            return Number(data[value_field]).toLocaleString();
-        default:
-            return data[value_field];
+    let valueToFormat = round ? Math.round(number) : number;
+    if (formatter) {
+        return formatter.replace('{value}', valueToFormat.toLocaleString());
+    } else {
+        return valueToFormat.toLocaleString();
     }
 }
 
@@ -60,26 +43,26 @@ function formatData(data, value_field, round = false) {
  * 
  * @param {string} name - The name to be displayed in the tooltip.
  * @param {Object} data - The data to be displayed in the tooltip.
- * @param {string} value_field - The field in the data to be shown as the value.
+ * @param {Object} indicator - The indicator object.
  * @param {Array} compareLocations - An array of locations to compare against.
  * @param {Array} compareData - The data for the locations to compare against.
  */
-function buildTooltipContent(name, data, value_field, compareLocations, compareData) {
-    let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data, value_field, true)}</div>`;
+function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
+    let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data.value, indicator.formatter, true)}</div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
             let locationData = compareData.find(d => d.location_id === location.id 
                 && data.filter_option_id === d.filter_option_id
                 && data.end_date === d.end_date);
             if (locationData) {
-                let comparisonPhrases = getComparisonPhrases(data[value_field], locationData[value_field], value_field);
-                tooltipContent += `<div class='tooltip-comparison'><strong>${comparisonPhrases[0]}</strong> ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: ${formatData(locationData, value_field, true)}</div>`;
+                let comparisonPhrases = getComparisonPhrases(data.value, locationData.value, indicator.indicator_type);
+                tooltipContent += `<div class='tooltip-comparison'><strong>${comparisonPhrases[0]}</strong> ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: ${formatData(locationData.value, indicator.formatter, true)}</div>`;
             } else {
                 tooltipContent += `<div class='tooltip-comparison'><strong>No comparison available</strong> for ${location.name}</div>`;
             }
         });
     }
-    if (value_field === 'percentage' && data.count_moe && data.count && data.count_moe > (data.count / 10)) {
+    if (indicator.indicator_type === 'percentage' && data.count_moe && data.count && data.count_moe > (data.count / 10)) {
         tooltipContent += '<div class="tooltip-moe-note">†Margin of error at least 10% of total value</div>';
     }
 
@@ -91,12 +74,12 @@ function buildTooltipContent(name, data, value_field, compareLocations, compareD
  *
  * @param {Number} baseValue the base value
  * @param {Number} comparisonValue the comparison value
- * @param {String} valueField the type of value being compared (e.g., 'percentage', 'rate', etc.)
+ * @param {String} indicatorType the type of indicator being compared (e.g., 'percentage', 'rate', etc.)
  * @returns {Array} An array containing the comparison phrases.
  */
-function getComparisonPhrases(baseValue, comparisonValue, valueField) {
+function getComparisonPhrases(baseValue, comparisonValue, indicatorType) {
     let valueFieldPhrase = ' the value in ';
-    switch (valueField) {
+    switch (indicatorType) {
         case 'percentage':
             valueFieldPhrase = ' the rate in ';
             break;
@@ -104,7 +87,8 @@ function getComparisonPhrases(baseValue, comparisonValue, valueField) {
         case 'index':
             valueFieldPhrase = ' the figure in ';
             break;
-        case 'dollars':
+        case 'median':
+        case 'average':
             valueFieldPhrase = ' the amount in ';
             break;
     }

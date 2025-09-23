@@ -68,7 +68,7 @@ export default class DonutChart {
                 title: {
                     text: [
                         '{normal|' + this.option.series[0].data[params.selected[0].dataIndex[0]].name + '}',
-                        '{bold|' + formatData(this.option.series[0].data[params.selected[0].dataIndex[0]], this.visual.value_field, true) + '}'
+                        '{bold|' + formatData(this.option.series[0].data[params.selected[0].dataIndex[0]].value, this.indicator.formatter, true) + '}'
                     ].join(' '),
                 },
                 legend: {
@@ -131,7 +131,7 @@ export default class DonutChart {
             title: {
                 text: [
                     '{normal|' + dataItem.name + '}',
-                    '{bold|' + formatData(dataItem, this.visual.value_field, true) + '}'
+                    '{bold|' + formatData(dataItem.value, this.indicator.formatter, true) + '}'
                 ].join(' '),
             },
             legend: {
@@ -191,7 +191,7 @@ export default class DonutChart {
         let data = this.indicatorData.map(item => {
             return {
                 ...item,
-                value: item[this.visual.value_field],
+                value: item.value,
                 name: this.filterOptions.find(o => o.id === item.filter_option_id).name
             }
         });
@@ -253,7 +253,7 @@ export default class DonutChart {
                     show: 'true',
                     formatter: params => {
                         let data = this.chart.getOption().series[0].data.find(d => d.name === params.name);
-                        return buildTooltipContent(params.name, data, this.visual.value_field, this.compareLocations, this.compareData);
+                        return buildTooltipContent(params.name, data, this.indicator, this.compareLocations, this.compareData);
                     }
                 }
             },
@@ -262,7 +262,7 @@ export default class DonutChart {
                 trigger: 'item',
                 triggerOn: 'mousemove',
                 formatter: params => {
-                    return buildTooltipContent(params.name, params.data, this.visual.value_field, this.compareLocations, this.compareData);
+                    return buildTooltipContent(params.name, params.data, this.indicator, this.compareLocations, this.compareData);
                 }
             },
             yAxis: {
