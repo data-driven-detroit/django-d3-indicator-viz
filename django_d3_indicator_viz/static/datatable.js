@@ -88,7 +88,7 @@ export default class DataTable {
             row.appendChild(valueMoeCell);
 
             let countCell = document.createElement('td');
-            countCell.textContent = formatData(this.indicatorData[index].count, this.indicator.formatter);
+            countCell.textContent = formatData(this.indicatorData[index].count, null);
             row.appendChild(countCell);
             let countMoeCell = document.createElement('td');
             countMoeCell.className = 'context';
@@ -96,7 +96,7 @@ export default class DataTable {
             countMoePlusMinus.innerHTML = '&plusmn;';
             countMoeCell.appendChild(countMoePlusMinus);
             let countMoe = document.createElement('span');
-            countMoe.textContent = formatData(this.indicatorData[index].count_moe, this.indicator.formatter);
+            countMoe.textContent = formatData(this.indicatorData[index].count_moe, null);
             countMoeCell.appendChild(countMoe);
             row.appendChild(countMoeCell);
 
@@ -119,7 +119,7 @@ export default class DataTable {
                 valueMoeCell.appendChild(valueMoe);
                 row.appendChild(valueMoeCell);
                 let countCell = document.createElement('td');
-                countCell.textContent = formatData(compareDataItem.count, this.indicator.formatter);
+                countCell.textContent = formatData(compareDataItem.count, null);
                 row.appendChild(countCell);
                 let countMoeCell = document.createElement('td');
                 countMoeCell.className = 'context';
@@ -127,7 +127,7 @@ export default class DataTable {
                 countMoePlusMinus.innerHTML = '&plusmn;';
                 countMoeCell.appendChild(countMoePlusMinus);
                 let countMoe = document.createElement('span');
-                countMoe.textContent = formatData(compareDataItem.count_moe, this.indicator.formatter);
+                countMoe.textContent = formatData(compareDataItem.count_moe, null);
                 countMoeCell.appendChild(countMoe);
                 row.appendChild(countMoeCell);
             });
