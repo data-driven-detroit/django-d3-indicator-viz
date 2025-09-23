@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.forms import ValidationError
 
 class Section(models.Model):
     """
@@ -120,6 +121,48 @@ class Location(models.Model):
     class Meta:
         db_table = "location"
 
+class CustomLocation(models.Model):
+    """
+    Represents a custom geographical location, such as a collection of specific tracts or zip codes.
+    """
+
+    # The name of the custom location
+    name = models.TextField(blank=False, null=False, unique=True)
+
+    # The type of the locations that make up this custom location
+    location_type = models.ForeignKey(LocationType, on_delete=models.CASCADE)
+
+    # The geometry of the custom location (union of the geometries of the locations that make up this custom location)
+    geometry = models.MultiPolygonField(null=True, blank=True)
+
+    # The color associated with the custom location
+    color = models.TextField(null=True, blank=True)
+
+    # A unique slug for the custom location
+    slug = models.CharField(max_length=1000, blank=False, null=False, unique=True)
+
+    # The organization that created the custom location
+    organization = models.TextField(blank=True, null=True)
+
+    # The locations that make up this custom location
+    locations = models.ManyToManyField(Location, related_name="custom_locations", blank=False)
+
+    # The date and time when the custom location was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # The date and time when the custom location was last updated
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        # raise a validation error if the first part of the slug before a hyphen matches an existing location id
+        if Location.objects.filter(id__iexact=self.slug.split('-')[0]).exists():
+            raise ValidationError({'slug': 'Slug must be unique and cannot match any existing location id.'})
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        db_table = "custom_location"
 
 class IndicatorSource(models.Model):
     """
@@ -134,6 +177,25 @@ class IndicatorSource(models.Model):
 
     class Meta:
         db_table = "indicator_source"
+
+class IndicatorType(models.TextChoices):
+    """
+    Represents the type of indicator, such as "percentage", "average", "count", etc.
+    Necessary for custom location aggregation logic.
+    """
+
+    PERCENTAGE = "percentage",
+    AVERAGE = "average",
+    MEDIAN = "median",
+    COUNT = "count",
+    RATE = "rate",
+    INDEX = "index"
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "indicator_type"
 
 
 class Indicator(models.Model):
@@ -157,6 +219,15 @@ class Indicator(models.Model):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, null=True, blank=True
     )
+
+    # The type of the indicator, such as "percentage", "average", "count", etc.
+    indicator_type = models.TextField(choices=IndicatorType.choices, null=True, blank=True)
+
+    # The rate per which the indicator is calculated, if applicable (e.g., per 1,000 or per 100,000)
+    rate_per = models.IntegerField(null=True, blank=True)
+
+    # A formatter string for displaying the indicator value, such as ${value} for dollars or {value}% for percentage
+    formatter = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -234,6 +305,12 @@ class IndicatorValue(models.Model):
     # The location that this indicator value represents
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
 
+    # The actual value for this indicator value
+    value = models.FloatField(null=True, blank=True)
+
+    # The margin of error for the value
+    value_moe = models.FloatField(null=True, blank=True)
+
     # The count (numerator) for this indicator value
     count = models.FloatField(null=True, blank=True)
 
@@ -245,33 +322,6 @@ class IndicatorValue(models.Model):
 
     # The margin of error for the universe
     universe_moe = models.FloatField(null=True, blank=True)
-
-    # The percentage value for this indicator value
-    percentage = models.FloatField(null=True, blank=True)
-
-    # The margin of error for the percentage
-    percentage_moe = models.FloatField(null=True, blank=True)
-
-    # The rate for this indicator value, such as a ratio or rate per 1,000 or 100,000
-    rate = models.FloatField(null=True, blank=True)
-
-    # The margin of error for the rate
-    rate_moe = models.FloatField(null=True, blank=True)
-
-    # The rate per unit for this indicator value, such as 1,000 or 100,000
-    rate_per = models.FloatField(null=True, blank=True)
-
-    # The dollar amount for this indicator value
-    dollars = models.FloatField(null=True, blank=True)
-
-    # The margin of error for the dollar amount
-    dollars_moe = models.FloatField(null=True, blank=True)
-
-    # The index value for this indicator value
-    index = models.FloatField(null=True, blank=True)
-
-    # The margin of error for the index value
-    index_moe = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return (
@@ -329,25 +379,6 @@ class DataVisualLocationComparisonType(models.TextChoices):
         db_table = "data_visual_location_comparison_type"
 
 
-class ValueField(models.TextChoices):
-    """
-    Represents the type of value field to display in data visuals.
-    """
-
-    COUNT = "count",
-    UNIVERSE = "universe",
-    PERCENTAGE = "percentage",
-    RATE = "rate",
-    RATE_PER = "rate_per",
-    DOLLARS = "dollars",
-    INDEX = "index"
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "value_field"
-
 class ColorScale(models.Model):
     """
     Represents a color scale for data visualizations.
@@ -397,9 +428,6 @@ class IndicatorDataVisual(models.Model):
         null=True,
         blank=True
     )
-
-    # The value field to display in the data visual, such as "count", "universe", "percentage", etc.
-    value_field = models.TextField(choices=ValueField.choices)
 
     # The number of columns the data visual will span in a grid layout
     columns = models.IntegerField(

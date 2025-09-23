@@ -41,6 +41,12 @@ class LocationAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["location_type", "name"]
 admin.site.register(Location, LocationAdmin)
 
+class CustomLocationAdmin(ImportExportMixin, admin.ModelAdmin):
+    list_display = ["id", "name"]
+    readonly_fields = ("id",)
+    ordering = ["created_at"]
+admin.site.register(CustomLocation, CustomLocationAdmin)
+
 class IndicatorSourceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ["id", "name"]
     readonly_fields = ("id",)
