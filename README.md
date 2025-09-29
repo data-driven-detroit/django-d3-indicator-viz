@@ -4,10 +4,28 @@ Django package for D3 indicators and data visuals
 ## Setup
 
 ### Installation
-In addition to adding ```django-d3-indicator-viz``` to the ```INSTALLED_APPS``` in ```settings.py```, be sure to include the following apps:
+In addition to adding ```django-d3-indicator-viz``` to the ```INSTALLED_APPS``` in ```settings.py```, be sure to 
+include the following apps:
 - ```import_export```
 - ```adminsortable2```
 - ```django.contrib.gis```
+
+### IndicatorValueAggregator
+The package includes aggregation logic for custom aggregated locations. Logic for aggregating count, percentage, rate, 
+mean, and median values is provided. However, implementation of aggregation logic for index values is abstract and must 
+be provided by the project installing this package. If no index aggregation is needed, simply extend the base class
+and raise an error in the unneeded abstract methods:
+
+```python
+from django_d3_indicator_viz import indicator_value_aggregator
+
+class MyIndicatorValueAggregator(indicator_value_aggregator.IndicatorValueAggregator):
+    def aggregate_index_values(self, index_values):
+        raise NotImplementedError('This project does not support index aggregation.')
+
+    def aggregate_index_moe_values(self, index_values, index_moe_values):
+        raise NotImplementedError('This project does not support index MOE aggregation.')
+```
 
 ### Views
 Create the profile view in  ```views.py```
@@ -27,13 +45,13 @@ class ProfileView(TemplateView):
         return super(ProfileView, self).dispatch(*args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
-        return d3_views.build_profile_context(self.request, self.location_slug)
+        return d3_views.build_profile_context(self.request, self.location_slug, MyIndicatorValueAggregator)
 ```
 
 ### Urls
 Add the profile view in ```urls.py```
 > [!IMPORTANT]
-> The ```location_slug``` must start with a location id from the ```Location``` model, optionally followed by a hyphen and any additional text, such as the location name.
+> The ```location_slug``` must start with a location id from the ```Location``` model, optionally followed by a hyphen and any additional text, such as the location name for all standard locations. Custom locations allow for more flexibility, but cannot begin with a standard location id.
 
 ```python
 from .views import (
@@ -79,7 +97,8 @@ const visuals = new Visuals(
     {{ location_types_json|safe }},
     {{ filter_options_json|safe }},
     {{ indicator_values_json|safe }},
-    {{ color_scales_json|safe }}
+    {{ color_scales_json|safe }},
+    {{ utils.DataVisualComparisonMode.TOOLTIP }}
     {} // additional echarts options as needed
 );
 ```
@@ -110,5 +129,5 @@ Additionally, the following CSS classes are applied to elements within HTML-rend
 |datatable|```name```|The first cell in each row containing the name (e.g., 'Female')|
 |datatable|```value```|The second cell in each row containing the value.|
 |datatable|```context```|The third cell in each row containing the MOE|
-
+|all types|```aggregate-notice```|The aggregate notice text (e.g., 'Based on 3 out of 4 locations with data available.')|
 

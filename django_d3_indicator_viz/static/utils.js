@@ -178,6 +178,9 @@ function buildAggregateNotice(valuesConsidered, valuesAggregated) {
 
 /**
  * Represents the types of location comparisons that can be made in the data visualization.
+ * 
+ * PARENTS: compare to larger locations containing the current location (e.g., county to state)
+ * SIBLINGS: compare to similar locations at the same level (e.g., county to county)
  */
 const DataVisualLocationComparisonType = {
     PARENTS: 'parents',
@@ -186,6 +189,9 @@ const DataVisualLocationComparisonType = {
 
 /**
  * Represents the modes for displaying data visual comparisons.
+ * 
+ * DATA_VISUAL: comparisons are shown directly in the data visual (e.g., bars within a chart).
+ * TOOLTIP: comparisons are shown in the tooltip when hovering over data points.
  */
 const DataVisualComparisonMode = {
     DATA_VISUAL: 'data_visual',
