@@ -48,12 +48,9 @@ function formatData(number, formatter, round = false) {
  * @param {Array} compareData - The data for the locations to compare against.
  */
 function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
-    let showAggregateNotice = data.values_considered 
-            && data.values_aggregated 
-            && data.values_considered > data.values_aggregated;
     let tooltipContent = `<div class='tooltip-value'>
         <strong>${name}</strong>: 
-        ${formatData(data.value, indicator.formatter, true)}${showAggregateNotice ? '*' : ''}
+        ${formatData(data.value, indicator.formatter, true)}${showAggregateNotice(data) ? '*' : ''}
     </div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
@@ -81,7 +78,7 @@ function buildTooltipContent(name, data, indicator, compareLocations, compareDat
         
             tooltipContent += '<div class="tooltip-moe-note">†Margin of error at least 10% of total value</div>';
     }
-    if (showAggregateNotice) {
+    if (showAggregateNotice(data)) {
         tooltipContent += buildAggregateNotice(data.values_considered, data.values_aggregated).outerHTML;
     }
 
@@ -152,6 +149,9 @@ function getComparisonPhrases(baseValue, comparisonValue, indicatorType) {
  * @returns {boolean} True if the aggregate notice should be shown, false otherwise.
  */
 function showAggregateNotice(data) {
+    if (!data) {
+        return false;
+    }
     return data.values_considered 
             && data.values_aggregated 
             && data.values_considered > data.values_aggregated;
