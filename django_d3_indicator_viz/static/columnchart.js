@@ -209,7 +209,6 @@ export default class ColumnChart {
                 cursor: 'default'
             };
             option.series = [labelSeries].concat(option.series);
-            option.color = ['transparent'].concat(option.color);
         }
         this.chart.setOption(option);
     }
