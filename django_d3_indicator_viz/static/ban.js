@@ -60,13 +60,16 @@ export default class Ban {
             return;
         }
 
+        // do not round the value for rates
+        let roundValue = this.indicator.indicator_type !== 'rate';
+
         // draw the value
         let valueContainerEl = document.createElement('div');
         valueContainerEl.className = 'ban-value-container';
         let valueEl = document.createElement('span');
         valueEl.className = 'ban-value';
         valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
-        valueEl.textContent = formatData(this.indicatorData.value, this.indicator.formatter, true) 
+        valueEl.textContent = formatData(this.indicatorData.value, this.indicator.formatter, roundValue) 
             + (showAggregateNotice(this.indicatorData) ? '*' : '');
         valueContainerEl.appendChild(valueEl);
         let moeContainers = [];
@@ -76,7 +79,7 @@ export default class Ban {
             let moePlusMinusEl = document.createElement('span');
             moePlusMinusEl.innerHTML = '&plusmn;';
             let moeEl = document.createElement('span');
-            moeEl.textContent = formatData(this.indicatorData.value_moe, this.indicator.formatter, true);
+            moeEl.textContent = formatData(this.indicatorData.value_moe, this.indicator.formatter, roundValue);
             moeContainerEl.appendChild(moePlusMinusEl);
             moeContainerEl.appendChild(moeEl);
             valueContainerEl.appendChild(moeContainerEl);
@@ -84,12 +87,12 @@ export default class Ban {
                 let countContainerEl = document.createElement('span');
                 let countEl = document.createElement('span');
                 countEl.className = 'ban-moe';
-                countEl.textContent = '(' + formatData(this.indicatorData.count, this.indicator.formatter, true) + ')';
+                countEl.textContent = '(' + formatData(this.indicatorData.count, this.indicator.formatter, roundValue) + ')';
                 countContainerEl.appendChild(countEl);
                 let countMoeEl = document.createElement('span');
                 countMoeEl.className = 'ban-compare-moe';
                 countMoeEl.textContent = ' ± ' 
-                    + formatData(this.indicatorData.count_moe, this.indicator.formatter, true) + ')';
+                    + formatData(this.indicatorData.count_moe, this.indicator.formatter, roundValue) + ')';
                 countContainerEl.appendChild(countMoeEl);
                 moeContainerEl.appendChild(countContainerEl);
             }
@@ -139,7 +142,7 @@ export default class Ban {
                 compareEl.appendChild(compareLocEl);
                 let compareValEl = document.createElement('span');
                 compareValEl.className = 'ban-compare-value';
-                compareValEl.textContent = formatData(locCompareData.value, this.indicator.formatter, true);
+                compareValEl.textContent = formatData(locCompareData.value, this.indicator.formatter, roundValue);
                 compareEl.appendChild(compareValEl);
                 if (locCompareData.value_moe) {
                     let compareMoeContainer = document.createElement('span');
@@ -148,7 +151,7 @@ export default class Ban {
                     compareMoePlusMinusEl.innerHTML = '&plusmn;';
                     compareMoeContainer.appendChild(compareMoePlusMinusEl);
                     let compareMoeEl = document.createElement('span');
-                    compareMoeEl.textContent = formatData(locCompareData.value_moe, this.indicator.formatter, true);
+                    compareMoeEl.textContent = formatData(locCompareData.value_moe, this.indicator.formatter, roundValue);
                     compareMoeContainer.appendChild(compareMoeEl);
                     compareEl.appendChild(compareMoeContainer);
                     if (this.indicator.indicator_type === 'percentage') {
@@ -156,12 +159,12 @@ export default class Ban {
                         let countEl = document.createElement('span');
                         countEl.className = 'ban-moe';
                         countEl.textContent = '(' 
-                            + formatData(locCompareData.count, this.indicator.formatter, true) + ')';
+                            + formatData(locCompareData.count, this.indicator.formatter, roundValue) + ')';
                         countContainerEl.appendChild(countEl);
                         let countMoeEl = document.createElement('span');
                         countMoeEl.className = 'ban-compare-moe';
                         countMoeEl.textContent = ' ± ' 
-                            + formatData(locCompareData.count_moe, this.indicator.formatter, true) + ')';
+                            + formatData(locCompareData.count_moe, this.indicator.formatter, roundValue) + ')';
                         countContainerEl.appendChild(countMoeEl);
                         compareMoeContainer.appendChild(countContainerEl);
                     }
