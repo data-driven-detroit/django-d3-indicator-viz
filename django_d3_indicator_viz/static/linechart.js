@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
 
 /**
  * The Line chart visualization.
@@ -20,7 +20,9 @@ export default class LineChart {
      * @param {Array} colorScales the color scales
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, colorScales, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        locationTypes, colorScales, chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -93,7 +95,13 @@ export default class LineChart {
                     type: 'none'
                 },
                 formatter: params => {
-                    return buildTooltipContent(params[0].name.substring(0, 4), params[0].data, this.indicator, this.compareLocations, this.compareData);
+                    return buildTooltipContent(
+                        params[0].name.substring(0, 4), 
+                        params[0].data, 
+                        this.indicator, 
+                        this.compareLocations, 
+                        this.compareData
+                    );
                 }
             },
             xAxis: {
@@ -108,8 +116,10 @@ export default class LineChart {
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
                     formatter: (value) => {
-                        let label = '{bold|' + value.substring(0, 4) + ': ' + '}';
-                        return label + '{normal|' + formatData(seriesData[0].find(item => item.end_date === value).value, this.indicator.formatter, true) + '}';
+                        let data = seriesData[0].find(item => item.end_date === value);
+                        return '{bold|' + value.substring(0, 4) + ': ' + '}'
+                            + '{normal|' + formatData(data.value, this.indicator.formatter, true) + '}'
+                            + (showAggregateNotice(data) ? '*' : '');
                     },
                     rich: {
                         normal: {
@@ -139,15 +149,18 @@ export default class LineChart {
             series: seriesData
                 .map(data => {
                     return {
-                        // consolidate to two series names - the name of the location being viewed and the name of the other locations
+                        // consolidate to two series names - the name of the location being viewed and the name of the 
+                        // other locations
                         // if there are only two series, use the location name for the second series name
                         name: data[0].location_id === this.location.id
                             ? this.location.name 
                             : this.visual.location_comparison_type === 'parents'
                                 ? this.compareLocations.find(l => l.id === data[0].location_id).name
-                                : 'Other ' + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name + 's',
+                                : 'Other ' 
+                                    + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name 
+                                    + 's',
                         type: 'line',
-                        data: data.map(item => { return { ...item, value: item.value } }),
+                        data: data,
                         // make sure the location being viewed sits above the other locations
                         z: data[0].location_id === this.location.id ? 3 : 2,
                         // only show a symbol for the location being viewed on the last data point

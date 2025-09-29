@@ -1,4 +1,4 @@
-import { formatData, getComparisonPhrases } from "./utils.js";
+import { formatData, getComparisonPhrases, showAggregateNotice, buildAggregateNotice } from "./utils.js";
 
 /**
  * The BAN (Big Ass Number) visualization.
@@ -18,7 +18,9 @@ export default class Ban {
      * @param {Array} filterOptions the filter options
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -57,14 +59,15 @@ export default class Ban {
             this.container.appendChild(valueContainerEl);
             return;
         }
-        
+
         // draw the value
         let valueContainerEl = document.createElement('div');
         valueContainerEl.className = 'ban-value-container';
         let valueEl = document.createElement('span');
         valueEl.className = 'ban-value';
         valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
-        valueEl.textContent = formatData(this.indicatorData.value, this.indicator.formatter, true);
+        valueEl.textContent = formatData(this.indicatorData.value, this.indicator.formatter, true) 
+            + (showAggregateNotice(this.indicatorData) ? '*' : '');
         valueContainerEl.appendChild(valueEl);
         let moeContainers = [];
         if (this.indicatorData.value_moe) {
@@ -85,7 +88,8 @@ export default class Ban {
                 countContainerEl.appendChild(countEl);
                 let countMoeEl = document.createElement('span');
                 countMoeEl.className = 'ban-compare-moe';
-                countMoeEl.textContent = ' ± ' + formatData(this.indicatorData.count_moe, this.indicator.formatter, true) + ')';
+                countMoeEl.textContent = ' ± ' 
+                    + formatData(this.indicatorData.count_moe, this.indicator.formatter, true) + ')';
                 countContainerEl.appendChild(countMoeEl);
                 moeContainerEl.appendChild(countContainerEl);
             }
@@ -151,11 +155,13 @@ export default class Ban {
                         let countContainerEl = document.createElement('span');
                         let countEl = document.createElement('span');
                         countEl.className = 'ban-moe';
-                        countEl.textContent = '(' + formatData(locCompareData.count, this.indicator.formatter, true) + ')';
+                        countEl.textContent = '(' 
+                            + formatData(locCompareData.count, this.indicator.formatter, true) + ')';
                         countContainerEl.appendChild(countEl);
                         let countMoeEl = document.createElement('span');
                         countMoeEl.className = 'ban-compare-moe';
-                        countMoeEl.textContent = ' ± ' + formatData(locCompareData.count_moe, this.indicator.formatter, true) + ')';
+                        countMoeEl.textContent = ' ± ' 
+                            + formatData(locCompareData.count_moe, this.indicator.formatter, true) + ')';
                         countContainerEl.appendChild(countMoeEl);
                         compareMoeContainer.appendChild(countContainerEl);
                     }
@@ -163,6 +169,12 @@ export default class Ban {
                 }
                 this.container.appendChild(compareEl);
             });
+        }
+
+        // draw the aggregate notice
+        if (showAggregateNotice(this.indicatorData)) {
+            this.container.appendChild(buildAggregateNotice(this.indicatorData.values_considered, 
+                this.indicatorData.values_aggregated));
         }
 
         // set up the event listeners for the MOE containers to show/hide on hover and touch

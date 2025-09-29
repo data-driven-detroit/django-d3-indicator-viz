@@ -1,4 +1,4 @@
-import { formatData } from "./utils.js";
+import { formatData, showAggregateNotice, buildAggregateNotice } from "./utils.js";
 
 /**
  * The DataTable visualization.
@@ -18,7 +18,9 @@ export default class DataTable {
      * @param {Array} filterOptions the filter options
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -66,6 +68,7 @@ export default class DataTable {
             }
             return option;
         });
+        let aggregateNoticePresent = false;
         filterOptions.forEach((option, index) => {
             let row = document.createElement('tr');
             let cell = document.createElement('td');
@@ -76,6 +79,10 @@ export default class DataTable {
             let valueCell = document.createElement('td');
             valueCell.className = 'value';
             valueCell.textContent = formatData(this.indicatorData[index].value, this.indicator.formatter);
+            if (showAggregateNotice(this.indicatorData[index])) {
+                valueCell.innerHTML += '*';
+                aggregateNoticePresent = true;
+            }
             row.appendChild(valueCell);
             let valueMoeCell = document.createElement('td');
             valueMoeCell.className = 'context';
@@ -135,5 +142,16 @@ export default class DataTable {
             tbody.appendChild(row);
         });
         table.appendChild(tbody);
+
+        if (aggregateNoticePresent) {
+            let footer = document.createElement('tfoot');
+            let footerRow = document.createElement('tr');
+            let footerCell = document.createElement('td');
+            footerCell.colSpan = headers.length * 4 - (headers.length - 1);
+            footerCell.appendChild(buildAggregateNotice());
+            footerRow.appendChild(footerCell);
+            footer.appendChild(footerRow);
+            table.appendChild(footer);
+        }
     }
 }

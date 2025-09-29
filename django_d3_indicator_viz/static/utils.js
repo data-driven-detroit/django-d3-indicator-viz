@@ -48,7 +48,13 @@ function formatData(number, formatter, round = false) {
  * @param {Array} compareData - The data for the locations to compare against.
  */
 function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
-    let tooltipContent = `<div class='tooltip-value'><strong>${name}</strong>: ${formatData(data.value, indicator.formatter, true)}</div>`;
+    let showAggregateNotice = data.values_considered 
+            && data.values_aggregated 
+            && data.values_considered > data.values_aggregated;
+    let tooltipContent = `<div class='tooltip-value'>
+        <strong>${name}</strong>: 
+        ${formatData(data.value, indicator.formatter, true)}${showAggregateNotice ? '*' : ''}
+    </div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
             let locationData = compareData.find(d => d.location_id === location.id 
@@ -56,14 +62,27 @@ function buildTooltipContent(name, data, indicator, compareLocations, compareDat
                 && data.end_date === d.end_date);
             if (locationData) {
                 let comparisonPhrases = getComparisonPhrases(data.value, locationData.value, indicator.indicator_type);
-                tooltipContent += `<div class='tooltip-comparison'><strong>${comparisonPhrases[0]}</strong> ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: ${formatData(locationData.value, indicator.formatter, true)}</div>`;
+                tooltipContent += `<div class='tooltip-comparison'>
+                    <strong>${comparisonPhrases[0]}</strong> 
+                    ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: 
+                    ${formatData(locationData.value, indicator.formatter, true)}
+                </div>`;
             } else {
-                tooltipContent += `<div class='tooltip-comparison'><strong>No comparison available</strong> for ${location.name}</div>`;
+                tooltipContent += `<div class='tooltip-comparison'>
+                    <strong>No comparison available</strong> for ${location.name}
+                </div>`;
             }
         });
     }
-    if (indicator.indicator_type === 'percentage' && data.count_moe && data.count && data.count_moe > (data.count / 10)) {
-        tooltipContent += '<div class="tooltip-moe-note">†Margin of error at least 10% of total value</div>';
+    if (indicator.indicator_type === 'percentage' 
+        && data.count_moe 
+        && data.count 
+        && data.count_moe > (data.count / 10)) {
+        
+            tooltipContent += '<div class="tooltip-moe-note">†Margin of error at least 10% of total value</div>';
+    }
+    if (showAggregateNotice) {
+        tooltipContent += buildAggregateNotice(data.values_considered, data.values_aggregated).outerHTML;
     }
 
     return tooltipContent;
@@ -127,6 +146,37 @@ function getComparisonPhrases(baseValue, comparisonValue, indicatorType) {
 }
 
 /**
+ * Determine if an aggregate notice should be shown.
+ * 
+ * @param {Object} data - The data object containing values_considered and values_aggregated.
+ * @returns {boolean} True if the aggregate notice should be shown, false otherwise.
+ */
+function showAggregateNotice(data) {
+    return data.values_considered 
+            && data.values_aggregated 
+            && data.values_considered > data.values_aggregated;
+}
+
+/**
+ * Build an aggregate notice element.
+ * 
+ * @param {Number} valuesConsidered - The number of values considered.
+ * @param {Number} valuesAggregated - The number of values aggregated.
+ * @returns {Element} The aggregate notice element.
+ */
+function buildAggregateNotice(valuesConsidered, valuesAggregated) {
+    let aggregateNoticeEl = document.createElement('div');
+    aggregateNoticeEl.className = 'aggregate-notice';
+    if (valuesConsidered && valuesAggregated) {
+    aggregateNoticeEl.textContent = `*Based on ${valuesAggregated} out of ${valuesConsidered} 
+        locations with data available.`;
+    } else {
+        aggregateNoticeEl.textContent = '*Based on a subset of locations with data available.';
+    }
+    return aggregateNoticeEl;
+}
+
+/**
  * Represents the types of location comparisons that can be made in the data visualization.
  */
 const DataVisualLocationComparisonType = {
@@ -151,6 +201,8 @@ export {
     formatData,
     buildTooltipContent,
     getComparisonPhrases,
+    showAggregateNotice,
+    buildAggregateNotice,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };

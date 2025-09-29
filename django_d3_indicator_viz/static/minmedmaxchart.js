@@ -1,4 +1,4 @@
-import { formatData } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
 
 /**
  * The Min/Median/Max chart visualization.
@@ -19,7 +19,9 @@ export default class MinMedMaxChart {
      * @param {Array} locationTypes the location types
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        locationTypes, chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -79,6 +81,14 @@ export default class MinMedMaxChart {
                 right: 8,
                 top: '10'
             },
+            tooltip: {
+                show: 'true',
+                trigger: 'item',
+                triggerOn: 'mousemove',
+                formatter: params => {
+                    return buildTooltipContent(params.data.label, params.data.indicatorData, this.indicator);
+                }
+            },
             xAxis: {
                 type: 'value',
                 boundaryGap: ['0%', '0%'],
@@ -95,8 +105,15 @@ export default class MinMedMaxChart {
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
                     formatter: (value) => {
-                        let label = '{bold|' + (value === minMedMax[0] ? 'Min: ' : value === minMedMax[1] ? 'Median: ' : 'Max: ') + '}';
-                        return label + '{normal|' + formatData(value, this.indicator.formatter, true) + '}';
+                        let label = value === minMedMax[0] 
+                            ? 'Min: ' 
+                            : value === minMedMax[1] 
+                                ? 'Median: ' 
+                                : 'Max: ';
+                        
+                        return '{bold|' + label + '}' 
+                            + '{normal|' + formatData(value, this.indicator.formatter, true) + '}'
+                            + (value === this.indicatorData.value && showAggregateNotice(this.indicatorData) ? '*' : '');
                     },
                     rich: {
                         normal: {
@@ -133,7 +150,11 @@ export default class MinMedMaxChart {
                 show: false
             },
             series: [{
-                data: [[this.indicatorData.value, 0]],
+                data: [{
+                    value: [this.indicatorData.value, 0], 
+                    label: this.location.name, 
+                    indicatorData: this.indicatorData
+                }],
                 type: 'scatter',
                 symbolSize: 15,
                 itemStyle: {

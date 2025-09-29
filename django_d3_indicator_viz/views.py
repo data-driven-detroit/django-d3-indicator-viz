@@ -4,11 +4,11 @@ from django.http import HttpResponse
 from django.template import loader
 
 from .models import Section, Category, ColorScale, IndicatorDataVisual, Indicator, IndicatorValue, Location, CustomLocation, IndicatorFilterOption, LocationType
-from django_d3_indicator_viz.indicator_value_aggregator import * 
+from django_d3_indicator_viz.indicator_value_aggregator import aggregation_result, IndicatorValueAggregator
 
 import json
 
-def build_profile_context(request, location_slug=None):
+def build_profile_context(request, location_slug, indicator_value_aggregator):
     """
     Build the context for the profile page.
     """
@@ -21,7 +21,7 @@ def build_profile_context(request, location_slug=None):
         try:
             location = CustomLocation.objects.get(slug__iexact=location_slug)
             is_custom_location = True
-            location_type, locations, parent_locations, location_geojson, sibling_locations_geojson, indicator_values_dict_list, header_data = __build_custom_profile_context(location)
+            location_type, locations, parent_locations, location_geojson, sibling_locations_geojson, indicator_values_dict_list, header_data = __build_custom_profile_context(location, indicator_value_aggregator)
         except (CustomLocation.DoesNotExist):
             return None
         
@@ -120,7 +120,7 @@ def __build_standard_profile_context(location):
 
     return location_type, locations, parent_locations, location_geojson, sibling_locations_geojson, indicator_values_dict_list, header_data
 
-def __build_custom_profile_context(location):
+def __build_custom_profile_context(location, indicator_value_aggregator):
     location_type = location.locations.first().location_type
     parent_location_types = location_type.parent_location_types.all()
     # parent locations are of a different type than the profile location, set up as a parent type of the profile location's type, have a larger area, and contain the profile location's center point
@@ -179,7 +179,7 @@ def __build_custom_profile_context(location):
     data_visuals = IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False)
     indicator_values_dict_list = []
     for dv in data_visuals:
-        indicator_values_dict_list.extend(__aggregate_indicator_values(location, dv, custom_indicator_values) or [])
+        indicator_values_dict_list.extend(__aggregate_indicator_values(location, dv, custom_indicator_values, indicator_value_aggregator) or [])
     indicator_values_dict_list.extend(__build_indicator_values_dict_list(parent_sibling_indicator_values))
     # indicators with no category will be shown in the header area
     header_data_visuals = IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True).order_by('indicator__sort_order')
@@ -189,7 +189,7 @@ def __build_custom_profile_context(location):
         indicator_values = IndicatorValue.objects.filter(
             indicator_id=hdv.indicator_id, location_id__in=location.locations.values_list('id', flat=True), source_id=hdv.source_id, start_date=hdv.start_date, end_date=hdv.end_date
         )
-        aggregated_value = __aggregate_indicator_values(location, hdv, indicator_values)[0] if indicator_values.exists() else None
+        aggregated_value = __aggregate_indicator_values(location, hdv, indicator_values, indicator_value_aggregator)[0] if indicator_values.exists() else None
         header_data.append({
             'indicator_name': hdv.indicator.name,
             'source_name': hdv.source.name,
@@ -200,7 +200,7 @@ def __build_custom_profile_context(location):
     return location_type, locations, parent_locations, location_geojson, sibling_locations_geojson, indicator_values_dict_list, header_data
 
 
-def __aggregate_indicator_values(custom_location, data_visual, indicator_values):
+def __aggregate_indicator_values(custom_location, data_visual, indicator_values, indicator_value_aggregator):
     grouped_values = {}
     for iv in __build_indicator_values_dict_list(indicator_values):
         if iv['indicator_id'] != data_visual.indicator.id:
@@ -211,11 +211,11 @@ def __aggregate_indicator_values(custom_location, data_visual, indicator_values)
         grouped_values[key].append(iv)
     aggregated_values = []
     for (filter_option_id, start_date), ivs in grouped_values.items():
-        aggregated_value = __aggregate_indicator_value_set(custom_location, data_visual, ivs)
+        aggregated_value = __aggregate_indicator_value_set(custom_location, data_visual, ivs, indicator_value_aggregator)
         aggregated_values.append(aggregated_value)
     return aggregated_values
 
-def __aggregate_indicator_value_set(custom_location, data_visual, indicator_values):
+def __aggregate_indicator_value_set(custom_location, data_visual, indicator_values, indicator_value_aggregator):
     aggregate_value = {
         'location_id': str(custom_location.id),
         'indicator_id': data_visual.indicator.id,
@@ -223,63 +223,90 @@ def __aggregate_indicator_value_set(custom_location, data_visual, indicator_valu
         'filter_option_id': indicator_values[0]['filter_option_id'] if indicator_values else None,
         'start_date': indicator_values[0]['start_date'] if indicator_values else None,
         'end_date': indicator_values[0]['end_date'] if indicator_values else None,
-        'count': aggregate_count_values([iv['count'] for iv in indicator_values]),
-        'count_moe': aggregate_count_moe_values([iv['count_moe'] for iv in indicator_values]),
-        'universe': aggregate_count_values([iv['universe'] for iv in indicator_values]),
-        'universe_moe': aggregate_count_moe_values([iv['universe_moe'] for iv in indicator_values]),
+        'count': indicator_value_aggregator.aggregate_count_values([iv['count'] for iv in indicator_values]).value,
+        'count_moe': indicator_value_aggregator.aggregate_count_moe_values([iv['count_moe'] for iv in indicator_values]).value,
+        'universe': indicator_value_aggregator.aggregate_count_values([iv['universe'] for iv in indicator_values]).value,
+        'universe_moe': indicator_value_aggregator.aggregate_count_moe_values([iv['universe_moe'] for iv in indicator_values]).value,
         'value': None,
         'value_moe': None,
+        'values_considered': None,
+        'values_aggregated': None
         
     }
 
-    if data_visual.indicator.indicator_type == 'percentage':
-        aggregate_value['value'] = aggregate_percentage_values(
+    if data_visual.indicator.indicator_type == 'count':
+        aggregate_value_result = indicator_value_aggregator.aggregate_count_values(
+            [iv['count'] for iv in indicator_values])
+        aggregate_moe_result = indicator_value_aggregator.aggregate_count_moe_values(
+            [iv['count_moe'] for iv in indicator_values])
+        aggregate_value['value'] = aggregate_value_result.value
+        aggregate_value['value_moe'] = aggregate_moe_result.value
+        aggregate_value['values_considered'] = aggregate_value_result.values_considered
+        aggregate_value['values_aggregated'] = aggregate_value_result.values_aggregated
+    elif data_visual.indicator.indicator_type == 'percentage':
+        aggregate_value_result = indicator_value_aggregator.aggregate_percentage_values(
             [iv['count'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values]
         )
-        aggregate_value['value_moe'] = aggregate_percentage_moe_values(
+        aggregate_moe_result = indicator_value_aggregator.aggregate_percentage_moe_values(
             [iv['count'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values],
             [iv['count_moe'] for iv in indicator_values],
             [iv['universe_moe'] for iv in indicator_values]
         )
+        aggregate_value['value'] = aggregate_value_result.value
+        aggregate_value['value_moe'] = aggregate_moe_result.value
+        aggregate_value['values_considered'] = aggregate_value_result.values_considered
+        aggregate_value['values_aggregated'] = aggregate_value_result.values_aggregated
     elif data_visual.indicator.indicator_type == 'median':
-        aggregate_value['value'] = aggregate_median_values(
+        aggregate_value_result = indicator_value_aggregator.aggregate_median_values(
             [iv['value'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values]
-        ) if aggregate_value['universe'] and aggregate_value['universe'] > 0 else None
-        aggregate_value['value_moe'] = aggregate_median_moe_values(
+        )
+        aggregate_moe_result = indicator_value_aggregator.aggregate_median_moe_values(
             [iv['value'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values],
             [iv['value_moe'] for iv in indicator_values],
             [iv['universe_moe'] for iv in indicator_values]
         )
+        aggregate_value['value'] = aggregate_value_result.value
+        aggregate_value['value_moe'] = aggregate_moe_result.value
+        aggregate_value['values_considered'] = aggregate_value_result.values_considered
+        aggregate_value['values_aggregated'] = aggregate_value_result.values_aggregated
     elif data_visual.indicator.indicator_type == 'average':
-        aggregate_value['value'] = aggregate_average_values(
+        aggregate_result = indicator_value_aggregator.aggregate_average_values(
             [iv['value'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values]
-        ) if aggregate_value['universe'] and aggregate_value['universe'] > 0 else None
-        aggregate_value['value_moe'] = aggregate_average_moe_values(
+        )
+        aggregate_moe_result = indicator_value_aggregator.aggregate_average_moe_values(
             [iv['value'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values],
             [iv['value_moe'] for iv in indicator_values],
             [iv['universe_moe'] for iv in indicator_values]
         )
+        aggregate_value['value'] = aggregate_result.value
+        aggregate_value['value_moe'] = aggregate_moe_result.value
+        aggregate_value['values_considered'] = aggregate_result.values_considered
+        aggregate_value['values_aggregated'] = aggregate_result.values_aggregated
     elif data_visual.indicator.indicator_type == 'rate':
-        aggregate_value['value'] = aggregate_rate_values(
+        aggregate_result = indicator_value_aggregator.aggregate_rate_values(
             [iv['count'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values],
             data_visual.rate_per
-        ) if aggregate_value['universe'] and aggregate_value['universe'] > 0 else None
-        aggregate_value['value_moe'] = aggregate_rate_moe_values(
+        )
+        aggregate_moe_result = indicator_value_aggregator.aggregate_rate_moe_values(
             [iv['count'] for iv in indicator_values],
             [iv['universe'] for iv in indicator_values],
             [iv['count_moe'] for iv in indicator_values],
             [iv['universe_moe'] for iv in indicator_values],
             data_visual.rate_per
         )
-    if data_visual.indicator.indicator_type == 'index':
-        # TODO: implement index aggregation in indicator_value_aggregator.py. may need to be abstract since index is calculated differently depending on the indicator?
+        aggregate_value['value'] = aggregate_result.value
+        aggregate_value['value_moe'] = aggregate_moe_result.value
+        aggregate_value['values_considered'] = aggregate_result.values_considered
+        aggregate_value['values_aggregated'] = aggregate_result.values_aggregated
+    elif data_visual.indicator.indicator_type == 'index':
+        # index aggregation not supported for custom locations in SDC
         pass
 
     return aggregate_value
@@ -300,11 +327,18 @@ def __build_indicator_values_dict_list(indicator_values):
         'universe_moe': iv.universe_moe
     } for iv in indicator_values]
 
+class SampleIndicatorValueAggregator(IndicatorValueAggregator):
+    def aggregate_index_values(self, index_values):
+        raise NotImplementedError
+
+    def aggregate_index_moe_values(self, index_values, index_moe_values):
+        raise NotImplementedError
+
 # Create your views here.
 def demo(request, location_slug=None):
     """
     Render the demo page.
     """
     template = loader.get_template('demo.html')
-    context = build_profile_context(request, location_slug)
+    context = build_profile_context(request, location_slug, SampleIndicatorValueAggregator())
     return HttpResponse(template.render(context, request))

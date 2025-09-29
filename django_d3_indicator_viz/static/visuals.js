@@ -26,7 +26,9 @@ export default class Visuals {
      * @param {Object} dataVisualComparisonMode the mode for displaying data visual comparisons
      * @param {Object} options additional options for echarts
      */
-    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, colorScales, dataVisualComparisonMode, options = {}) {
+    constructor(dataVisuals, locationId, indicators, locations, parentLocations, locationTypes, filterOptions, data, 
+        colorScales, dataVisualComparisonMode, options = {}) {
+        
         this.dataVisuals = dataVisuals;
         this.locationId = locationId;
         this.indicators = indicators;
@@ -101,27 +103,35 @@ export default class Visuals {
         // create the visual
         switch (visual.data_visual_type) {
             case 'ban':
-                new Ban(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.options);
+                new Ban(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, 
+                    this.filterOptions, this.options);
                 break;
             case 'column':
-                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.colorScales, this.dataVisualComparisonMode, this.options);
+                new ColumnChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, 
+                    this.filterOptions, this.colorScales, this.dataVisualComparisonMode, this.options);
                 if (tableContainer) {
-                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, 
+                        compareData, this.filterOptions, this.options);
                 }
                 break;
             case 'line':
-                new LineChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.colorScales, this.options);
+                new LineChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, 
+                    this.filterOptions, this.locationTypes, this.colorScales, this.options);
                 if (tableContainer) {
-                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, 
+                        compareData, this.filterOptions, this.options);
                 }
                 break;
             case 'min_med_max':
-                new MinMedMaxChart(visual, container, indicator, location, indicatorData[0], compareLocations, compareData, this.filterOptions, this.locationTypes, this.options);
+                new MinMedMaxChart(visual, container, indicator, location, indicatorData[0], compareLocations, 
+                    compareData, this.filterOptions, this.locationTypes, this.options);
                 break;
             case 'donut':
-                new DonutChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.locationTypes, this.colorScales, this.options);
+                new DonutChart(visual, container, indicator, location, indicatorData, compareLocations, compareData, 
+                    this.filterOptions, this.locationTypes, this.colorScales, this.options);
                 if (tableContainer) {
-                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, compareData, this.filterOptions, this.options);
+                    new DataTable(visual, tableContainer, indicator, location, indicatorData, compareLocations, 
+                        compareData, this.filterOptions, this.options);
                 }
                 break;
             default:

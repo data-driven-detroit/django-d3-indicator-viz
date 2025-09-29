@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, DataVisualComparisonMode } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, DataVisualComparisonMode } from "./utils.js";
 
 /**
  * The Column chart visualization.
@@ -20,7 +20,9 @@ export default class ColumnChart {
      * @param {String} dataVisualComparisonMode the mode for displaying data visual comparisons
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, colorScales, dataVisualComparisonMode, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        colorScales, dataVisualComparisonMode, chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -69,9 +71,13 @@ export default class ColumnChart {
         // set up the container
         this.container.classList.add('column-chart-container');
         if (window.innerWidth < 768) {
-            this.container.style.height = (seriesData.length * seriesData[0].length * 60) + (seriesData.length * 30) + 'px';
+            this.container.style.height = (seriesData.length * seriesData[0].length * 60) 
+                + (seriesData.length * 30) 
+                + 'px';
         } else if (window.innerWidth < 1200) { 
-            this.container.style.height = (seriesData.length * seriesData[0].length * 30) + (seriesData.length * 30) + 'px';
+            this.container.style.height = (seriesData.length * seriesData[0].length * 30) 
+                + (seriesData.length * 30) 
+                + 'px';
         }
         if (window.innerWidth < 1200) {
             seriesData = seriesData.map(series => series.reverse());
@@ -148,7 +154,8 @@ export default class ColumnChart {
                     if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
                         return buildTooltipContent(params.name, params.data, this.indicator);
                     } else {
-                        return buildTooltipContent(params.seriesName, params.data, this.indicator, this.compareLocations, this.compareData);
+                        return buildTooltipContent(params.seriesName, params.data, this.indicator, 
+                            this.compareLocations, this.compareData);
                     }
                 }
             },
@@ -159,13 +166,14 @@ export default class ColumnChart {
                     name: seriesNames[index],
                     type: 'bar',
                     colorBy: 'data',
-                    data: data.map(item => { return { ...item, value: item.value } }),
+                    data: data,
                     label: {
                         show: true,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
-                            return formatData(params.data.value, this.indicator.formatter, true);
+                            return formatData(params.data.value, this.indicator.formatter, true) 
+                                + (showAggregateNotice(params.data) ? '*' : '');
                         }
                     },
                     emphasis: {
@@ -180,7 +188,12 @@ export default class ColumnChart {
             let labelSeries = {
                 name: '',
                 type: 'bar',
-                data: seriesData[0].map(item => { return { value: 0, label: this.filterOptions.find(f => f.id === item.filter_option_id) } }),
+                data: seriesData[0].map(item => { 
+                    return {
+                        value: 0,
+                        label: this.filterOptions.find(f => f.id === item.filter_option_id)
+                    } 
+                }),
                 label: {
                     show: true,
                     position: 'right',

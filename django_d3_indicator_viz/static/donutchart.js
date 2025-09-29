@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
 
 /**
  * The Donut chart visualization.
@@ -20,7 +20,9 @@ export default class DonutChart {
      * @param {Array} colorScales the color scales
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, locationTypes, colorScales, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
+        locationTypes, colorScales, chartOptions = {}) {
+        
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -63,12 +65,13 @@ export default class DonutChart {
         if (params.fromAction === 'select') {
             // update the last selected index
             this.lastSelectedIndex = params.selected[0].dataIndex[0];
-            
+            let data = this.chart.getOption().series[0].data[params.selected[0].dataIndex[0]];
             this.chart.setOption({
                 title: {
                     text: [
-                        '{normal|' + this.option.series[0].data[params.selected[0].dataIndex[0]].name + '}',
-                        '{bold|' + formatData(this.option.series[0].data[params.selected[0].dataIndex[0]].value, this.indicator.formatter, true) + '}'
+                        '{normal|' + data.name + '}',
+                        '{bold|' + formatData(data.value, this.indicator.formatter, true) 
+                            + (showAggregateNotice(data) ? '*' : '') + '}'
                     ].join(' '),
                 },
                 legend: {
@@ -125,13 +128,13 @@ export default class DonutChart {
             dataItem = this.chart.getOption().series[0].data[this.lastSelectedIndex];
             dataItemIndex = this.lastSelectedIndex;
         }
-        
         this.chart.setOption({
             // set the title to the hovered item or the previously selected item
             title: {
                 text: [
                     '{normal|' + dataItem.name + '}',
-                    '{bold|' + formatData(dataItem.value, this.indicator.formatter, true) + '}'
+                    '{bold|' + formatData(dataItem.value, this.indicator.formatter, true) 
+                        + (showAggregateNotice(dataItem) ? '*' : '') + '}'
                 ].join(' '),
             },
             legend: {
@@ -253,7 +256,8 @@ export default class DonutChart {
                     show: 'true',
                     formatter: params => {
                         let data = this.chart.getOption().series[0].data.find(d => d.name === params.name);
-                        return buildTooltipContent(params.name, data, this.indicator, this.compareLocations, this.compareData);
+                        return buildTooltipContent(params.name, data, this.indicator, this.compareLocations, 
+                            this.compareData);
                     }
                 }
             },
@@ -262,7 +266,8 @@ export default class DonutChart {
                 trigger: 'item',
                 triggerOn: 'mousemove',
                 formatter: params => {
-                    return buildTooltipContent(params.name, params.data, this.indicator, this.compareLocations, this.compareData);
+                    return buildTooltipContent(params.name, params.data, this.indicator, this.compareLocations, 
+                        this.compareData);
                 }
             },
             yAxis: {
@@ -325,7 +330,9 @@ export default class DonutChart {
         this.chart.dispatchAction({
             type: 'select',
             seriesIndex: 0,
-            dataIndex: this.option.series[0].data.findIndex(item => item.value === Math.max(...data.map(item => item.value)))
+            dataIndex: this.option.series[0].data.findIndex(item => 
+                item.value === Math.max(...data.map(item => item.value))
+            )
         });
     }
 }
