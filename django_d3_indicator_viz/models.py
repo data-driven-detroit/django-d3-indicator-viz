@@ -194,9 +194,6 @@ class IndicatorType(models.TextChoices):
     def __str__(self):
         return self.name
 
-    class Meta:
-        db_table = "indicator_type"
-
 
 class Indicator(models.Model):
     """
@@ -361,8 +358,6 @@ class DataVisualType(models.TextChoices):
     def __str__(self):
         return self.name
 
-    class Meta:
-        db_table = "data_visual"
 
 class DataVisualLocationComparisonType(models.TextChoices):
     """
@@ -374,9 +369,6 @@ class DataVisualLocationComparisonType(models.TextChoices):
 
     def __str__(self):
         return self.name
-
-    class Meta:
-        db_table = "data_visual_location_comparison_type"
 
 
 class ColorScale(models.Model):
