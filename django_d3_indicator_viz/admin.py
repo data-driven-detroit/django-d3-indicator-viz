@@ -9,6 +9,7 @@ from adminsortable2.admin import SortableTabularInline
 class IndicatorInline(SortableTabularInline):
     model = Indicator
     ordering = ["sort_order"]
+    max_num = 1
     extra = 0
 
 
