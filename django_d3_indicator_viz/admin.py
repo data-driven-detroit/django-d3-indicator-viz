@@ -61,7 +61,7 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     section_link.short_description = "Section"
 
 
-admin.site.register(Category, CategoryAdmin)
+# admin.site.register(Category, CategoryAdmin)
 
 
 class LocationTypeAdmin(
@@ -81,7 +81,7 @@ class LocationAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["location_type", "name"]
 
 
-admin.site.register(Location, LocationAdmin)
+# admin.site.register(Location, LocationAdmin)
 
 
 class CustomLocationAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -99,7 +99,7 @@ class IndicatorSourceAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["name"]
 
 
-admin.site.register(IndicatorSource, IndicatorSourceAdmin)
+# admin.site.register(IndicatorSource, IndicatorSourceAdmin)
 
 
 class VisualInline(admin.TabularInline):
@@ -163,7 +163,7 @@ class IndicatorValueAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["indicator", "location", "start_date", "end_date", "source"]
 
 
-admin.site.register(IndicatorValue, IndicatorValueAdmin)
+# admin.site.register(IndicatorValue, IndicatorValueAdmin)
 
 
 class ColorScaleAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -188,4 +188,4 @@ class IndicatorDataVisualAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["indicator", "start_date", "end_date", "source"]
 
 
-admin.site.register(IndicatorDataVisual, IndicatorDataVisualAdmin)
+# admin.site.register(IndicatorDataVisual, IndicatorDataVisualAdmin)
