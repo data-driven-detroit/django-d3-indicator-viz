@@ -14,7 +14,6 @@ from .models import *
 class IndicatorInline(SortableTabularInline):
     model = Indicator
     ordering = ["sort_order"]
-    max_num = 1
     extra = 0
     fields = ["name"]
     readonly_fields = ["name"]
@@ -45,12 +44,17 @@ admin.site.register(Section, SectionAdmin)
 
 class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "section", "name", "sort_order"]
-    readonly_fields = ("id",)
+    readonly_fields = ("id","section_link")
     inlines = [IndicatorInline]
     ordering = ["sort_order"]
     formfield_overrides = {
         models.TextField: {"widget": TextInput(attrs={"style": "width: 500px"})},
     }
+
+    def section_link(self, obj):
+        url = reverse("admin:yourapp_section_change", args=[obj.section_id])
+        return format_html('<a href="{}">{}</a>', url, obj.section)
+    section_link.short_description = "Section"
 
 
 admin.site.register(Category, CategoryAdmin)
@@ -97,13 +101,27 @@ admin.site.register(IndicatorSource, IndicatorSourceAdmin)
 class VisualInline(admin.TabularInline):
     model = IndicatorDataVisual
     can_delete = False
+    max_num = 1
+    extra = 0
 
 
 class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "category", "name", "sort_order"]
-    readonly_fields = ("id",)
+    readonly_fields = ("id","section_link")
     ordering = ["sort_order"]
     inlines = [VisualInline]
+
+    formfield_overrides = {
+        models.TextField: {"widget": TextInput(attrs={"style": "width: 500px"})},
+    }
+
+
+    def section_link(self, obj):
+        url = reverse("admin:yourapp_section_change", args=[obj.category_id])
+        return format_html('<a href="{}">{}</a>', url, obj.category)
+
+    section_link.short_description = "Category"
+
 
 
 admin.site.register(Indicator, IndicatorAdmin)
