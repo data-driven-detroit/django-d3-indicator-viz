@@ -14,6 +14,13 @@ from .models import *
 
 
 class HiddenFromIndex(admin.ModelAdmin):
+    """
+    In order to simplify the workflow we want to remove a bunch of models 
+    from the admin page so they are only available through the inlines. This
+    will allow the admin to quickly get to the chart that they want to work on
+    without having to awkwardly bounce around the admin page.
+    """
+
     def get_model_perms(self, request):
         return {}
 
@@ -115,7 +122,7 @@ class VisualInline(admin.TabularInline):
     extra = 0
 
 
-class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
+class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, HiddenFromIndex):
     list_display = ["id", "category", "name", "sort_order"]
     readonly_fields = ("id","category_link")
     ordering = ["sort_order"]
