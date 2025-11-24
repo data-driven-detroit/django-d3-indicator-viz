@@ -36,7 +36,7 @@ class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     inlines = [CategoryInline]
     ordering = ["sort_order"]
     formfield_overrides = {
-        models.TextField: {"widget": TextInput},
+        models.TextField: {"widget": TextInput(attrs={"style": "width: 500px"})},
     }
 
 
@@ -49,7 +49,7 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     inlines = [IndicatorInline]
     ordering = ["sort_order"]
     formfield_overrides = {
-        models.TextField: {"widget": TextInput},
+        models.TextField: {"widget": TextInput(attrs={"style": "width: 500px"})},
     }
 
 
