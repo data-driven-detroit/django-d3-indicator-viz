@@ -53,32 +53,10 @@ export default class LineChart {
             return;
         }
 
-        // generate a date range for the x axis, filling in any missing years
-        let xAxisData = [];
-        let currentDate = new Date(this.indicatorData[0].end_date);
-        let endDate = new Date(this.indicatorData[this.indicatorData.length - 1].end_date);
-        while (currentDate <= endDate) {
-            xAxisData.push(currentDate.toISOString().substring(0, 10));
-            currentDate.setFullYear(currentDate.getFullYear() + 1);
-        }
-
-        // create a series for each location, ensuring each series has a data point for each x axis date
+        // create a series for each location
+        let seriesNames = [this.location.name];
         let seriesData = {};
-        seriesData[this.location.id] = [];
-        xAxisData.forEach(end_date => {
-            seriesData[this.location.id].push(
-                this.indicatorData.find(d => d.end_date === end_date && d.location_id === this.location.id) 
-                    || { end_date: end_date, value: null }
-            );
-        });
-        this.compareLocations.forEach(location => {
-            seriesData[location.id] = [];
-            xAxisData.forEach(end_date => {
-                seriesData[location.id].push(
-                    this.compareData.find(d => d.end_date === end_date && d.location_id === location.id) || null
-                );
-            });
-        });
+        seriesData[this.location.id] = [].concat(this.indicatorData);
         seriesData = Object.values(seriesData);
 
         // set up the container
@@ -128,7 +106,7 @@ export default class LineChart {
             },
             xAxis: {
                 type: 'category',
-                data: xAxisData,
+                data: seriesData[0].map(item => item.end_date),
                 boundaryGap: false,
                 axisLabel: {
                     width: 100,
@@ -140,7 +118,7 @@ export default class LineChart {
                     formatter: (value) => {
                         let data = seriesData[0].find(item => item.end_date === value);
                         return '{bold|' + value.substring(0, 4) + ': ' + '}'
-                            + '{normal|' + formatData(data?.value, this.indicator.formatter, true) + '}'
+                            + '{normal|' + formatData(data.value, this.indicator.formatter, true) + '}'
                             + (showAggregateNotice(data) ? '*' : '');
                     },
                     rich: {
