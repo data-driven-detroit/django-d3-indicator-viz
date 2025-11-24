@@ -1,8 +1,12 @@
 from django.contrib import admin
+from django.db import models as django_models
+from django.forms import TextInput
+
 from import_export.admin import ImportExportMixin
 from adminsortable2.admin import SortableAdminBase
 from adminsortable2.admin import SortableAdminMixin
 from adminsortable2.admin import SortableTabularInline
+
 
 from .models import *
 
@@ -31,6 +35,9 @@ class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     readonly_fields = ("id",)
     inlines = [CategoryInline]
     ordering = ["sort_order"]
+    formfield_overrides = {
+        models.TextField: {"widget": TextInput},
+    }
 
 
 admin.site.register(Section, SectionAdmin)
@@ -41,6 +48,9 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     readonly_fields = ("id",)
     inlines = [IndicatorInline]
     ordering = ["sort_order"]
+    formfield_overrides = {
+        models.TextField: {"widget": TextInput},
+    }
 
 
 admin.site.register(Category, CategoryAdmin)
