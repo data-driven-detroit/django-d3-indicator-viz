@@ -54,8 +54,10 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     }
 
     def section_link(self, obj):
-        url = reverse("admin:sdc_section_change", args=[obj.section_id])
+        meta = obj.section._meta
+        url = reverse(f"admin:{meta.app_label}_{meta.model_name}_change", args=[obj.section_id])
         return format_html('<a href="{}">{}</a>', url, obj.section)
+
     section_link.short_description = "Section"
 
 
@@ -109,7 +111,7 @@ class VisualInline(admin.TabularInline):
 
 class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "category", "name", "sort_order"]
-    readonly_fields = ("id","section_link")
+    readonly_fields = ("id","category_link")
     ordering = ["sort_order"]
     inlines = [VisualInline]
 
@@ -118,11 +120,12 @@ class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     }
 
 
-    def section_link(self, obj):
-        url = reverse("admin:sdc_section_change", args=[obj.category_id])
+    def category_link(self, obj):
+        meta = obj.category._meta
+        url = reverse(f"admin:{meta.app_label}_{meta.model_name}_change", args=[obj.category_id])
         return format_html('<a href="{}">{}</a>', url, obj.category)
 
-    section_link.short_description = "Category"
+    cateogry_link.short_description = "Category"
 
 
 
