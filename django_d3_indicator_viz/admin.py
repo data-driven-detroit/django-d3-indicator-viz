@@ -125,7 +125,7 @@ class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
         url = reverse(f"admin:{meta.app_label}_{meta.model_name}_change", args=[obj.category_id])
         return format_html('<a href="{}">{}</a>', url, obj.category)
 
-    cateogry_link.short_description = "Category"
+    category_link.short_description = "Category"
 
 
 
