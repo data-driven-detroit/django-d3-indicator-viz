@@ -11,13 +11,15 @@ class IndicatorInline(SortableTabularInline):
     ordering = ["sort_order"]
     max_num = 1
     extra = 0
-
+    fields = ["name"]
+    show_change_link = True
 
 class CategoryInline(SortableTabularInline):
     model = Category
     ordering = ["sort_order"]
     extra = 0
-
+    fields = ["name"]
+    show_change_link = True
 
 class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "name", "sort_order"]
