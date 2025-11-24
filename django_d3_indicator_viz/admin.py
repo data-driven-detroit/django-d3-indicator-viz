@@ -1,9 +1,10 @@
 from django.contrib import admin
-from .models import *
 from import_export.admin import ImportExportMixin
 from adminsortable2.admin import SortableAdminBase
 from adminsortable2.admin import SortableAdminMixin
 from adminsortable2.admin import SortableTabularInline
+
+from .models import *
 
 
 class IndicatorInline(SortableTabularInline):
@@ -12,14 +13,18 @@ class IndicatorInline(SortableTabularInline):
     max_num = 1
     extra = 0
     fields = ["name"]
+    readonly_fields = ["name"]
     show_change_link = True
+
 
 class CategoryInline(SortableTabularInline):
     model = Category
     ordering = ["sort_order"]
     extra = 0
     fields = ["name"]
+    readonly_fields = ["name"]
     show_change_link = True
+
 
 class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "name", "sort_order"]
