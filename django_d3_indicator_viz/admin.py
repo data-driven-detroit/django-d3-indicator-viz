@@ -13,6 +13,12 @@ from adminsortable2.admin import SortableTabularInline
 from .models import *
 
 
+class HiddenFromIndex(admin.ModelAdmin):
+    def get_model_perms(self, request):
+        return {}
+
+
+
 class IndicatorInline(SortableTabularInline):
     model = Indicator
     ordering = ["sort_order"]
@@ -44,7 +50,7 @@ class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
 admin.site.register(Section, SectionAdmin)
 
 
-class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
+class CategoryAdmin(ImportExportMixin, SortableAdminMixin, HiddenFromIndex):
     list_display = ["id", "section", "name", "sort_order"]
     readonly_fields = ("id","section_link")
     inlines = [IndicatorInline]
@@ -61,7 +67,7 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     section_link.short_description = "Section"
 
 
-# admin.site.register(Category, CategoryAdmin)
+admin.site.register(Category, CategoryAdmin)
 
 
 class LocationTypeAdmin(
@@ -75,13 +81,13 @@ class LocationTypeAdmin(
 admin.site.register(LocationType, LocationTypeAdmin)
 
 
-class LocationAdmin(ImportExportMixin, admin.ModelAdmin):
+class LocationAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = ["id", "location_type", "name"]
     readonly_fields = ("id",)
     ordering = ["location_type", "name"]
 
 
-# admin.site.register(Location, LocationAdmin)
+admin.site.register(Location, LocationAdmin)
 
 
 class CustomLocationAdmin(ImportExportMixin, admin.ModelAdmin):
@@ -93,13 +99,13 @@ class CustomLocationAdmin(ImportExportMixin, admin.ModelAdmin):
 admin.site.register(CustomLocation, CustomLocationAdmin)
 
 
-class IndicatorSourceAdmin(ImportExportMixin, admin.ModelAdmin):
+class IndicatorSourceAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = ["id", "name"]
     readonly_fields = ("id",)
     ordering = ["name"]
 
 
-# admin.site.register(IndicatorSource, IndicatorSourceAdmin)
+admin.site.register(IndicatorSource, IndicatorSourceAdmin)
 
 
 class VisualInline(admin.TabularInline):
@@ -150,7 +156,7 @@ class IndicatorFilterTypeAdmin(
 admin.site.register(IndicatorFilterType, IndicatorFilterTypeAdmin)
 
 
-class IndicatorValueAdmin(ImportExportMixin, admin.ModelAdmin):
+class IndicatorValueAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = [
         "id",
         "indicator",
@@ -163,10 +169,10 @@ class IndicatorValueAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["indicator", "location", "start_date", "end_date", "source"]
 
 
-# admin.site.register(IndicatorValue, IndicatorValueAdmin)
+admin.site.register(IndicatorValue, IndicatorValueAdmin)
 
 
-class ColorScaleAdmin(ImportExportMixin, admin.ModelAdmin):
+class ColorScaleAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = ["id", "name", "colors"]
     readonly_fields = ("id",)
     ordering = ["name"]
@@ -175,7 +181,7 @@ class ColorScaleAdmin(ImportExportMixin, admin.ModelAdmin):
 admin.site.register(ColorScale, ColorScaleAdmin)
 
 
-class IndicatorDataVisualAdmin(ImportExportMixin, admin.ModelAdmin):
+class IndicatorDataVisualAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = [
         "id",
         "indicator",
@@ -188,4 +194,4 @@ class IndicatorDataVisualAdmin(ImportExportMixin, admin.ModelAdmin):
     ordering = ["indicator", "start_date", "end_date", "source"]
 
 
-# admin.site.register(IndicatorDataVisual, IndicatorDataVisualAdmin)
+admin.site.register(IndicatorDataVisual, IndicatorDataVisualAdmin)
