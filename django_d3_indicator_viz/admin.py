@@ -54,7 +54,7 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     }
 
     def section_link(self, obj):
-        url = reverse("admin:yourapp_section_change", args=[obj.section_id])
+        url = reverse("admin:sdc_section_change", args=[obj.section_id])
         return format_html('<a href="{}">{}</a>', url, obj.section)
     section_link.short_description = "Section"
 
@@ -119,7 +119,7 @@ class IndicatorAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
 
 
     def section_link(self, obj):
-        url = reverse("admin:yourapp_section_change", args=[obj.category_id])
+        url = reverse("admin:sdc_section_change", args=[obj.category_id])
         return format_html('<a href="{}">{}</a>', url, obj.category)
 
     section_link.short_description = "Category"
