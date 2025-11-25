@@ -322,6 +322,9 @@ class IndicatorValue(models.Model):
 
     # The margin of error for the universe
     universe_moe = models.FloatField(null=True, blank=True)
+    
+    active_data = models.BooleanField(default=False)
+
 
     def __str__(self):
         return (
