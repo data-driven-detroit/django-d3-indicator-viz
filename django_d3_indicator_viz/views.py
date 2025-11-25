@@ -30,7 +30,9 @@ def build_profile_context(request, location_slug, indicator_value_aggregator):
 
     is_custom_location = False
     try:
-        location = Location.objects.get(id__iexact=location_slug.split("-")[0])
+        geoid, slug = location_slug.split("-")
+
+        location = Location.objects.get(id=geoid)
 
         (
             location_type,
@@ -139,6 +141,7 @@ def __build_standard_profile_context(location):
     # Parent locations are of a different type than the profile location, 
     # set up as a parent type of the profile location's type, have a larger 
     # area, and contain the profile location's center point
+
 
     # limit to the two closest parent locations
     parent_locations = Location.objects.extra(
