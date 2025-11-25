@@ -172,7 +172,8 @@ def __build_standard_profile_context(location):
 
     sibling_locations_geojson = serialize(
         "geojson",
-        Location.objects
+        (
+            Location.objects
             .filter(location_type_id=location_type.id)
             .exclude(id=location.id)
             .extra(
