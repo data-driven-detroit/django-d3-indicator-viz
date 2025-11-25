@@ -183,7 +183,7 @@ def __build_standard_profile_context(location):
     # values are filtered by the corresponding data visual's source and start date (start date is ignored if the data visual type is 'line')
     indicator_values = IndicatorValue.objects.raw(
         """
-        select iv.*, l.name, idv.*, i.*, ifo.*, 
+        select iv.*, l.name, idv.*, i.*, ifo.*
         from indicator_value iv
             join location l on iv.location_id = l.id
             join indicator_data_visual idv on iv.indicator_id = idv.indicator_id and iv.source_id = idv.source_id
