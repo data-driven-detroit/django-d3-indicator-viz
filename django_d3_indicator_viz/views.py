@@ -177,7 +177,7 @@ def __build_standard_profile_context(location):
             .filter(location_type_id=location_type.id)
             .exclude(id=location.id)
             .extra(
-                where=["ST_DWithin(geometry, (SELECT geometry FROM location WHERE id = '%s'), %s)"],
+                where=["ST_DWithin(geometry, (SELECT geometry FROM location WHERE id = %s), %s)"],
                 params=[location.id, 0.2]
             )
         ),
