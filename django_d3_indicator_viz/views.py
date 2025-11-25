@@ -1,5 +1,5 @@
 from django.core.serializers import serialize
-from django.db.models import Q
+from django.db.models import Q, OuterRef, Subquery
 from django.http import HttpResponse
 from django.template import loader
 
@@ -206,34 +206,35 @@ def __build_standard_profile_context(location):
     )
 
     # indicators with no category will be shown in the header area
-    header_data_visuals = IndicatorDataVisual.objects.filter(
-        indicator__category_id__isnull=True
-    ).order_by("indicator__sort_order")
+    header_data = list(
+        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
+        .select_related("indicator", "source")
+        .annotate(
+            header_value=Subquery(
+                IndicatorValue.objects.filter(
+                    indicator_id=OuterRef("indicator_id"),
+                    source_id=OuterRef("source_id"),
+                    start_date=OuterRef("start_date"),
+                    end_date=OuterRef("end_date"),
+                    location_id=location.id,
+                ).values("value")[:1]
+            )
+        )
+        .order_by("indicator__sort_order")
+        .values(
+            "indicator__name",
+            "source__name",
+            "end_date",
+            "header_value",
+        )
+    )
 
     header_data = [
         {
             "indicator_name": hdv.indicator.name,
             "source_name": hdv.source.name,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
-            "value": (
-                IndicatorValue.objects.filter(
-                    indicator_id=hdv.indicator_id,
-                    location_id=location.id,
-                    source_id=hdv.source_id,
-                    start_date=hdv.start_date,
-                    end_date=hdv.end_date,
-                )
-                .first()
-                .value
-                if IndicatorValue.objects.filter(
-                    indicator_id=hdv.indicator_id,
-                    location_id=location.id,
-                    source_id=hdv.source_id,
-                    start_date=hdv.start_date,
-                    end_date=hdv.end_date,
-                ).exists()
-                else None
-            ),
+            "value": row.header_value if row.header_value else None,
         }
         for hdv in header_data_visuals
     ]
