@@ -30,7 +30,7 @@ def build_profile_context(request, location_slug, indicator_value_aggregator):
 
     is_custom_location = False
     try:
-        geoid, slug = location_slug.split("-")
+        geoid, *slug = location_slug.split("-")
 
         location = Location.objects.get(id=geoid)
 
