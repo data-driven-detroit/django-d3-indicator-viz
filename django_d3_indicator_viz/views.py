@@ -152,7 +152,7 @@ def __build_standard_profile_context(location):
         params=[
             location_type.id,
             list(parent_location_types.values_list("id", flat=True)),
-            location.id,
+            # location.id,
             location.id,
         ],
         order_by=["area"],
