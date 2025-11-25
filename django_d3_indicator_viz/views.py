@@ -267,6 +267,7 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
         where=[
             "location_type_id <> %s",
             "location_type_id = any(%s)",
+
             # This handles the 'custom' stuff basically unioning the 
             "st_area(geometry) > (select st_area(st_union(geometry)) from location where id = any(%s))",
             "st_contains(geometry, (select st_pointonsurface(st_union(geometry)) from location where id = any(%s)))",
