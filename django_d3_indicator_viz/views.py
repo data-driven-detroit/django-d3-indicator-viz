@@ -146,7 +146,7 @@ def __build_standard_profile_context(location):
         where=[
             "location_type_id <> %s",
             "location_type_id = any(%s)",
-            # "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
+            "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
             "st_contains(geometry, (select st_pointonsurface(geometry) from location where id = %s))",
         ],
         params=[
@@ -183,7 +183,7 @@ def __build_standard_profile_context(location):
     # values are filtered by the corresponding data visual's source and start date (start date is ignored if the data visual type is 'line')
     indicator_values = IndicatorValue.objects.raw(
         """
-        select *
+        select iv.*, l.name, idv.*, i.*, ifo.*, 
         from indicator_value iv
             join location l on iv.location_id = l.id
             join indicator_data_visual idv on iv.indicator_id = idv.indicator_id and iv.source_id = idv.source_id
@@ -250,15 +250,24 @@ def __build_standard_profile_context(location):
 
 
 def __build_custom_profile_context(location, indicator_value_aggregator):
+
+    # Only one we need the geography on
     location_type = location.locations.first().location_type
+    
+    # This table says which 
+
     parent_location_types = location_type.parent_location_types.all()
-    # parent locations are of a different type than the profile location, set up as a parent type of the profile location's type, have a larger area, and contain the profile location's center point
-    # limit to the two closest parent locations
+    # parent locations are of a different type than the profile location, 
+    # set up as a parent type of the profile location's type, have a larger area, 
+    # and contain the profile location's center point limit to the two closest 
+    # parent locations
+
     parent_locations = Location.objects.extra(
         select={"area": "st_area(geometry)"},
         where=[
             "location_type_id <> %s",
             "location_type_id = any(%s)",
+            # This handles the 'custom' stuff basically unioning the 
             "st_area(geometry) > (select st_area(st_union(geometry)) from location where id = any(%s))",
             "st_contains(geometry, (select st_pointonsurface(st_union(geometry)) from location where id = any(%s)))",
         ],

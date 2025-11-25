@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
 
+
 class Section(models.Model):
     """
     Represents a section for categories, such as "Youth & Family Demographics".
@@ -95,6 +96,7 @@ class LocationType(models.Model):
     class Meta:
         db_table = "location_type"
 
+
 class Location(models.Model):
     """
     Represents a geographical location, such as a Detroit, Wayne County, or Michigan.
@@ -120,6 +122,7 @@ class Location(models.Model):
 
     class Meta:
         db_table = "location"
+
 
 class CustomLocation(models.Model):
     """
