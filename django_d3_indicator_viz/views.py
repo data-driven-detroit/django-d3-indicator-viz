@@ -228,7 +228,7 @@ def __build_standard_profile_context(location):
             "indicator_name": hdv.indicator.name,
             "source_name": hdv.source.name,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
-            "value": row.header_value if row.header_value else None,
+            "value": hdv.header_value if hdv.header_value else None,
         }
         for hdv in header_data_visuals
     ]
