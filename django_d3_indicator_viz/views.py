@@ -206,7 +206,7 @@ def __build_standard_profile_context(location):
     )
 
     # indicators with no category will be shown in the header area
-    header_data = list(
+    header_data_visuals = list(
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
         .select_related("indicator", "source")
         .annotate(
