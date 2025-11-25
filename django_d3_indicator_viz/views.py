@@ -221,12 +221,6 @@ def __build_standard_profile_context(location):
             )
         )
         .order_by("indicator__sort_order")
-        .values(
-            "indicator__name",
-            "source__name",
-            "end_date",
-            "header_value",
-        )
     )
 
     header_data = [
