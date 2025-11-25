@@ -169,10 +169,16 @@ def __build_standard_profile_context(location):
     location_geojson = serialize(
         "geojson", [location], geometry_field="geometry", fields=("id", "name")
     )
+
     sibling_locations_geojson = serialize(
         "geojson",
-        Location.objects.filter(
-            Q(location_type_id=location_type.id) & ~Q(id=location.id)
+        Location.objects
+            .filter(location_type_id=location_type.id)
+            .exclude(id=location.id)
+            .extra(
+                where=["ST_DWithin(geometry, (SELECT geometry FROM location WHERE id = '%s'), %s)"],
+                params=[location_id, 0.2]
+            )
         ),
         geometry_field="geometry",
         fields=("id", "name", "location_type"),
