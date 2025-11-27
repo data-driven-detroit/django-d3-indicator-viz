@@ -62,6 +62,11 @@ class Category(models.Model):
         Section, on_delete=models.CASCADE, null=True, blank=True
     )
 
+    share_axes = models.BooleanField(
+        default=False,
+        help_text="When enabled, all line and column charts in this category will share the same Y-axis scale for easier comparison."
+    )
+
     # An anchor for linking to this category in a web page
     anchor = models.TextField(null=True, blank=True)
 

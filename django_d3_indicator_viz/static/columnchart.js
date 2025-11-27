@@ -92,7 +92,9 @@ export default class ColumnChart {
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let categoryAxis = {
             type: 'category',
-            data: seriesData[0].map(item => this.filterOptions.find(f => f.id === item.filter_option_id).name),
+            data: seriesData[0].map(
+                item => this.filterOptions.find(f => f.id === item.filter_option_id).name
+            ),
             show: window.innerWidth >= 768 ? true : false,
             boundaryGap: true,
             axisLabel: {
