@@ -1,7 +1,10 @@
 from django.core.serializers import serialize
-from django.db.models import Q, OuterRef, Subquery
+from django.db.models import Q, OuterRef, Subquery, Prefetch
+from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import loader
+from django_filters import rest_framework as filters
+from rest_framework import routers, serializers, viewsets
 
 from .models import (
     Section,
@@ -600,6 +603,148 @@ def __build_indicator_values_dict_list(indicator_values):
         }
         for iv in indicator_values
     ]
+
+
+def profile(request, location_id):
+    location = Location.objects.get(id=location_id)
+    location_type = location.location_type
+    parent_location_types = location.location_type.parent_location_types.all()
+
+    # Parent locations are of a different type than the profile location, 
+    # set up as a parent type of the profile location's type, have a larger 
+    # area, and contain the profile location's center point
+
+    # limit to the two closest parent locations
+    parent_locations = Location.objects.extra(
+        select={"area": "st_area(geometry)"},
+        where=[
+            "location_type_id <> %s",
+            "location_type_id = any(%s)",
+            "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
+            "st_contains(geometry, (select st_pointonsurface(geometry) from location where id = %s))",
+        ],
+        params=[
+            location_type.id,
+            list(parent_location_types.values_list("id", flat=True)),
+            location.id,
+            location.id,
+        ],
+        order_by=["area"],
+    )[:2]
+
+    # Get sibling locations (same type, excluding current location)
+    sibling_locations = Location.objects.filter(
+        location_type_id=location_type.id
+    ).exclude(id=location_id)
+
+    first_section = Section.objects.first()
+
+    # Collect all locations for lookup (primary + parents + siblings)
+    all_locations = [location] + list(parent_locations) + list(sibling_locations)
+
+    # Serialize reference data needed by all charts
+    filter_options = IndicatorFilterOption.objects.all()
+    color_scales = ColorScale.objects.all()
+    location_types = LocationType.objects.all()
+
+    return render(
+        request, "django_d3_indicator_viz/profile.html",
+        {
+            "first_section": first_section,
+            "primary_loc_id": location_id,
+            "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
+            "sibling_loc_ids": ",".join(loc.id for loc in sibling_locations),
+            "filter_options_json": json.dumps(IndicatorFilterOptionSerializer(filter_options, many=True).data),
+            "color_scales_json": json.dumps(ColorScaleSerializer(color_scales, many=True).data),
+            "location_types_json": json.dumps(LocationTypeSerializer(location_types, many=True).data),
+            "locations_json": json.dumps(LocationSerializer(all_locations, many=True).data),
+        }
+    )
+
+
+def next_section(request):
+    after = request.GET.get("after")
+    next_section = Section.objects.filter(sort_order__gt=after).first()
+
+    if not next_section:
+        return HTTPResponse("")
+
+    return render(
+        request, "section.html",
+        {
+            "section": next_section,
+        }
+    )
+
+
+# A DRF Section to handle getting the data ready to be called by the chart code
+
+class IndicatorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Indicator
+        fields = ['id', 'name', 'category_id', 'formatter', 'indicator_type', 'sort_order']
+
+
+class IndicatorDataVisualSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndicatorDataVisual
+        fields = ['id', 'indicator_id', 'source_id', 'data_visual_type',
+                  'location_comparison_type', 'start_date', 'end_date',
+                  'color_scale_id', 'columns']
+
+
+class ColorScaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ColorScale
+        fields = ['id', 'name', 'colors']
+
+
+class LocationTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LocationType
+        fields = ['id', 'name']
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'location_type_id']
+
+
+class IndicatorFilterOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndicatorFilterOption
+        fields = ['id', 'name', 'sort_order']
+
+
+class ValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndicatorValue
+        fields = ["source", "start_date", "end_date", "indicator",
+            "filter_option", "location", "value", "value_moe", "count",
+            "count_moe", "universe", "universe_moe", "active_data"]
+
+
+class ValueFilter(filters.FilterSet):
+    class Meta:
+        model = IndicatorValue
+        fields = {
+            'location_id': ['exact', 'in'],
+            'indicator_id': ['exact', 'in'],
+            'start_date': ['exact', 'gte', 'lte'],
+            'end_date': ['exact', 'gte', 'lte'],
+        }
+
+
+class ValueViewSet(viewsets.ModelViewSet):
+    queryset = IndicatorValue.objects.all().select_related("filter_option")
+    serializer_class = ValueSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_fields = ("start_date", "end_date", "indicator_id", "location_id")
+    filterset_class = ValueFilter
+
+router = routers.DefaultRouter()
+router.register("values", ValueViewSet)
 
 
 class SampleIndicatorValueAggregator(IndicatorValueAggregator):

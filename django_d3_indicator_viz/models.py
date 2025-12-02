@@ -234,6 +234,12 @@ class Indicator(models.Model):
     # A formatter string for displaying the indicator value, such as ${value} for dollars or {value}% for percentage
     formatter = models.TextField(null=True, blank=True)
 
+    def to_json(self):
+        """Returns JSON representation of this indicator for use in templates."""
+        from django_d3_indicator_viz.views import IndicatorSerializer
+        import json
+        return json.dumps(IndicatorSerializer(self).data)
+
     def __str__(self):
         return self.name
 
@@ -399,6 +405,7 @@ class ColorScale(models.Model):
     class Meta:
         db_table = "color_scale"
 
+
 class IndicatorDataVisual(models.Model):
     """
     Represents a data visual for an indicator, including its type, source, date range, and other attributes.
@@ -439,6 +446,12 @@ class IndicatorDataVisual(models.Model):
 
     # The color scale to use for the data visual
     color_scale = models.ForeignKey(ColorScale, on_delete=models.CASCADE, null=True, blank=True)
+
+    def to_json(self):
+        """Returns JSON representation of this data visual for use in templates."""
+        from django_d3_indicator_viz.views import IndicatorDataVisualSerializer
+        import json
+        return json.dumps(IndicatorDataVisualSerializer(self).data)
 
     def __str__(self):
         return (
