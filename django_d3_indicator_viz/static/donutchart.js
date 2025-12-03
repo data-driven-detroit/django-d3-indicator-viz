@@ -68,11 +68,10 @@ export default class DonutChart {
             let data = this.chart.getOption().series[0].data[params.selected[0].dataIndex[0]];
             this.chart.setOption({
                 title: {
-                    text: [
-                        '{normal|' + data.name + '}',
-                        '{bold|' + formatData(data.value, this.indicator.formatter, true) 
-                            + (showAggregateNotice(data) ? '*' : '') + '}'
-                    ].join(' '),
+                    text: 
+                        '{normal|' + data.name + ' ' + '}'
+                        + '{bold|' + formatData(data.value, this.indicator.formatter, true) 
+                        + (showAggregateNotice(data) ? '*' : '') + '}'
                 },
                 legend: {
                     data: this.option.series[0].data.map((item, index) => {
@@ -131,9 +130,7 @@ export default class DonutChart {
         this.chart.setOption({
             // set the title to the hovered item or the previously selected item
             title: {
-                text: [
-                    '{normal|' + dataItem.name + '}',
-                    '{bold|' + formatData(dataItem.value, this.indicator.formatter, true) 
+                text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true) 
                         + (showAggregateNotice(dataItem) ? '*' : '') + '}'
                 ].join(' '),
             },
@@ -224,12 +221,10 @@ export default class DonutChart {
                         normal: {
                             fontWeight: 'normal',
                             fontSize: (this.chartOptions.textStyle?.fontSize || 16),
-                            verticalAlign: 'middle',
                         },
                         bold: {
                             fontWeight: 'bold',
                             fontSize: (this.chartOptions.textStyle?.fontSize || 16),
-                            verticalAlign: 'middle',
                         }
                     }
                 },
