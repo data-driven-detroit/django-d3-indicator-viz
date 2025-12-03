@@ -1,0 +1,67 @@
+{% load humanize madlibs %}
+
+<article id="{{ section.anchor }}">
+    <header class="section-contents">
+        <h1>{{ section.name }}</h1>
+    </header>
+    {% for category in section.category_set.all %}
+    <div class="section-container">
+        <section class="stat-row"
+            {% if forloop.last %}
+            hx-get="{% url "next_section" %}?after={{ section.sort_order }}"
+            hx-trigger="revealed"
+            hx-swap="afterend"
+            hx-target="closest article"
+            {% endif %}
+        >
+            <div class="section-intro">
+                <h2 class="header-for-columns">
+                    <a class="permalink section" href="#{{ category.anchor }}" id="{{ category.anchor }}" title="Permalink">
+                        {{ category.name }}<br /><i class="fa fa-link"></i></a>
+                    <a class="permalink" href="#" title="Back to top"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></a>
+                </h2>
+                <aside></aside>
+            </div>
+            <div class="section-visuals">
+                {% for indicator in category.indicator_set.all %}
+                {% with data_visual=indicator.indicatordatavisual_set.first %}
+                <div class="column-{{ data_visual.columns }} data-visual-container">
+                    <h3 class="chart-title">
+                        {{ indicator.name }}
+                        {% if indicator.indicator_type == 'rate' %}
+                            (per {{ indicator.rate_per|intcomma }})
+                        {% endif %}
+                        ({% if data_visual.data_visual_type == 'line' %}{{ data_visual.start_date.year }} - {% endif %}{{ data_visual.end_date.year }})
+                    </h3>
+                    <div class="chart-container"
+                        data-indicator-id="{{ indicator.id }}"
+                        data-indicator='{{ indicator.to_json }}'
+                        data-visual='{{ data_visual.to_json }}'
+                        id="indicator-{{ data_visual.indicator_id }}-{{ data_visual.data_visual_type }}-container">
+                    </div>
+                    {% if indicator.qualifier %}
+                    <span class="chart-qualifier">{{ indicator.qualifier }}</span>
+                    {% endif %}
+                    {% if data_visual.data_visual_type != 'ban' and data_visual.data_visual_type != 'min_med_max' %}
+                    <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Show data</button>
+                    {% endif %}
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+        </section>
+        {% for indicator in category.indicator_set.all %}
+        {% with data_visual=indicator.indicatordatavisual_set.first %}
+        <section id="indicator-{{ indicator.id }}-datatable-container" data-category-id="{{ category.id }}" data-indicator-id="{{ indicator.id }}" class="data-drawer" style="display: none;">
+            <h3 class="chart-title">
+                <span>{{ indicator.name }} ({{ data_visual.end_date.year }} {{ data_visual.source.name }})</span>
+                <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Hide data</button>
+            </h3>
+            <table class="full-width">
+            </table>
+        </section>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+</article>

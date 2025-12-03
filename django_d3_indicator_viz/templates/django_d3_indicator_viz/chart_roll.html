@@ -1,0 +1,60 @@
+<script id="reference-data" type="application/json">
+    {
+      "filterOptions": {{ filter_options_json|safe }},
+      "colorScales": {{ color_scales_json|safe }},
+      "locationTypes": {{ location_types_json|safe }},
+      "locations": {{ locations_json|safe }},
+      "primaryLocId": "{{ primary_loc_id }}",
+      "parentLocIds": "{{ parent_loc_ids }}",
+      "siblingLocIds": "{{ sibling_loc_ids }}"
+    }
+</script>
+<main>
+    {% include "django_d3_indicator_viz/section.html" with section=first_section %}
+    {% block content %}{% endblock %}
+</main>
+<script type="module">
+    import { loadAllCharts } from "/static/chartloader.js";
+
+    document.addEventListener('DOMContentLoaded', loadAllCharts);
+    document.body.addEventListener('htmx:afterSettle', loadAllCharts);
+
+    // Handle show/hide data button clicks
+    function setupDataButtons() {
+        document.querySelectorAll('.show-data-button').forEach(button => {
+            // Remove any existing listeners to avoid duplicates
+            button.replaceWith(button.cloneNode(true));
+        });
+
+        document.querySelectorAll('.show-data-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const indicatorId = button.dataset.indicatorId;
+                const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
+
+                if (!tableContainer) {
+                    console.error('Table container not found for indicator:', indicatorId);
+                    return;
+                }
+
+                const isCurrentlyHidden = tableContainer.style.display === 'none' || !tableContainer.style.display;
+
+                // Close all other drawers first
+                document.querySelectorAll('.data-drawer').forEach(drawer => {
+                    drawer.style.display = 'none';
+                });
+                document.querySelectorAll('.show-data-button').forEach(btn => {
+                    btn.textContent = 'Show data';
+                });
+
+                // Toggle the clicked one
+                if (isCurrentlyHidden) {
+                    tableContainer.style.display = 'block';
+                    button.textContent = 'Hide data';
+                }
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', setupDataButtons);
+    document.body.addEventListener('htmx:afterSettle', setupDataButtons);
+</script>
