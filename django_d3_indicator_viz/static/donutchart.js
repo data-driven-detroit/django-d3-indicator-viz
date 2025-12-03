@@ -69,8 +69,8 @@ export default class DonutChart {
             this.chart.setOption({
                 title: {
                     text: 
-                        '{normal|' + data.name + ' ' + '}'
-                        + '{bold|' + formatData(data.value, this.indicator.formatter, true) 
+                        '{normal|' + data.name + ' '
+                        + formatData(data.value, this.indicator.formatter, true) 
                         + (showAggregateNotice(data) ? '*' : '') + '}'
                 },
                 legend: {
@@ -131,7 +131,7 @@ export default class DonutChart {
             // set the title to the hovered item or the previously selected item
             title: {
                 text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true) 
-                        + (showAggregateNotice(dataItem) ? '*' : '') + '}'
+                        + (showAggregateNotice(dataItem) ? '*' : '')
             },
             legend: {
                 // set the legend opacity to 1 for the hovered item or the previously selected item
