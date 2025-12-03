@@ -639,6 +639,11 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     # Collect all locations for lookup (primary + parents + siblings)
     all_locations = [location] + list(parent_locations) + list(sibling_locations)
 
+    # Serialize location geometry
+    location_geojson = serialize(
+        "geojson", [location], geometry_field="geometry", fields=("id", "name")
+    )
+
     # This is messy, but these are needed globally and can't be called from within
     # the tree. These are expected to be complete even down to the charts layer ...
     filter_options = IndicatorFilterOption.objects.all()
@@ -688,8 +693,44 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
             "location_types_json": json.dumps(LocationTypeSerializer(location_types, many=True).data),
             "locations_json": json.dumps(LocationSerializer(all_locations, many=True).data),
             "header_data": header_data,
+            "location": location,
+            "location_type": location_type,
+            "parent_locations": parent_locations,
+            "location_geojson": location_geojson,
+            "sibling_locations_geojson": json.dumps({"type": "FeatureCollection", "features": []}),  # Empty initially, loaded later
+            "is_custom_location": False,
         }
     )
+
+
+def sibling_locations_geojson(request, location_id):
+    """
+    Returns the sibling locations geojson for a given location.
+    This is a separate endpoint to avoid loading heavy geojson data on initial page load.
+    """
+    try:
+        location = Location.objects.get(id=location_id)
+        location_type = location.location_type
+
+        # Get sibling locations (same type, excluding current location)
+        sibling_locations = Location.objects.filter(
+            location_type_id=location_type.id
+        ).exclude(id=location_id)
+
+        sibling_locations_geojson = serialize(
+            "geojson",
+            sibling_locations,
+            geometry_field="geometry",
+            fields=("id", "name", "location_type"),
+        )
+
+        return HttpResponse(sibling_locations_geojson, content_type="application/json")
+    except Location.DoesNotExist:
+        return HttpResponse(
+            json.dumps({"type": "FeatureCollection", "features": []}),
+            content_type="application/json",
+            status=404
+        )
 
 
 def next_section(request):
