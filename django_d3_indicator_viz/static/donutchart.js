@@ -223,11 +223,13 @@ export default class DonutChart {
                     rich: {
                         normal: {
                             fontWeight: 'normal',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16),
+                            verticalAlign: 'middle',
                         },
                         bold: {
                             fontWeight: 'bold',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16),
+                            verticalAlign: 'middle',
                         }
                     }
                 },
