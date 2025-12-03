@@ -223,11 +223,11 @@ export default class DonutChart {
                     rich: {
                         normal: {
                             fontWeight: 'normal',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
                         },
                         bold: {
                             fontWeight: 'bold',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
                         }
                     }
                 },
