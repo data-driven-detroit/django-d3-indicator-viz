@@ -132,7 +132,6 @@ export default class DonutChart {
             title: {
                 text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true) 
                         + (showAggregateNotice(dataItem) ? '*' : '') + '}'
-                ].join(' '),
             },
             legend: {
                 // set the legend opacity to 1 for the hovered item or the previously selected item
