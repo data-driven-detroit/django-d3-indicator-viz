@@ -605,14 +605,10 @@ def __build_indicator_values_dict_list(indicator_values):
     ]
 
 
-def profile(request, location_id):
+def profile(request, location_id, template_name="django_d3_indicator_viz/profile.html"):
     location = Location.objects.get(id=location_id)
     location_type = location.location_type
     parent_location_types = location.location_type.parent_location_types.all()
-
-    # Parent locations are of a different type than the profile location, 
-    # set up as a parent type of the profile location's type, have a larger 
-    # area, and contain the profile location's center point
 
     # limit to the two closest parent locations
     parent_locations = Location.objects.extra(
@@ -633,6 +629,7 @@ def profile(request, location_id):
     )[:2]
 
     # Get sibling locations (same type, excluding current location)
+    # This carries the geometry so can be a heavy pull
     sibling_locations = Location.objects.filter(
         location_type_id=location_type.id
     ).exclude(id=location_id)
@@ -642,13 +639,45 @@ def profile(request, location_id):
     # Collect all locations for lookup (primary + parents + siblings)
     all_locations = [location] + list(parent_locations) + list(sibling_locations)
 
-    # Serialize reference data needed by all charts
+    # This is messy, but these are needed globally and can't be called from within
+    # the tree. These are expected to be complete even down to the charts layer ...
     filter_options = IndicatorFilterOption.objects.all()
     color_scales = ColorScale.objects.all()
     location_types = LocationType.objects.all()
 
+    # Indicators with no category will be shown in the header area
+    # They have no category and hence to section so they don't get pulled with
+    # the first-section query.
+    header_data_visuals = list(
+        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
+        .select_related("indicator", "source")
+        .annotate(
+            header_value=Subquery(
+                IndicatorValue.objects.filter(
+                    indicator_id=OuterRef("indicator_id"),
+                    source_id=OuterRef("source_id"),
+                    start_date=OuterRef("start_date"),
+                    end_date=OuterRef("end_date"),
+                    location_id=location.id,
+                ).values("value")[:1]
+            )
+        )
+        .order_by("indicator__sort_order")
+    )
+    
+    # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
+    header_data = [
+        {
+            "indicator_name": hdv.indicator.name,
+            "source_name": hdv.source.name,
+            "year": str(hdv.end_date.year) if hdv.end_date else None,
+            "value": hdv.header_value if hdv.header_value else None,
+        }
+        for hdv in header_data_visuals
+    ]
+
     return render(
-        request, "django_d3_indicator_viz/profile.html",
+        request, template_name,
         {
             "first_section": first_section,
             "primary_loc_id": location_id,
@@ -658,6 +687,7 @@ def profile(request, location_id):
             "color_scales_json": json.dumps(ColorScaleSerializer(color_scales, many=True).data),
             "location_types_json": json.dumps(LocationTypeSerializer(location_types, many=True).data),
             "locations_json": json.dumps(LocationSerializer(all_locations, many=True).data),
+            "header_data": header_data,
         }
     )
 
@@ -670,7 +700,7 @@ def next_section(request):
         return HTTPResponse("")
 
     return render(
-        request, "section.html",
+        request, "django_d3_indicator_viz/section.html",
         {
             "section": next_section,
         }
