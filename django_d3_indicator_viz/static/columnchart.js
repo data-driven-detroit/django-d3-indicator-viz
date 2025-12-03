@@ -98,7 +98,7 @@ export default class ColumnChart {
             show: window.innerWidth >= 768 ? true : false,
             boundaryGap: true,
             axisLabel: {
-                fontSize: (this.chartOptions.textStyle?.fontSize || 16) + 'px',
+                fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                 interval: 0,
                 width: window.innerWidth >= 768 ? 110 : 0,
                 overflow: 'break',
