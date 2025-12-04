@@ -95,7 +95,7 @@ export default class ColumnChart {
             data: seriesData[0].map(
                 item => this.filterOptions.find(f => f.id === item.filter_option_id).name
             ),
-            show: window.innerWidth >= 768 ? true : false,
+            show: window.innerWidth >= 768 ? true : true,
             boundaryGap: true,
             axisLabel: {
                 fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
@@ -170,7 +170,7 @@ export default class ColumnChart {
                     colorBy: 'data',
                     data: data,
                     label: {
-                        show: false,
+                        show: true,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
