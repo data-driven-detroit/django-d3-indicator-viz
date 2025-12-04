@@ -68,10 +68,11 @@ export default class DonutChart {
             let data = this.chart.getOption().series[0].data[params.selected[0].dataIndex[0]];
             this.chart.setOption({
                 title: {
-                    text: 
-                        '{normal|' + data.name + ' '
-                        + formatData(data.value, this.indicator.formatter, true) 
-                        + (showAggregateNotice(data) ? '*' : '') + '}'
+                    text: [
+                        '{normal|' + data.name + '}',
+                        '{bold|' + formatData(data.value, this.indicator.formatter, true) 
+                            + (showAggregateNotice(data) ? '*' : '') + '}'
+                    ].join(' '),
                 },
                 legend: {
                     data: this.option.series[0].data.map((item, index) => {
@@ -130,8 +131,11 @@ export default class DonutChart {
         this.chart.setOption({
             // set the title to the hovered item or the previously selected item
             title: {
-                text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true) 
-                        + (showAggregateNotice(dataItem) ? '*' : '')
+                text: [
+                    '{normal|' + dataItem.name + '}',
+                    '{bold|' + formatData(dataItem.value, this.indicator.formatter, true) 
+                        + (showAggregateNotice(dataItem) ? '*' : '') + '}'
+                ].join(' '),
             },
             legend: {
                 // set the legend opacity to 1 for the hovered item or the previously selected item
@@ -219,11 +223,11 @@ export default class DonutChart {
                     rich: {
                         normal: {
                             fontWeight: 'normal',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16),
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
                         },
                         bold: {
                             fontWeight: 'bold',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16),
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16)
                         }
                     }
                 },
