@@ -101,7 +101,6 @@ export default class ColumnChart {
                 fontSize: (this.chartOptions.textStyle?.fontSize || 16) + 'px',
                 interval: 0,
                 width: window.innerWidth >= 768 ? 110 : 0,
-                max-width: 150 + 'px',
                 overflow: 'wrap',
                 // rotate the axis label 45% if the screen width is less than 1720px
                 rotate: window.innerWidth >= 1200 && window.innerWidth < 1720 && seriesData[0].length > 12 ? 45 : 0
