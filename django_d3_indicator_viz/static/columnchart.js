@@ -170,10 +170,9 @@ export default class ColumnChart {
                     colorBy: 'data',
                     data: data,
                     label: {
-                        show: true,
+                        show: false,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
-                        width: 100 + 'px',
                         formatter: (params) =>{
                             return formatData(params.data.value, this.indicator.formatter, true) 
                                 + (showAggregateNotice(params.data) ? '*' : '');
