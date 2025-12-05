@@ -1,19 +1,17 @@
 {% load humanize madlibs %}
 
 <article id="{{ section.anchor }}">
-    <header class="section-contents">
+    <header class="section-contents"
+        hx-get="{% url "next_section" %}?after={{ section.sort_order }}"
+        hx-trigger="revealed"
+        hx-swap="afterend"
+        hx-target="closest article"
+    >
         <h1>{{ section.name }}</h1>
     </header>
     {% for category in section.category_set.all %}
     <div class="section-container">
-        <section class="stat-row"
-            {% if forloop.last %}
-            hx-get="{% url "next_section" %}?after={{ section.sort_order }}"
-            hx-trigger="revealed"
-            hx-swap="afterend"
-            hx-target="closest article"
-            {% endif %}
-        >
+        <section class="stat-row">
             <div class="section-intro">
                 <h2 class="header-for-columns">
                     <a class="permalink section" href="#{{ category.anchor }}" id="{{ category.anchor }}" title="Permalink">
@@ -54,7 +52,7 @@
         {% with data_visual=indicator.indicatordatavisual_set.first %}
         <section id="indicator-{{ indicator.id }}-datatable-container" data-category-id="{{ category.id }}" data-indicator-id="{{ indicator.id }}" class="data-drawer" style="display: none;">
             <h3 class="chart-title">
-                <span>{{ indicator.name }} ({{ data_visual.end_date.year }} {{ data_visual.source.name }})</span>
+                <span>{{ indicator.name }} ({{ data_visual.end_date.year }} {% with primary_source=data_visual.get_primary_source %}{{ primary_source.name|default:"" }}{% endwith %})</span>
                 <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Hide data</button>
             </h3>
             <table class="full-width">

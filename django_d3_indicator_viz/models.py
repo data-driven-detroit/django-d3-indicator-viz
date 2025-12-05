@@ -406,14 +406,44 @@ class ColorScale(models.Model):
         db_table = "color_scale"
 
 
+class IndicatorDataVisualSource(models.Model):
+    """
+    Intermediate model to maintain priority order for data visual sources.
+    Allows multiple sources per data visual with fallback priority.
+    """
+
+    # The data visual this source belongs to
+    data_visual = models.ForeignKey('IndicatorDataVisual', on_delete=models.CASCADE)
+
+    # The source of the indicator data
+    source = models.ForeignKey(IndicatorSource, on_delete=models.CASCADE)
+
+    # Priority/order of this source (lower number = higher priority, 0 = primary)
+    priority = models.PositiveIntegerField(
+        default=0,
+        help_text="Source priority: 0 = primary source, 1+ = fallback sources in order"
+    )
+
+    class Meta:
+        db_table = "indicator_data_visual_source"
+        ordering = ['priority']
+        unique_together = ('data_visual', 'source')
+
+    def __str__(self):
+        return f"{self.data_visual.indicator.name} - {self.source.name} (priority {self.priority})"
+
+
 class IndicatorDataVisual(models.Model):
     """
     Represents a data visual for an indicator, including its type, source, date range, and other attributes.
     """
 
-    # The source of the indicator data visual, such as "Census", "CDC", etc.
-    source = models.ForeignKey(
-        IndicatorSource, on_delete=models.CASCADE, null=True, blank=True
+    # The sources for this data visual, ordered by priority (primary + fallbacks)
+    sources = models.ManyToManyField(
+        IndicatorSource,
+        through='IndicatorDataVisualSource',
+        related_name='data_visuals',
+        help_text="Ordered list of data sources. First source is primary, rest are fallbacks."
     )
 
     # The start for the indicator data visual, representing the time period it covers
@@ -446,6 +476,58 @@ class IndicatorDataVisual(models.Model):
 
     # The color scale to use for the data visual
     color_scale = models.ForeignKey(ColorScale, on_delete=models.CASCADE, null=True, blank=True)
+
+    def get_primary_source(self):
+        """Returns the primary (priority 0) source, or None if no sources."""
+        source_rel = self.indicatordatavisualsource_set.filter(priority=0).first()
+        return source_rel.source if source_rel else None
+
+    def get_ordered_sources(self):
+        """Returns all sources ordered by priority."""
+        return [rel.source for rel in self.indicatordatavisualsource_set.all().order_by('priority')]
+
+    def resolve_source_for_location(self, location_id):
+        """
+        Returns the best available source for a specific location.
+        Tries sources in priority order, returns first one with data.
+        """
+        for source in self.get_ordered_sources():
+            has_data = IndicatorValue.objects.filter(
+                indicator_id=self.indicator_id,
+                source_id=source.id,
+                start_date=self.start_date,
+                end_date=self.end_date,
+                location_id=location_id,
+            ).exists()
+
+            if has_data:
+                return source
+
+        # No data found for any source, return primary anyway
+        return self.get_primary_source()
+
+    def to_dict_with_resolved_source(self, location_id):
+        """
+        Returns a dictionary representation with resolved source for a location.
+        Used by views to build data_visuals context.
+        """
+        resolved_source = self.resolve_source_for_location(location_id)
+
+        if not resolved_source:
+            return None
+
+        return {
+            "id": self.id,
+            "source_id": resolved_source.id,
+            "source__name": resolved_source.name,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "indicator_id": self.indicator_id,
+            "data_visual_type": self.data_visual_type,
+            "location_comparison_type": self.location_comparison_type,
+            "columns": self.columns,
+            "color_scale_id": self.color_scale_id,
+        }
 
     def to_json(self):
         """Returns JSON representation of this data visual for use in templates."""

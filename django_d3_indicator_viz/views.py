@@ -73,7 +73,7 @@ def build_profile_context(request, location_slug, indicator_value_aggregator):
         color_scales,
         data_visuals,
         filter_options,
-    ) = __build_common_profile_context(location_type, parent_locations)
+    ) = __build_common_profile_context(location_type, parent_locations, location.id)
 
     return {
         "sections": sections,
@@ -98,7 +98,7 @@ def build_profile_context(request, location_slug, indicator_value_aggregator):
     }
 
 
-def __build_common_profile_context(location_type, parent_locations):
+def __build_common_profile_context(location_type, parent_locations, location_id=None):
     sections = Section.objects.all().order_by("sort_order").values()
     categories = Category.objects.all().order_by("sort_order").values()
     indicators = Indicator.objects.all().order_by("sort_order").values()
@@ -106,22 +106,17 @@ def __build_common_profile_context(location_type, parent_locations):
     location_types = LocationType.objects.all().values()
 
     color_scales = ColorScale.objects.all().order_by("name").values()
-    data_visuals = (
-        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False)
-        .order_by("indicator__sort_order")
-        .values(
-            "id",
-            "source_id",
-            "source__name",
-            "start_date",
-            "end_date",
-            "indicator_id",
-            "data_visual_type",
-            "location_comparison_type",
-            "columns",
-            "color_scale_id",
-        )
-    )
+
+    # Get data visuals with resolved sources based on data availability
+    data_visuals = [
+        dv.to_dict_with_resolved_source(location_id)
+        for dv in IndicatorDataVisual.objects.filter(indicator__category_id__isnull=False)
+            .prefetch_related('indicatordatavisualsource_set__source')
+            .order_by("indicator__sort_order")
+    ]
+    # Filter out any that returned None (no sources configured)
+    data_visuals = [dv for dv in data_visuals if dv is not None]
+
     filter_options = (
         IndicatorFilterOption.objects.all().order_by("sort_order").values()
     )
@@ -199,8 +194,9 @@ def __build_standard_profile_context(location):
         select iv.*, l.name, idv.*, i.*, ifo.*
         from indicator_value iv
             join location l on iv.location_id = l.id
-            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id and iv.source_id = idv.source_id
             join indicator i on iv.indicator_id = i.id
+            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id
+            join indicator_data_visual_source idvs on idvs.data_visual_id = idv.id and idvs.source_id = iv.source_id
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where (iv.location_id = %s
             or (idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
@@ -221,12 +217,17 @@ def __build_standard_profile_context(location):
     # indicators with no category will be shown in the header area
     header_data_visuals = list(
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
-        .select_related("indicator", "source")
+        .select_related("indicator")
+        .prefetch_related('indicatordatavisualsource_set__source')
         .annotate(
             header_value=Subquery(
                 IndicatorValue.objects.filter(
                     indicator_id=OuterRef("indicator_id"),
-                    source_id=OuterRef("source_id"),
+                    source_id=Subquery(
+                        IndicatorDataVisualSource.objects.filter(
+                            data_visual_id=OuterRef("id")
+                        ).order_by('priority').values('source_id')[:1]
+                    ),
                     start_date=OuterRef("start_date"),
                     end_date=OuterRef("end_date"),
                     location_id=location.id,
@@ -239,7 +240,7 @@ def __build_standard_profile_context(location):
     header_data = [
         {
             "indicator_name": hdv.indicator.name,
-            "source_name": hdv.source.name,
+            "source_name": hdv.get_primary_source().name if hdv.get_primary_source() else None,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
             "value": hdv.header_value if hdv.header_value else None,
         }
@@ -329,8 +330,9 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
         select *
         from indicator_value iv
             join location l on iv.location_id = l.id
-            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id and iv.source_id = idv.source_id
             join indicator i on iv.indicator_id = i.id
+            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id
+            join indicator_data_visual_source idvs on idvs.data_visual_id = idv.id and idvs.source_id = iv.source_id
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where iv.location_id = any(%s)
             and (iv.start_date = idv.start_date or idv.data_visual_type = 'line')
@@ -343,8 +345,9 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
         select *
         from indicator_value iv
             join location l on iv.location_id = l.id
-            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id and iv.source_id = idv.source_id
             join indicator i on iv.indicator_id = i.id
+            join indicator_data_visual idv on iv.indicator_id = idv.indicator_id
+            join indicator_data_visual_source idvs on idvs.data_visual_id = idv.id and idvs.source_id = iv.source_id
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where ((idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
             or (idv.location_comparison_type = 'parents' and l.id = any(%s)))
@@ -373,14 +376,14 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
     # indicators with no category will be shown in the header area
     header_data_visuals = IndicatorDataVisual.objects.filter(
         indicator__category_id__isnull=True
-    ).order_by("indicator__sort_order")
+    ).prefetch_related('indicatordatavisualsource_set__source').order_by("indicator__sort_order")
     header_data = []
     for hdv in header_data_visuals:
         indicators = Indicator.objects.filter(id=hdv.indicator_id)
         indicator_values = IndicatorValue.objects.filter(
             indicator_id=hdv.indicator_id,
             location_id__in=location.locations.values_list("id", flat=True),
-            source_id=hdv.source_id,
+            source_id=hdv.get_primary_source().id if hdv.get_primary_source() else None,
             start_date=hdv.start_date,
             end_date=hdv.end_date,
         )
@@ -394,7 +397,7 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
         header_data.append(
             {
                 "indicator_name": hdv.indicator.name,
-                "source_name": hdv.source.name,
+                "source_name": hdv.get_primary_source().name if hdv.get_primary_source() else None,
                 "year": str(hdv.end_date.year) if hdv.end_date else None,
                 "value": aggregated_value.value if aggregated_value else None,
             }
@@ -738,13 +741,11 @@ def next_section(request):
     next_section = Section.objects.filter(sort_order__gt=after).first()
 
     if not next_section:
-        return HTTPResponse("")
+        return HttpResponse("")
 
     return render(
         request, "django_d3_indicator_viz/section.html",
-        {
-            "section": next_section,
-        }
+        {"section": next_section}
     )
 
 
@@ -757,11 +758,24 @@ class IndicatorSerializer(serializers.ModelSerializer):
 
 
 class IndicatorDataVisualSerializer(serializers.ModelSerializer):
+    source_id = serializers.SerializerMethodField()
+    source_name = serializers.SerializerMethodField()
+
     class Meta:
         model = IndicatorDataVisual
-        fields = ['id', 'indicator_id', 'source_id', 'data_visual_type',
+        fields = ['id', 'indicator_id', 'source_id', 'source_name', 'data_visual_type',
                   'location_comparison_type', 'start_date', 'end_date',
                   'color_scale_id', 'columns']
+
+    def get_source_id(self, obj):
+        """Returns the primary source ID (priority 0)."""
+        primary_source = obj.get_primary_source()
+        return primary_source.id if primary_source else None
+
+    def get_source_name(self, obj):
+        """Returns the primary source name."""
+        primary_source = obj.get_primary_source()
+        return primary_source.name if primary_source else None
 
 
 class ColorScaleSerializer(serializers.ModelSerializer):

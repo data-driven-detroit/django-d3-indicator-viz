@@ -42,7 +42,8 @@
                 document.querySelectorAll('.data-drawer').forEach(drawer => {
                     drawer.style.display = 'none';
                 });
-                document.querySelectorAll('.show-data-button').forEach(btn => {
+                // Reset button text for buttons NOT inside drawers
+                document.querySelectorAll('.show-data-button:not(.data-drawer .show-data-button)').forEach(btn => {
                     btn.textContent = 'Show data';
                 });
 

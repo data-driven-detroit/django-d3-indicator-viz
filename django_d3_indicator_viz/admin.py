@@ -188,6 +188,13 @@ class ColorScaleAdmin(ImportExportMixin, HiddenFromIndex):
 admin.site.register(ColorScale, ColorScaleAdmin)
 
 
+class IndicatorDataVisualSourceInline(SortableTabularInline):
+    model = IndicatorDataVisualSource
+    ordering = ["priority"]
+    extra = 1
+    fields = ["source", "priority"]
+
+
 class IndicatorDataVisualAdmin(ImportExportMixin, HiddenFromIndex):
     list_display = [
         "id",
@@ -195,10 +202,17 @@ class IndicatorDataVisualAdmin(ImportExportMixin, HiddenFromIndex):
         "data_visual_type",
         "start_date",
         "end_date",
-        "source",
+        "primary_source_display",
     ]
     readonly_fields = ("id",)
-    ordering = ["indicator", "start_date", "end_date", "source"]
+    ordering = ["indicator", "start_date", "end_date"]
+    inlines = [IndicatorDataVisualSourceInline]
+
+    def primary_source_display(self, obj):
+        primary = obj.get_primary_source()
+        return primary.name if primary else "-"
+
+    primary_source_display.short_description = "Primary Source"
 
 
 admin.site.register(IndicatorDataVisual, IndicatorDataVisualAdmin)
