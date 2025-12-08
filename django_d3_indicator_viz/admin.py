@@ -195,7 +195,7 @@ class IndicatorDataVisualSourceInline(SortableTabularInline):
     fields = ["source", "priority"]
 
 
-class IndicatorDataVisualAdmin(ImportExportMixin, HiddenFromIndex):
+class IndicatorDataVisualAdmin(ImportExportMixin, SortableAdminBase, HiddenFromIndex):
     list_display = [
         "id",
         "indicator",
