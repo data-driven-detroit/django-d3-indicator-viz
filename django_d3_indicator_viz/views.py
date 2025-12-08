@@ -225,7 +225,7 @@ def __build_standard_profile_context(location):
                     indicator_id=OuterRef("indicator_id"),
                     source_id=Subquery(
                         IndicatorDataVisualSource.objects.filter(
-                            data_visual_id=OuterRef("id")
+                            data_visual_id=OuterRef(OuterRef("id"))
                         ).order_by('priority').values('source_id')[:1]
                     ),
                     start_date=OuterRef("start_date"),
