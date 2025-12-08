@@ -658,12 +658,17 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     # the first-section query.
     header_data_visuals = list(
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
-        .select_related("indicator", "source")
+        .select_related("indicator")
+        .prefetch_related('indicatordatavisualsource_set__source')
         .annotate(
             header_value=Subquery(
                 IndicatorValue.objects.filter(
                     indicator_id=OuterRef("indicator_id"),
-                    source_id=OuterRef("source_id"),
+                    source_id=Subquery(
+                        IndicatorDataVisualSource.objects.filter(
+                            data_visual_id=OuterRef(OuterRef("id"))
+                        ).order_by('priority').values('source_id')[:1]
+                    ),
                     start_date=OuterRef("start_date"),
                     end_date=OuterRef("end_date"),
                     location_id=location.id,
@@ -677,7 +682,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     header_data = [
         {
             "indicator_name": hdv.indicator.name,
-            "source_name": hdv.source.name,
+            "source_name": hdv.get_primary_source().name if hdv.get_primary_source() else None,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
             "value": hdv.header_value if hdv.header_value else None,
         }
