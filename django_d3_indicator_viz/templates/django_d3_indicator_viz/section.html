@@ -2,7 +2,7 @@
 
 <article id="{{ section.anchor }}">
     <header class="section-contents"
-        hx-get="{% url "next_section" %}?after={{ section.sort_order }}"
+        hx-get="{% url "next_section" %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}&sibling_loc_ids={{ sibling_loc_ids }}"
         hx-trigger="revealed"
         hx-swap="afterend"
         hx-target="closest article"
@@ -10,7 +10,11 @@
         <h1>{{ section.name }}</h1>
     </header>
     {% for category in section.category_set.all %}
-    <div class="section-container">
+    <div class="section-container"
+         data-category-id="{{ category.id }}"
+         {% if category_scales %}{% with scale=category_scales|dict_get:category.id %}{% if scale %}
+         data-axis-scale='{{ scale|tojson }}'
+         {% endif %}{% endwith %}{% endif %}>
         <section class="stat-row">
             <div class="section-intro">
                 <h2 class="header-for-columns">

@@ -19,10 +19,11 @@ export default class ColumnChart {
      * @param {Array} colorScales the color scales
      * @param {String} dataVisualComparisonMode the mode for displaying data visual comparisons
      * @param {Object} chartOptions the chart options for echarts
+     * @param {Object} axisScale optional shared axis scale {min, max}
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions, 
-        colorScales, dataVisualComparisonMode, chartOptions = {}) {
-        
+    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions,
+        colorScales, dataVisualComparisonMode, chartOptions = {}, axisScale = null) {
+
         this.visual = visual;
         this.container = container;
         this.indicator = indicator;
@@ -34,6 +35,7 @@ export default class ColumnChart {
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
         this.dataVisualComparisonMode = dataVisualComparisonMode;
+        this.axisScale = axisScale;
         this.chart = null;
 
         this.draw();
@@ -78,6 +80,9 @@ export default class ColumnChart {
             this.container.style.height = (seriesData.length * seriesData[0].length * 30) 
                 + (seriesData.length * 30) 
                 + 'px';
+        } else {
+            // Desktop screens >= 1200px
+            this.container.style.height = '200px';
         }
         if (window.innerWidth < 1200) {
             seriesData = seriesData.map(series => series.reverse());
@@ -98,10 +103,10 @@ export default class ColumnChart {
             show: window.innerWidth >= 768 ? true : false,
             boundaryGap: true,
             axisLabel: {
-                fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
+                fontSize: (this.chartOptions.textStyle?.fontSize || 12) * 0.75 + 'px',
                 interval: 0,
-                width: window.innerWidth >= 768 ? 110 : 0,
-                overflow: 'break',
+                width: 80, // window.innerWidth >= 768 ? 120 : 65,
+                overflow: 'break', // break, breakAll, ... with another 
                 // rotate the axis label 45% if the screen width is less than 1720px
                 rotate: window.innerWidth >= 1200 && window.innerWidth < 1720 && seriesData[0].length > 12 ? 45 : 0
             },
@@ -120,10 +125,20 @@ export default class ColumnChart {
             position: 'right',
             show: false
         };
+
+        if (this.indicator.indicator_type === 'percentage') {
+            valueAxis.min = 0;
+            valueAxis.max = 100;
+        } else if (this.axisScale) {
+            valueAxis.min = this.axisScale.min;
+            valueAxis.max = this.axisScale.max;
+        }
         let grid = { containLabel: true};
         if (window.innerWidth >= 1200) {
             grid.left = '0px';
             grid.right = '0px';
+            grid.top = '10px';
+            grid.bottom = '10px';
         } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
             grid.top = '20px';
             grid.bottom = '20px';
@@ -133,7 +148,7 @@ export default class ColumnChart {
             grid.left = '0px';
         }
         let option = {
-            ...this.chartOptions,
+            ...this.chartOptions, // This upacks the options set in the chartloader.js file
             color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
@@ -169,6 +184,8 @@ export default class ColumnChart {
                     type: 'bar',
                     colorBy: 'data',
                     data: data,
+                    // NOTE (Mike): Sean, this is where you can adjust the width of bars
+                    barWidth: '85%',
                     label: {
                         show: true,
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
@@ -182,7 +199,7 @@ export default class ColumnChart {
                         disabled: true
                     },
                     cursor: 'default',
-                    
+
                 }
             })
         }

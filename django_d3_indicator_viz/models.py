@@ -70,6 +70,80 @@ class Category(models.Model):
     # An anchor for linking to this category in a web page
     anchor = models.TextField(null=True, blank=True)
 
+    def get_axis_scale(self, location_id, parent_location_ids=None, sibling_location_ids=None):
+        """
+        Calculate shared Y-axis scale for all line/column charts in this category.
+
+        Args:
+            location_id: Primary location ID
+            parent_location_ids: List of parent location IDs (optional)
+            sibling_location_ids: List of sibling location IDs (optional)
+
+        Returns:
+            Dict with 'min' and 'max' keys, or None if sharing disabled or no data.
+        """
+        if not self.share_axes:
+            return None
+
+        # Get all indicators in this category with line/column visuals
+        from django_d3_indicator_viz.models import IndicatorDataVisual
+        indicators = self.indicator_set.filter(
+            indicatordatavisual__data_visual_type__in=['line', 'column']
+        ).distinct()
+
+        if not indicators.exists():
+            return None
+
+        # Collect all location IDs to query based on comparison types
+        location_ids = [location_id]
+
+        # Check each indicator's data visual for comparison type
+        for indicator in indicators:
+            dv = indicator.indicatordatavisual_set.first()
+            if not dv:
+                continue
+
+            if dv.location_comparison_type == 'parents' and parent_location_ids:
+                location_ids.extend(parent_location_ids)
+            elif dv.location_comparison_type == 'siblings' and sibling_location_ids:
+                location_ids.extend(sibling_location_ids)
+
+        # Remove duplicates
+        location_ids = list(set(location_ids))
+
+        # Query all indicator values for these indicators and locations
+        from django_d3_indicator_viz.models import IndicatorValue
+        values = IndicatorValue.objects.filter(
+            indicator__in=indicators,
+            location_id__in=location_ids
+        ).values_list('value', flat=True)
+
+        # Filter out None values
+        values = [v for v in values if v is not None]
+
+        if not values:
+            return None
+
+        # Calculate min/max
+        min_val = min(values)
+        max_val = max(values)
+
+        # Handle edge case where all values are the same
+        if min_val == max_val:
+            if min_val == 0:
+                return {'min': -1, 'max': 1}
+            else:
+                return {'min': min_val * 0.9, 'max': max_val * 1.1}
+
+        # Add 10% padding
+        range_val = max_val - min_val
+        padding = range_val * 0.1
+
+        return {
+            'min': min_val - padding,
+            'max': max_val + padding
+        }
+
     def __str__(self):
         return self.name
 

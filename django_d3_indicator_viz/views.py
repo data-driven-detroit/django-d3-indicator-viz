@@ -743,9 +743,33 @@ def next_section(request):
     if not next_section:
         return HttpResponse("")
 
+    # Get location context from query parameters
+    primary_loc_id = request.GET.get('primary_loc_id')
+    parent_loc_ids = request.GET.get('parent_loc_ids', '').split(',') if request.GET.get('parent_loc_ids') else []
+    sibling_loc_ids = request.GET.get('sibling_loc_ids', '').split(',') if request.GET.get('sibling_loc_ids') else []
+
+    # Filter out empty strings
+    parent_loc_ids = [loc_id for loc_id in parent_loc_ids if loc_id]
+    sibling_loc_ids = [loc_id for loc_id in sibling_loc_ids if loc_id]
+
+    # Calculate axis scales for each category in this section
+    category_scales = {}
+    if primary_loc_id:
+        for category in next_section.category_set.all():
+            scale = category.get_axis_scale(
+                primary_loc_id,
+                parent_location_ids=parent_loc_ids,
+                sibling_location_ids=sibling_loc_ids
+            )
+            if scale:
+                category_scales[category.id] = scale
+
     return render(
         request, "django_d3_indicator_viz/section.html",
-        {"section": next_section}
+        {
+            "section": next_section,
+            "category_scales": category_scales
+        }
     )
 
 

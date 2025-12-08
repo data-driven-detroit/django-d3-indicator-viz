@@ -10,7 +10,7 @@
     }
 </script>
 <main>
-    {% include "django_d3_indicator_viz/section.html" with section=first_section %}
+    {% include "django_d3_indicator_viz/section.html" with section=first_section primary_loc_id=primary_loc_id parent_loc_ids=parent_loc_ids sibling_loc_ids=sibling_loc_ids %}
     {% block content %}{% endblock %}
 </main>
 <script type="module">

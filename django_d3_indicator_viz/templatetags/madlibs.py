@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from django import template
 from django.utils.safestring import mark_safe
+import json
 
 
 register = template.Library()
@@ -66,3 +67,22 @@ def stat_type_to_number_noun(stat_type):
     elif stat_type == "percentage":
         return "rate"
     return "figure"
+
+
+@register.filter
+def tojson(value):
+    """
+    Convert a Python object to JSON string for use in data attributes.
+    """
+    return mark_safe(json.dumps(value))
+
+
+@register.filter
+def dict_get(dictionary, key):
+    """
+    Get a value from a dictionary using a variable key.
+    Usage: {{ mydict|dict_get:mykey }}
+    """
+    if dictionary is None:
+        return None
+    return dictionary.get(key)

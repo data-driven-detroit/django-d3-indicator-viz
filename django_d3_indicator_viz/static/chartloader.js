@@ -126,6 +126,7 @@ export async function loadChart(container) {
         }
 
         // Chart options
+        // NOTE (MIKE): Sean -- this is where a lot of options can be set.
         const chartOptions = {
             animation: false,
             textStyle: {
@@ -134,6 +135,21 @@ export async function loadChart(container) {
                 color: '#000'
             }
         };
+
+        // Check if this chart's category has a shared axis scale
+        let axisScale = null;
+        const categoryContainer = container.closest('[data-category-id]');
+        if (categoryContainer && categoryContainer.dataset.axisScale) {
+            try {
+                const categoryScale = JSON.parse(categoryContainer.dataset.axisScale);
+                // Only apply to line and column charts
+                if (['line', 'column'].includes(visual.data_visual_type)) {
+                    axisScale = categoryScale;
+                }
+            } catch (e) {
+                console.error('Error parsing axis scale:', e);
+            }
+        }
 
         // Get table container if it exists
         const tableContainer = getTableContainer(indicator.id);
@@ -166,7 +182,8 @@ export async function loadChart(container) {
                     filterOptions,
                     colorScales,
                     visual.location_comparison_type,
-                    chartOptions
+                    chartOptions,
+                    axisScale
                 );
                 if (tableContainer) {
                     new DataTable(
@@ -195,7 +212,8 @@ export async function loadChart(container) {
                     filterOptions,
                     locationTypes,
                     colorScales,
-                    chartOptions
+                    chartOptions,
+                    axisScale
                 );
                 if (tableContainer) {
                     new DataTable(
