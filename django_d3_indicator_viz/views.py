@@ -11,6 +11,7 @@ from .models import (
     Category,
     ColorScale,
     IndicatorDataVisual,
+    IndicatorDataVisualSource,
     Indicator,
     IndicatorValue,
     Location,
