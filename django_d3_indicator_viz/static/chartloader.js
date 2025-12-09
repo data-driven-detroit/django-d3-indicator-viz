@@ -58,8 +58,12 @@ export async function loadChart(container) {
 
     // For line charts, fetch all dates; for others, filter by specific dates
     if (visual.data_visual_type !== 'line') {
-        baseParams.start_date = visual.start_date;
-        baseParams.end_date = visual.end_date;
+        if (visual.start_date) {
+            baseParams.start_date = visual.start_date;
+        }
+        if (visual.end_date) {
+            baseParams.end_date = visual.end_date;
+        }
     }
 
     const primaryParams = new URLSearchParams({
