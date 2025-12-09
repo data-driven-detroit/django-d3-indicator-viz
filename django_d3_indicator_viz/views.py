@@ -660,7 +660,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     # Indicators with no category will be shown in the header area
     # They have no category and hence to section so they don't get pulled with
     # the first-section query.
-    header_data_visuals = list(
+    header_data_visuals = (
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
@@ -689,6 +689,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     with open("header_data_query.sql", "w") as f:
         f.write(header_data_visuals.query)
     
+
     # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
     header_data = [
         {
