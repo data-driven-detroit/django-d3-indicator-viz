@@ -202,7 +202,9 @@ def __build_standard_profile_context(location):
         where (iv.location_id = %s
             or (idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
             or (idv.location_comparison_type = 'parents' and l.id = any(%s)))
-            and (iv.start_date = idv.start_date or idv.data_visual_type = 'line')
+            and (idv.data_visual_type = 'line'
+                 or idv.end_date IS NULL
+                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         (
@@ -230,11 +232,10 @@ def __build_standard_profile_context(location):
                     FROM indicator_value iv
                     JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
                     WHERE iv.indicator_id = indicator_data_visual.indicator_id
-                      AND iv.start_date = indicator_data_visual.start_date
-                      AND iv.end_date = indicator_data_visual.end_date
+                      AND EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)
                       AND iv.location_id = %s
                       AND idvs.data_visual_id = indicator_data_visual.id
-                    ORDER BY idvs.priority
+                    ORDER BY idvs.priority, iv.end_date DESC
                     LIMIT 1
                 '''
             },
@@ -341,7 +342,9 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
             join indicator_data_visual_source idvs on idvs.data_visual_id = idv.id and idvs.source_id = iv.source_id
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where iv.location_id = any(%s)
-            and (iv.start_date = idv.start_date or idv.data_visual_type = 'line')
+            and (idv.data_visual_type = 'line'
+                 or idv.end_date IS NULL
+                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         ([id for id in location.locations.values_list("id", flat=True)],),
@@ -357,7 +360,9 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where ((idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
             or (idv.location_comparison_type = 'parents' and l.id = any(%s)))
-            and (iv.start_date = idv.start_date or idv.data_visual_type = 'line')
+            and (idv.data_visual_type = 'line'
+                 or idv.end_date IS NULL
+                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         (location_type.id, [loc["id"] for loc in parent_locations]),
@@ -673,11 +678,10 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
                     FROM indicator_value iv
                     JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
                     WHERE iv.indicator_id = indicator_data_visual.indicator_id
-                      AND iv.start_date = indicator_data_visual.start_date
-                      AND iv.end_date = indicator_data_visual.end_date
+                      AND EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)
                       AND iv.location_id = %s
                       AND idvs.data_visual_id = indicator_data_visual.id
-                    ORDER BY idvs.priority
+                    ORDER BY idvs.priority, iv.end_date DESC
                     LIMIT 1
                 '''
             },
@@ -686,10 +690,6 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
         .order_by("indicator__sort_order")
     )
 
-
-    with open("header_data_query.sql", "w") as f:
-        f.write(str(header_data_visuals.query))
-    
 
     # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
     header_data = [
