@@ -687,7 +687,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
 
 
     with open("header_data_query.sql", "w") as f:
-        f.write(header_data_visuals.query)
+        f.write(str(header_data_visuals.query))
     
 
     # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
