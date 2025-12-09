@@ -246,7 +246,7 @@ def __build_standard_profile_context(location):
     header_data = [
         {
             "indicator_name": hdv.indicator.name,
-            "source_name": hdv.get_primary_source().name if hdv.get_primary_source() else None,
+            "source_name": hdv.indicatordatavisualsource_set.first().source.name if hdv.indicatordatavisualsource_set.first() else None,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
             "value": hdv.header_value if hdv.header_value else None,
         }
@@ -695,7 +695,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     header_data = [
         {
             "indicator_name": hdv.indicator.name,
-            "source_name": hdv.get_primary_source().name if hdv.get_primary_source() else None,
+            "source_name": hdv.indicatordatavisualsource_set.first().source.name if hdv.indicatordatavisualsource_set.first() else None,
             "year": str(hdv.end_date.year) if hdv.end_date else None,
             "value": hdv.header_value if hdv.header_value else None,
         }
