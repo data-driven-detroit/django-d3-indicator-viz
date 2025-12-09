@@ -221,14 +221,17 @@ def __build_standard_profile_context(location):
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
         .annotate(
+            primary_source_id=Subquery(
+                IndicatorDataVisualSource.objects.filter(
+                    data_visual_id=OuterRef("id")
+                ).order_by('priority').values('source_id')[:1]
+            )
+        )
+        .annotate(
             header_value=Subquery(
                 IndicatorValue.objects.filter(
                     indicator_id=OuterRef("indicator_id"),
-                    source_id=Subquery(
-                        IndicatorDataVisualSource.objects.filter(
-                            data_visual_id=OuterRef(OuterRef("id"))
-                        ).order_by('priority').values('source_id')[:1]
-                    ),
+                    source_id=OuterRef("primary_source_id"),
                     start_date=OuterRef("start_date"),
                     end_date=OuterRef("end_date"),
                     location_id=location.id,
@@ -662,14 +665,17 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
         .annotate(
+            primary_source_id=Subquery(
+                IndicatorDataVisualSource.objects.filter(
+                    data_visual_id=OuterRef("id")
+                ).order_by('priority').values('source_id')[:1]
+            )
+        )
+        .annotate(
             header_value=Subquery(
                 IndicatorValue.objects.filter(
                     indicator_id=OuterRef("indicator_id"),
-                    source_id=Subquery(
-                        IndicatorDataVisualSource.objects.filter(
-                            data_visual_id=OuterRef(OuterRef("id"))
-                        ).order_by('priority').values('source_id')[:1]
-                    ),
+                    source_id=OuterRef("primary_source_id"),
                     start_date=OuterRef("start_date"),
                     end_date=OuterRef("end_date"),
                     location_id=location.id,
