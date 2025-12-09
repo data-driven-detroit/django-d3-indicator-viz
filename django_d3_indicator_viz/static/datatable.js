@@ -61,6 +61,19 @@ export default class DataTable {
 
         // set up the table body
         let tbody = document.createElement('tbody');
+
+        // Add source row
+        let sourceRow = document.createElement('tr');
+        sourceRow.innerHTML = `<td class="name">Source</td><td colspan="${(headers.length * 4) - (headers.length - 1) - 1}">${this.visual.source_name || 'N/A'}</td>`;
+        tbody.appendChild(sourceRow);
+
+        // Add universe row
+        if (this.indicatorData[0] && this.indicatorData[0].universe) {
+            let universeRow = document.createElement('tr');
+            universeRow.innerHTML = `<td class="name">Universe</td><td colspan="${(headers.length * 4) - (headers.length - 1) - 1}">${formatData(this.indicatorData[0].universe, null)}</td>`;
+            tbody.appendChild(universeRow);
+        }
+
         let filterOptions = this.indicatorData.map(item => {
             let option = this.filterOptions.find(o => o.id === item.filter_option_id)?.name;
             if (!option) {
