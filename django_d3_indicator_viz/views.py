@@ -216,27 +216,29 @@ def __build_standard_profile_context(location):
     )
 
     # indicators with no category will be shown in the header area
+    from django.db.models import Exists, OuterRef, Subquery, Q
+    from django.db.models.expressions import RawSQL
+
     header_data_visuals = list(
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
-        .annotate(
-            primary_source_id=Subquery(
-                IndicatorDataVisualSource.objects.filter(
-                    data_visual_id=OuterRef("id")
-                ).order_by('priority').values('source_id')[:1]
-            )
-        )
-        .annotate(
-            header_value=Subquery(
-                IndicatorValue.objects.filter(
-                    indicator_id=OuterRef("indicator_id"),
-                    source_id=OuterRef("primary_source_id"),
-                    start_date=OuterRef("start_date"),
-                    end_date=OuterRef("end_date"),
-                    location_id=location.id,
-                ).values("value")[:1]
-            )
+        .extra(
+            select={
+                'header_value': '''
+                    SELECT iv.value
+                    FROM indicator_value iv
+                    JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
+                    WHERE iv.indicator_id = indicator_data_visual.indicator_id
+                      AND iv.start_date = indicator_data_visual.start_date
+                      AND iv.end_date = indicator_data_visual.end_date
+                      AND iv.location_id = %s
+                      AND idvs.data_visual_id = indicator_data_visual.id
+                    ORDER BY idvs.priority
+                    LIMIT 1
+                '''
+            },
+            select_params=(location.id,)
         )
         .order_by("indicator__sort_order")
     )
@@ -664,23 +666,22 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
-        .annotate(
-            primary_source_id=Subquery(
-                IndicatorDataVisualSource.objects.filter(
-                    data_visual_id=OuterRef("id")
-                ).order_by('priority').values('source_id')[:1]
-            )
-        )
-        .annotate(
-            header_value=Subquery(
-                IndicatorValue.objects.filter(
-                    indicator_id=OuterRef("indicator_id"),
-                    source_id=OuterRef("primary_source_id"),
-                    start_date=OuterRef("start_date"),
-                    end_date=OuterRef("end_date"),
-                    location_id=location.id,
-                ).values("value")[:1]
-            )
+        .extra(
+            select={
+                'header_value': '''
+                    SELECT iv.value
+                    FROM indicator_value iv
+                    JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
+                    WHERE iv.indicator_id = indicator_data_visual.indicator_id
+                      AND iv.start_date = indicator_data_visual.start_date
+                      AND iv.end_date = indicator_data_visual.end_date
+                      AND iv.location_id = %s
+                      AND idvs.data_visual_id = indicator_data_visual.id
+                    ORDER BY idvs.priority
+                    LIMIT 1
+                '''
+            },
+            select_params=(location.id,)
         )
         .order_by("indicator__sort_order")
     )
