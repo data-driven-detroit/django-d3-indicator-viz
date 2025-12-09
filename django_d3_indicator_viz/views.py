@@ -202,9 +202,7 @@ def __build_standard_profile_context(location):
         where (iv.location_id = %s
             or (idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
             or (idv.location_comparison_type = 'parents' and l.id = any(%s)))
-            and (idv.data_visual_type = 'line'
-                 or idv.end_date IS NULL
-                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
+            and (idv.start_date IS NULL or iv.start_date = idv.start_date or idv.data_visual_type = 'line')
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         (
@@ -342,9 +340,7 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
             join indicator_data_visual_source idvs on idvs.data_visual_id = idv.id and idvs.source_id = iv.source_id
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where iv.location_id = any(%s)
-            and (idv.data_visual_type = 'line'
-                 or idv.end_date IS NULL
-                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
+            and (idv.start_date IS NULL or iv.start_date = idv.start_date or idv.data_visual_type = 'line')
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         ([id for id in location.locations.values_list("id", flat=True)],),
@@ -360,9 +356,7 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
             left join indicator_filter_option ifo on iv.filter_option_id = ifo.id
         where ((idv.location_comparison_type = 'siblings' and l.location_type_id = %s)
             or (idv.location_comparison_type = 'parents' and l.id = any(%s)))
-            and (idv.data_visual_type = 'line'
-                 or idv.end_date IS NULL
-                 or EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM idv.end_date))
+            and (idv.start_date IS NULL or iv.start_date = idv.start_date or idv.data_visual_type = 'line')
         order by i.sort_order, l.name, iv.start_date, ifo.sort_order
         """,
         (location_type.id, [loc["id"] for loc in parent_locations]),
