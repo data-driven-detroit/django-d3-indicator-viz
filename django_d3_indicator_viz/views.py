@@ -684,6 +684,10 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
         )
         .order_by("indicator__sort_order")
     )
+
+
+    with open("header_data_query.sql", "w") as f:
+        f.write(header_data_visuals.query)
     
     # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
     header_data = [
