@@ -811,13 +811,13 @@ class IndicatorDataVisualSerializer(serializers.ModelSerializer):
 
     def get_source_id(self, obj):
         """Returns the primary source ID (priority 0)."""
-        primary_source = obj.get_primary_source()
-        return primary_source.id if primary_source else None
+        first_source = obj.indicatordatavisualsource_set.first()
+        return first_source.source.id if first_source else None
 
     def get_source_name(self, obj):
         """Returns the primary source name."""
-        primary_source = obj.get_primary_source()
-        return primary_source.name if primary_source else None
+        first_source = obj.indicatordatavisualsource_set.first()
+        return first_source.source.name if first_source else None
 
 
 class ColorScaleSerializer(serializers.ModelSerializer):
@@ -867,8 +867,39 @@ class ValueViewSet(viewsets.ModelViewSet):
     queryset = IndicatorValue.objects.all().select_related("filter_option")
     serializer_class = ValueSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filterset_fields = ("start_date", "end_date", "indicator_id", "location_id")
-    filterset_class = ValueFilter
+    filterset_fields = ("indicator_id", "location_id")  # Removed date fields - handled in get_queryset
+
+    def get_queryset(self):
+        """
+        Override to support year-based filtering and source fallback.
+        Matches dates by year only to support ACS 1-year/5-year fallback.
+        """
+        queryset = super().get_queryset()
+
+        # Get query params
+        end_date = self.request.query_params.get('end_date')
+        location_id = self.request.query_params.get('location_id')
+        location_id_in = self.request.query_params.get('location_id__in')
+
+        # If dates are provided, filter by year instead of exact match
+        if end_date:
+            from django.db.models.functions import ExtractYear
+            from datetime import datetime
+
+            # Parse the date string to get the year
+            try:
+                date_obj = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                year = date_obj.year
+
+                # Filter by year and get most recent data, ordered by end_date DESC
+                queryset = queryset.annotate(
+                    end_year=ExtractYear('end_date')
+                ).filter(end_year=year).order_by('-end_date')
+            except (ValueError, AttributeError):
+                # If date parsing fails, skip date filtering
+                pass
+
+        return queryset
 
 router = routers.DefaultRouter()
 router.register("values", ValueViewSet)
