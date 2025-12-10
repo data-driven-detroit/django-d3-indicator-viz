@@ -1,4 +1,6 @@
 from django.contrib.gis.db import models
+from django.db.models import Window, Prefetch
+from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
 
@@ -33,13 +35,6 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-    def categories_for_template(self, location_id):
-        """
-        This doesn't pull data -- just the structure that is needed for
-        the template and the metadata. What is key here is that the dates and 
-        sources are correct and will match when the full data is pulled in the
-        'categories_for_charting' method below.
-        """
 
     def categories_for_charting(self, location_id):
         # Build the filtered indicator values queryset
