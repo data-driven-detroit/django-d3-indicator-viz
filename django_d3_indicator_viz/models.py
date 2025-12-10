@@ -223,7 +223,7 @@ class Location(models.Model):
         Find the bounding box based on the margins multiple
         """
 
-        xmin, ymin, xmax, ymax = self.extent
+        xmin, ymin, xmax, ymax = self.geometry.extent
         width = xmax - xmin
         height = ymax - ymin
         
