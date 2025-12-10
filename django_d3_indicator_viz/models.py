@@ -36,14 +36,20 @@ class Section(models.Model):
         return self.name
 
     def __get_indicators(self, location_id, partition_by):
+        priority_subquery = IndicatorDataVisualSource.objects.filter(
+            data_visual=OuterRef('indicator__indicatordatavisual'),
+            source=OuterRef('source')
+        ).values('priority')[:1]
+
         return IndicatorValue.objects.filter(
             location_id=location_id,
             indicator__category__section_id=self.id
         ).annotate(
+            source_priority=priority_subquery,
             rn=Window(
                 expression=RowNumber(),
                 partition_by=partition_by,
-                order_by=[F('start_date').desc(), F('priority')]
+                order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
