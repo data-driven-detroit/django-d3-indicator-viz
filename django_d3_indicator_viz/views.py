@@ -782,23 +782,10 @@ def next_section(request):
     parent_loc_ids = [loc_id for loc_id in parent_loc_ids if loc_id]
     sibling_loc_ids = [loc_id for loc_id in sibling_loc_ids if loc_id]
 
-    # Calculate axis scales for each category in this section
-    category_scales = {}
-    if primary_loc_id:
-        for category in next_section.category_set.all():
-            scale = category.get_axis_scale(
-                primary_loc_id,
-                parent_location_ids=parent_loc_ids,
-                sibling_location_ids=sibling_loc_ids
-            )
-            if scale:
-                category_scales[category.id] = scale
-
     return render(
         request, "django_d3_indicator_viz/section.html",
         {
             "section": next_section,
-            "category_scales": category_scales
         }
     )
 

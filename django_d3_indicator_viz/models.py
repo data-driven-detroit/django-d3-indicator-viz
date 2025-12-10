@@ -26,12 +26,50 @@ class Section(models.Model):
     # An anchor for linking to this category in a web page
     anchor = models.TextField(null=True, blank=True)
 
-    def __str__(self):
-        return self.name
-
     class Meta:
         db_table = "section"
         ordering = ["sort_order"]
+
+    def __str__(self):
+        return self.name
+
+    def categories_for_template(self, location_id):
+        """
+        This doesn't pull data -- just the structure that is needed for
+        the template and the metadata. What is key here is that the dates and 
+        sources are correct and will match when the full data is pulled in the
+        'categories_for_charting' method below.
+        """
+
+    def categories_for_charting(self, location_id):
+        # Build the filtered indicator values queryset
+        filtered_values = IndicatorValue.objects.filter(
+          location_id=location_id,
+          indicator__category__section_id=0  # Add this!
+        ).annotate(
+          rn=Window(
+              expression=RowNumber(),
+              partition_by=[F('indicator_id'), F('filter_option_id')],
+              order_by=F('start_date').desc()
+          ),
+          data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
+        ).filter(
+          Q(rn=1) | Q(data_visual_type='line')
+        ).select_related('filter_option', 'location')
+        
+        # Get categories with prefetched filtered values
+        categories = Category.objects.filter(
+          section_id=self.id
+        ).prefetch_related(
+          Prefetch(
+              'indicator_set__indicatorvalue_set',
+              queryset=filtered_values,
+              to_attr='filtered_values'
+          ),
+          'indicator_set__indicatordatavisual_set'
+        ).select_related('section')
+
+        return categories
 
 
 class Category(models.Model):
@@ -51,7 +89,7 @@ class Category(models.Model):
         default=0, null=False, blank=False, db_index=True
     )
 
-    # The color associated with the category
+    # The color associated with the category (USED IN NVI, not in SDC / HIP)
     color = models.TextField(null=True, blank=True)
 
     # An image URL or path associated with the category
@@ -61,7 +99,8 @@ class Category(models.Model):
     section = models.ForeignKey(
         Section, on_delete=models.CASCADE, null=True, blank=True
     )
-
+    
+    # If the axes are shared among all the column charts in the visual
     share_axes = models.BooleanField(
         default=False,
         help_text="When enabled, all line and column charts in this category will share the same Y-axis scale for easier comparison."
@@ -70,7 +109,8 @@ class Category(models.Model):
     # An anchor for linking to this category in a web page
     anchor = models.TextField(null=True, blank=True)
 
-    def get_axis_scale(self, location_id, parent_location_ids=None, sibling_location_ids=None):
+
+    def get_axis_scale(self, location_id):
         """
         Calculate shared Y-axis scale for all line/column charts in this category.
 
@@ -86,7 +126,6 @@ class Category(models.Model):
             return None
 
         # Get all indicators in this category with line/column visuals
-        from django_d3_indicator_viz.models import IndicatorDataVisual
         indicators = self.indicator_set.filter(
             indicatordatavisual__data_visual_type__in=['line', 'column']
         ).distinct()
@@ -112,7 +151,6 @@ class Category(models.Model):
         location_ids = list(set(location_ids))
 
         # Query all indicator values for these indicators and locations
-        from django_d3_indicator_viz.models import IndicatorValue
         values = IndicatorValue.objects.filter(
             indicator__in=indicators,
             location_id__in=location_ids
@@ -246,6 +284,7 @@ class CustomLocation(models.Model):
     class Meta:
         db_table = "custom_location"
 
+
 class IndicatorSource(models.Model):
     """
     Represents a source of data for indicators, such as "ACS 5-year estimates Table B01001", "MDE", etc.
@@ -259,6 +298,7 @@ class IndicatorSource(models.Model):
 
     class Meta:
         db_table = "indicator_source"
+
 
 class IndicatorType(models.TextChoices):
     """
@@ -435,6 +475,7 @@ class IndicatorValue(models.Model):
             "location",
         )
 
+
 class DataVisualType(models.TextChoices):
     """
     Represents the type of data visualizations that can be created for indicators.
@@ -509,7 +550,8 @@ class IndicatorDataVisualSource(models.Model):
 
 class IndicatorDataVisual(models.Model):
     """
-    Represents a data visual for an indicator, including its type, source, date range, and other attributes.
+    Represents a data visual for an indicator, including its type, source, 
+    date range, and other attributes.
     """
 
     # The sources for this data visual, ordered by priority (primary + fallbacks)
@@ -545,7 +587,9 @@ class IndicatorDataVisual(models.Model):
 
     # The number of columns the data visual will span in a grid layout
     columns = models.IntegerField(
-        default=12, null=False, blank=False, db_index=True, validators=[MinValueValidator(1), MaxValueValidator(12)]
+        default=12, null=False, blank=False, db_index=True, validators=[
+            MinValueValidator(1), MaxValueValidator(12)
+        ]
     )
 
     # The color scale to use for the data visual
