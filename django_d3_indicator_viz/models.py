@@ -93,7 +93,7 @@ class Section(models.Model):
     
     def get_comparison_types(self):
         return [
-            i.location_comparison_type for i in (
+            i["location_comparison_type"] for i in (
                 IndicatorDataVisual.objects
                 .filter(indicator__category__section=self)
                 .order_by()
