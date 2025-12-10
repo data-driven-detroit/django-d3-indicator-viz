@@ -43,7 +43,7 @@ class Section(models.Model):
             rn=Window(
                 expression=RowNumber(),
                 partition_by=partition_by,
-                order_by=F('start_date').desc()
+                order_by=[F('start_date').desc(), F('priority')]
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
@@ -52,7 +52,7 @@ class Section(models.Model):
 
     def get_annotated_indicators(self, location_id):
         # NO filter_option_id
-        return self.__get_indicators(location_id, [F('indicator_id'), F('source_id')])
+        return self.__get_indicators(location_id, [F('indicator_id')])
 
     def get_filtered_values(self, location_id):
         """
