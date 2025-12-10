@@ -35,27 +35,45 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-
-    def categories_for_charting(self, location_id):
-        # Build the filtered indicator values queryset
-        filtered_values = IndicatorValue.objects.filter(
-          location_id=location_id,
-          indicator__category__section_id=0  # Add this!
+    def __get_indicators(self, location_id, partition_by):
+        return IndicatorValue.objects.filter(
+            location_id=location_id,
+            indicator__category__section_id=self.id
         ).annotate(
-          rn=Window(
-              expression=RowNumber(),
-              partition_by=[F('indicator_id'), F('filter_option_id')],
-              order_by=F('start_date').desc()
-          ),
-          data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
+            rn=Window(
+                expression=RowNumber(),
+                partition_by=
+                order_by=F('start_date').desc()
+            ),
+            data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
-          Q(rn=1) | Q(data_visual_type='line')
-        ).select_related('filter_option', 'location')
-        
-        # Get categories with prefetched filtered values
+            Q(rn=1) | Q(data_visual_type='line')
+        ).select_related('filter_option', 'location', 'source')
+
+    def get_annotated_indicators(self, location_id):
+        # NO filter_option_id
+        return self.__get_indicators(location_id, [F('indicator_id'), F('source_id')])
+
+    def get_filtered_values(self, location_id):
+        """
+        This queries from the point of view of the IndicatorValue, but 
+        filters to the values that fall in this section.
+        """
+
+        return self.__get_indicators(location_id, [F('indicator_id'), F('filter_option_id')])
+
+    def get_hydrated_categories(self, location_id):
+        annotated_indicators = self.get_annotated_indicators(location_id)
+        filtered_values = self.get_filtered_values(location_id)
+
         categories = Category.objects.filter(
           section_id=self.id
         ).prefetch_related(
+          Prefetch(
+              'indicator_set__indicatorvalue_set',
+              queryset=annotated_indicators,
+              to_attr='annotated_indicators'
+          ),
           Prefetch(
               'indicator_set__indicatorvalue_set',
               queryset=filtered_values,
@@ -104,87 +122,14 @@ class Category(models.Model):
     # An anchor for linking to this category in a web page
     anchor = models.TextField(null=True, blank=True)
 
-
-    def get_axis_scale(self, location_id):
-        """
-        Calculate shared Y-axis scale for all line/column charts in this category.
-
-        Args:
-            location_id: Primary location ID
-            parent_location_ids: List of parent location IDs (optional)
-            sibling_location_ids: List of sibling location IDs (optional)
-
-        Returns:
-            Dict with 'min' and 'max' keys, or None if sharing disabled or no data.
-        """
-        if not self.share_axes:
-            return None
-
-        # Get all indicators in this category with line/column visuals
-        indicators = self.indicator_set.filter(
-            indicatordatavisual__data_visual_type__in=['line', 'column']
-        ).distinct()
-
-        if not indicators.exists():
-            return None
-
-        # Collect all location IDs to query based on comparison types
-        location_ids = [location_id]
-
-        # Check each indicator's data visual for comparison type
-        for indicator in indicators:
-            dv = indicator.indicatordatavisual_set.first()
-            if not dv:
-                continue
-
-            if dv.location_comparison_type == 'parents' and parent_location_ids:
-                location_ids.extend(parent_location_ids)
-            elif dv.location_comparison_type == 'siblings' and sibling_location_ids:
-                location_ids.extend(sibling_location_ids)
-
-        # Remove duplicates
-        location_ids = list(set(location_ids))
-
-        # Query all indicator values for these indicators and locations
-        values = IndicatorValue.objects.filter(
-            indicator__in=indicators,
-            location_id__in=location_ids
-        ).values_list('value', flat=True)
-
-        # Filter out None values
-        values = [v for v in values if v is not None]
-
-        if not values:
-            return None
-
-        # Calculate min/max
-        min_val = min(values)
-        max_val = max(values)
-
-        # Handle edge case where all values are the same
-        if min_val == max_val:
-            if min_val == 0:
-                return {'min': -1, 'max': 1}
-            else:
-                return {'min': min_val * 0.9, 'max': max_val * 1.1}
-
-        # Add 10% padding
-        range_val = max_val - min_val
-        padding = range_val * 0.1
-
-        return {
-            'min': min_val - padding,
-            'max': max_val + padding
-        }
-
-    def __str__(self):
-        return self.name
-
     class Meta:
         db_table = "category"
         verbose_name_plural = "categories"
         ordering = ["sort_order"]
 
+    def __str__(self):
+        return self.name
+        
 
 class LocationType(models.Model):
     """
