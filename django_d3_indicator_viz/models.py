@@ -95,7 +95,7 @@ class Section(models.Model):
         return [
             i.location_comparison_type for i in (
                 IndicatorDataVisual.objects
-                .filter(indicator__category__section=section)
+                .filter(indicator__category__section=self)
                 .order_by()
                 .values("location_comparison_type")
                 .distinct()
