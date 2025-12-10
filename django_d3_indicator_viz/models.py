@@ -92,8 +92,8 @@ class Section(models.Model):
         return categories
     
     def get_comparison_types(self):
-        return self.categories.filter(
-            "Can skip this because it knows to filter to itself?"
+        return self.category_set.filter(
+            # Can skip this because it knows to filter to itself?
         ).values_list(
             'category__indicator__indicator_data_visual__location_comparison_type',
             flat=True
