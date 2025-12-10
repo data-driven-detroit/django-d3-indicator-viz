@@ -42,7 +42,7 @@ class Section(models.Model):
         ).annotate(
             rn=Window(
                 expression=RowNumber(),
-                partition_by=
+                partition_by=partition_by,
                 order_by=F('start_date').desc()
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
