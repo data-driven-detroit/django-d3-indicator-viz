@@ -241,10 +241,10 @@ class Location(models.Model):
         """
 
         if nearby:
-            bbox = sibling_box()
+            bbox = self.sibling_box()
             siblings = Location.objects.filter(
                 location_type_id=self.location_type.id,
-                geometry__bboverlaps(bbox),
+                geometry__bboverlaps=bbox,
             ).exclude(id=self.id)
         else:
             siblings = Location.objects.filter(
