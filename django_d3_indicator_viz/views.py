@@ -18,6 +18,7 @@ from .models import (
     CustomLocation,
     IndicatorFilterOption,
     LocationType,
+    assemble_header_data,
 )
 from django_d3_indicator_viz.indicator_value_aggregator import (
     aggregation_result,
@@ -634,36 +635,29 @@ def __build_indicator_values_dict_list(indicator_values):
 def profile(request, location_id, template_name="django_d3_indicator_viz/profile.html"):
     location = Location.objects.get(id=location_id)
     location_type = location.location_type
-    parent_location_types = location.location_type.parent_location_types.all()
 
     # limit to the two closest parent locations
-    parent_locations = Location.objects.extra(
-        select={"area": "st_area(geometry)"},
-        where=[
-            "location_type_id <> %s",
-            "location_type_id = any(%s)",
-            "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
-            "st_contains(geometry, (select st_pointonsurface(geometry) from location where id = %s))",
-        ],
-        params=[
-            location_type.id,
-            list(parent_location_types.values_list("id", flat=True)),
-            location.id,
-            location.id,
-        ],
-        order_by=["area"],
-    )[:2]
+    parent_locations = location.get_parents()
+    
+    # The display siblings only focusing on the bounding box that roughly
+    # covers the map, where all siblings skips the geometry for a speed-up
+    display_siblings = location.get_siblings(nearby=True)
 
-    # Get sibling locations (same type, excluding current location)
-    # This carries the geometry so can be a heavy pull
-    sibling_locations = Location.objects.filter(
-        location_type_id=location_type.id
-    ).exclude(id=location_id)
+    display_siblings_geojson = serialize(
+        "geojson",
+        sibling_locations,
+        geometry_field="geometry",
+        fields=("id", "name", "location_type"),
+    )
 
+    all_siblings = location.get_siblings(defer_geom=True)
+
+    # Only need to send the first section to the template, the rest will
+    # get pulled from the next_section view below
     first_section = Section.objects.first()
 
     # Collect all locations for lookup (primary + parents + siblings)
-    all_locations = [location] + list(parent_locations) + list(sibling_locations)
+    all_locations = [location] + list(parent_locations) + list(all_siblings)
 
     # Serialize location geometry
     location_geojson = serialize(
@@ -676,43 +670,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     color_scales = ColorScale.objects.all()
     location_types = LocationType.objects.all()
 
-    # Indicators with no category will be shown in the header area
-    # They have no category and hence to section so they don't get pulled with
-    # the first-section query.
-    header_data_visuals = (
-        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
-        .select_related("indicator")
-        .prefetch_related('indicatordatavisualsource_set__source')
-        .extra(
-            select={
-                'header_value': '''
-                    SELECT iv.value
-                    FROM indicator_value iv
-                    JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
-                    WHERE iv.indicator_id = indicator_data_visual.indicator_id
-                      AND EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)
-                      AND iv.location_id = %s
-                      AND idvs.data_visual_id = indicator_data_visual.id
-                    ORDER BY idvs.priority, iv.end_date DESC
-                    LIMIT 1
-                '''
-            },
-            select_params=(location.id,)
-        )
-        .order_by("indicator__sort_order")
-    )
-
-
-    # NOTE (MIKE): Unsure why this renaming is needed, maybe refactor
-    header_data = [
-        {
-            "indicator_name": hdv.indicator.name,
-            "source_name": hdv.indicatordatavisualsource_set.first().source.name if hdv.indicatordatavisualsource_set.first() else None,
-            "year": str(hdv.end_date.year) if hdv.end_date else None,
-            "value": hdv.header_value if hdv.header_value else None,
-        }
-        for hdv in header_data_visuals
-    ]
+    header_data = assemble_header_data(location_id)
 
     return render(
         request, template_name,
@@ -730,40 +688,10 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
             "location_type": location_type,
             "parent_locations": parent_locations,
             "location_geojson": location_geojson,
-            "sibling_locations_geojson": json.dumps({"type": "FeatureCollection", "features": []}),  # Empty initially, loaded later
+            "sibling_locations_geojson": display_siblings_geojson,
             "is_custom_location": False,
         }
     )
-
-
-def sibling_locations_geojson(request, location_id):
-    """
-    Returns the sibling locations geojson for a given location.
-    This is a separate endpoint to avoid loading heavy geojson data on initial page load.
-    """
-    try:
-        location = Location.objects.get(id=location_id)
-        location_type = location.location_type
-
-        # Get sibling locations (same type, excluding current location)
-        sibling_locations = Location.objects.filter(
-            location_type_id=location_type.id
-        ).exclude(id=location_id)
-
-        sibling_locations_geojson = serialize(
-            "geojson",
-            sibling_locations,
-            geometry_field="geometry",
-            fields=("id", "name", "location_type"),
-        )
-
-        return HttpResponse(sibling_locations_geojson, content_type="application/json")
-    except Location.DoesNotExist:
-        return HttpResponse(
-            json.dumps({"type": "FeatureCollection", "features": []}),
-            content_type="application/json",
-            status=404
-        )
 
 
 def next_section(request):
@@ -790,95 +718,8 @@ def next_section(request):
     )
 
 
-# A DRF Section to handle getting the data ready to be called by the chart code
-
-class IndicatorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Indicator
-        fields = ['id', 'name', 'category_id', 'formatter', 'indicator_type', 'sort_order']
-
-
-class IndicatorDataVisualSerializer(serializers.ModelSerializer):
-    source_id = serializers.SerializerMethodField()
-    source_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = IndicatorDataVisual
-        fields = ['id', 'indicator_id', 'source_id', 'source_name', 'data_visual_type',
-                  'location_comparison_type', 'start_date', 'end_date',
-                  'color_scale_id', 'columns']
-
-    def get_source_id(self, obj):
-        """Returns the primary source ID (priority 0)."""
-        first_source = obj.indicatordatavisualsource_set.first()
-        return first_source.source.id if first_source else None
-
-    def get_source_name(self, obj):
-        """Returns the primary source name."""
-        first_source = obj.indicatordatavisualsource_set.first()
-        return first_source.source.name if first_source else None
-
-
-class ColorScaleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ColorScale
-        fields = ['id', 'name', 'colors']
-
-
-class LocationTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LocationType
-        fields = ['id', 'name']
-
-
-class LocationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Location
-        fields = ['id', 'name', 'location_type_id']
-
-
-class IndicatorFilterOptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IndicatorFilterOption
-        fields = ['id', 'name', 'sort_order']
-
-
-class ValueSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = IndicatorValue
-        fields = ["source", "start_date", "end_date", "indicator",
-            "filter_option", "location", "value", "value_moe", "count",
-            "count_moe", "universe", "universe_moe", "active_data"]
-
-
-class ValueFilter(filters.FilterSet):
-    class Meta:
-        model = IndicatorValue
-        fields = {
-            'location_id': ['exact', 'in'],
-            'indicator_id': ['exact', 'in'],
-            'start_date': ['exact', 'gte', 'lte'],
-            'end_date': ['exact', 'gte', 'lte'],
-        }
-
-
-class ValueViewSet(viewsets.ModelViewSet):
-    queryset = IndicatorValue.objects.all().select_related("filter_option")
-    serializer_class = ValueSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filterset_fields = ("start_date", "end_date", "indicator_id", "location_id")
-    filterset_class = ValueFilter
-
-router = routers.DefaultRouter()
-router.register("values", ValueViewSet)
-
-
-class SampleIndicatorValueAggregator(IndicatorValueAggregator):
-    def aggregate_index_values(self, index_values):
-        raise NotImplementedError
-
-    def aggregate_index_moe_values(self, index_values, index_moe_values):
-        raise NotImplementedError
+def next_section_data(request):
+    pass
 
 
 # Create your views here.

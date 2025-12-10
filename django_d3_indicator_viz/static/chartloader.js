@@ -6,6 +6,9 @@ import Ban from "./ban.js";
 import DataTable from "./datatable.js";
 import { getVisualContainer, getTableContainer } from "./utils.js";
 
+// The first round will have the data to look at
+
+
 // Cache reference data (loaded once from script tag)
 let cachedReferenceData = null;
 
@@ -38,6 +41,20 @@ function getReferenceData() {
  *
  * @param {HTMLElement} container - The chart container element with data attributes
  */
+
+/**
+ * REMEMBER NOTE TODO WARNING (Mike) this for later -- we need to bring the 
+ * urls for this package into control here -- right now this is set on SDC.
+ */
+export async function loadSectionData(sectionId) {
+    const promises = [
+        fetch(`/section/data/?${primaryParams}`)
+            .then(r => r.json())
+            .then(data => data.results || data)
+    ];
+}
+
+
 export async function loadChart(container) {
     // Prevent duplicate loads
     if (container.dataset.loaded) return;

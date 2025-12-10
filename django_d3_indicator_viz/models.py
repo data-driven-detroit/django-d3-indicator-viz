@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.contrib.gis.geos import Polygon, GEOSGeometry
 from django.db.models import Window, Prefetch, F, Q, OuterRef
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -89,6 +90,14 @@ class Section(models.Model):
         ).select_related('section')
 
         return categories
+    
+    def get_comparison_types(self):
+        return self.categories.filter(
+            "Can skip this because it knows to filter to itself?"
+        ).values_list(
+            'category__indicator__indicator_data_visual__location_comparison_type',
+            flat=True
+        ).distinct()
 
 
 class Category(models.Model):
@@ -180,12 +189,72 @@ class Location(models.Model):
     # The color associated with the location
     color = models.TextField(null=True, blank=True)
 
-    def __str__(self):
-        return self.name
-
     class Meta:
         db_table = "location"
 
+    def __str__(self):
+        return self.name
+
+    
+    def get_parents(self):
+        parent_location_types = self.location_type.parent_location_types.all()
+        return Location.objects.extra(
+            select={"area": "st_area(geometry)"},
+            where=[
+                "location_type_id <> %s",
+                "location_type_id = any(%s)",
+                "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
+                "st_contains(geometry, (select st_pointonsurface(geometry) from location where id = %s))",
+            ],
+            params=[
+                self.location_type.id,
+                list(parent_location_types.values_list("id", flat=True)),
+                self.id,
+                self.id,
+            ],
+            order_by=["area"],
+        )[:2]
+
+    def sibling_box(self, margins=(2, 2, 2, 6)):
+        """
+        Find the bounding box based on the margins multiple
+        """
+
+        xmin, ymin, xmax, ymax = self.extent
+        width = xmax - xmin
+        height = ymax - ymin
+        
+        # Ordered like CSS
+        top, right, bottom, left = margins
+
+        box_xmin = xmin - left * width
+        box_xmax = xmax + right * width
+        
+        box_ymin = ymin - top * width
+        box_ymax = ymax + bottom * width
+
+        return Polygon.from_bbox((box_xmin, box_ymin, box_xmax, box_ymax))
+
+    def get_siblings(self, nearby=False, defer_geom=False):
+        """
+        If you apply nearby, it only gets roughly a bounding box around the object.
+        """
+
+        if nearby:
+            bbox = sibling_box()
+            siblings = Location.objects.filter(
+                location_type_id=self.location_type.id,
+                geometry__bboverlaps(bbox),
+            ).exclude(id=self.id)
+        else:
+            siblings = Location.objects.filter(
+                location_type_id=self.location_type.id
+            ).exclude(id=self.id)
+
+        if defer_geom:
+            return siblings.defer("geometry")
+
+        return siblings
 
 class CustomLocation(models.Model):
     """
@@ -599,6 +668,7 @@ class IndicatorDataVisual(models.Model):
         import json
         return json.dumps(IndicatorDataVisualSerializer(self).data)
 
+
     def __str__(self):
         return (
             self.indicator.name
@@ -615,3 +685,41 @@ class IndicatorDataVisual(models.Model):
             "data_visual_type",
         )
         ordering = ["indicator__category__section__sort_order", "indicator__category__sort_order", "indicator__sort_order"]
+
+
+def assemble_header_data(location_id):
+    # Indicators with no category will be shown in the header area
+    # They have no category and hence to section so they don't get pulled with
+    # the first-section query.
+    header_data_visuals = (
+        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
+        .select_related("indicator")
+        .prefetch_related('indicatordatavisualsource_set__source')
+        .extra(
+            select={
+                'header_value': '''
+                    SELECT iv.value
+                    FROM indicator_value iv
+                    JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
+                    WHERE iv.indicator_id = indicator_data_visual.indicator_id
+                      AND EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)
+                      AND iv.location_id = %s
+                      AND idvs.data_visual_id = indicator_data_visual.id
+                    ORDER BY idvs.priority, iv.end_date DESC
+                    LIMIT 1
+                '''
+            },
+            select_params=(location.id,)
+        )
+        .order_by("indicator__sort_order")
+    )
+
+    return [
+        {
+            "indicator_name": hdv.indicator.name,
+            "source_name": hdv.indicatordatavisualsource_set.first().source.name if hdv.indicatordatavisualsource_set.first() else None,
+            "year": str(hdv.end_date.year) if hdv.end_date else None,
+            "value": hdv.header_value if hdv.header_value else None,
+        }
+        for hdv in header_data_visuals
+    ]
