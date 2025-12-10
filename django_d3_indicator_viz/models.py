@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from django.db.models import Window, Prefetch, F, Q
+from django.db.models import Window, Prefetch, F, Q, OuterRef
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
