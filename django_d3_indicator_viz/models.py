@@ -218,7 +218,7 @@ class Location(models.Model):
             order_by=["area"],
         )[:2]
 
-    def sibling_box(self, margins=(2, 2, 2, 6)):
+    def sibling_box(self, margins=(1.5, 1.5, 2, 5)):
         """
         Find the bounding box based on the margins multiple
         """
