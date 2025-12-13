@@ -1,6 +1,6 @@
 from django.core.serializers import serialize
 from django.db.models import Q, OuterRef, Subquery, Prefetch
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.template import loader
 from django_filters import rest_framework as filters
@@ -641,9 +641,7 @@ def __build_indicator_values_dict_list(indicator_values):
     ]
 
 
-def profile(request, location_id, template_name="django_d3_indicator_viz/profile.html"):
-    from django.shortcuts import get_object_or_404
-
+def profile(request, location_id, template_path="django_d3_indicators_viz/profile.html"):
     location = get_object_or_404(Location, id=location_id)
     location_type = location.location_type
 
@@ -695,7 +693,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     }
 
     return render(
-        request, template_name,
+        request, "django_d3_indicator_viz/profile.html",
         {
             "sections": sections,
             "profile_data_json": json.dumps(profile_data),
@@ -713,7 +711,7 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
     )
 
 
-def next_section(request):
+def get_section(request):
     after = request.GET.get("after")
     next_section = Section.objects.filter(sort_order__gt=after).first()
 
