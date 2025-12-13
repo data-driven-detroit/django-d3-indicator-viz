@@ -645,6 +645,11 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     location = get_object_or_404(Location, id=location_id)
     location_type = location.location_type
 
+    # Serialize location geometry
+    location_geojson = serialize(
+        "geojson", [location], geometry_field="geometry", fields=("id", "name")
+    )
+
     # limit to the two closest parent locations
     parent_locations = location.get_parents()
 
@@ -663,11 +668,6 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
 
     # Collect all locations for lookup (primary + parents + siblings)
     all_locations = [location] + list(parent_locations) + list(all_siblings)
-
-    # Serialize location geometry
-    location_geojson = serialize(
-        "geojson", [location], geometry_field="geometry", fields=("id", "name")
-    )
 
     # This is messy, but these are needed globally and can't be called from within
     # the tree. These are expected to be complete even down to the charts layer ...

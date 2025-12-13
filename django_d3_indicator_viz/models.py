@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
+from django.contrib.gis.db.models.functions import SimplifyPreserveTopology
 from django.db.models import Window, Prefetch, F, Q, OuterRef
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -305,7 +306,7 @@ class Location(models.Model):
 
         return queryset
 
-    def sibling_box(self, margins=(1.5, 1.5, 2, 5)):
+    def sibling_box(self, margins=(1, 1, 1.5, 3)):
         """
         Find the bounding box based on the margins multiple
         """
@@ -329,22 +330,28 @@ class Location(models.Model):
         """
         If you apply nearby, it only gets roughly a bounding box around the object.
         """
+        
+        qs = (
+            Location.objects.filter(location_type_id=self.location_type.id)
+            .exclude(id=self.id)
+        )
 
         if nearby:
+            # if 'nearby' is set, only get the siblings roughly in the map viewport
+            # at the top of the profile page.
             bbox = self.sibling_box()
-            siblings = Location.objects.filter(
-                location_type_id=self.location_type.id,
-                geometry__bboverlaps=bbox,
-            ).exclude(id=self.id)
-        else:
-            siblings = Location.objects.filter(
-                location_type_id=self.location_type.id
-            ).exclude(id=self.id)
+            qs = qs.filter(geometry__bboverlaps=bbox)
 
         if defer_geom:
-            return siblings.defer("geometry")
+            # If you don't need the geometry -- do not pull it
+            qs = qs.defer("geometry")
 
-        return siblings
+        else:
+            # If you do need the geometry pull it in a simplified form
+            qs = qs.annotate(geometry=SimplifyPreserveTopology("geometry", tolerance=0.005))
+
+        return qs
+
 
 class CustomLocation(models.Model):
     """
