@@ -8,6 +8,8 @@ from django.forms import ValidationError
 from django.contrib.gis.db.models.functions import GeoFunc
 
 
+SIMPLIFICATION_AMT = 0.005
+
 class SimplifyPreserveTopology(GeoFunc):
     function = 'ST_SimplifyPreserveTopology'
 
@@ -353,7 +355,9 @@ class Location(models.Model):
 
         else:
             # If you do need the geometry pull it in a simplified form
-            qs = qs.annotate(geometry=SimplifyPreserveTopology("geometry", 0.005))
+            qs = qs.annotate(
+                sgeom=SimplifyPreserveTopology("geometry", SIMPLIFICATION_AMT)
+            ).defer("geometry")
 
         return qs
 
