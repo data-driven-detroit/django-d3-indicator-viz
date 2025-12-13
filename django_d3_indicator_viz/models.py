@@ -5,14 +5,6 @@ from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
 
-from django.contrib.gis.db.models.functions import GeoFunc
-
-
-SIMPLIFICATION_AMT = 0.005
-
-class SimplifyPreserveTopology(GeoFunc):
-    function = 'ST_SimplifyPreserveTopology'
-
 
 class Section(models.Model):
     """
@@ -352,12 +344,6 @@ class Location(models.Model):
         if defer_geom:
             # If you don't need the geometry -- do not pull it
             qs = qs.defer("geometry")
-
-        else:
-            # If you do need the geometry pull it in a simplified form
-            qs = qs.annotate(
-                sgeom=SimplifyPreserveTopology("geometry", SIMPLIFICATION_AMT)
-            ).defer("geometry")
 
         return qs
 
