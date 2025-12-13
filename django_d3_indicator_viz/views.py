@@ -678,7 +678,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     header_data = assemble_header_data(location_id)
 
     # Get all sections for client-side loading
-    sections = Section.objects.all().order_by('sort_order')
+    sections = Section.objects.all().order_by('sort_order')[:1]
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
