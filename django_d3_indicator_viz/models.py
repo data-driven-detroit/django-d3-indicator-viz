@@ -305,7 +305,7 @@ class Location(models.Model):
 
         return queryset
 
-    def sibling_box(self, margins=(1, 1, 1.5, 3)):
+    def sibling_box(self, margins=(1, 1, 1.5, 3.5)):
         """
         Find the bounding box based on the margins multiple
         """
