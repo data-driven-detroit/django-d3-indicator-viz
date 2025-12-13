@@ -3,6 +3,8 @@
 </script>
 <main id="sections-container">
     {% for section in sections %}
+    {% include "django_d3_indicator_viz/section.html" %}
+    {% comment %}
     <article id="section-{{ section.id }}" class="section-placeholder" data-section-id="{{ section.id }}" data-section-name="{{ section.name }}">
         <header class="section-contents">
             <h1>{{ section.name }}</h1>
@@ -15,6 +17,7 @@
             </div>
         </div>
     </article>
+    {% endcomment %}
     {% endfor %}
     {% block content %}{% endblock %}
 </main>
