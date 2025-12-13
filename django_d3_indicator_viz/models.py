@@ -1,6 +1,5 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
-from django.contrib.gis.db.models.functions import Simplify
 from django.db.models import Window, Prefetch, F, Q, OuterRef
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
