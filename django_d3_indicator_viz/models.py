@@ -457,7 +457,7 @@ class Indicator(models.Model):
 
     def to_json(self):
         """Returns JSON representation of this indicator for use in templates."""
-        from django_d3_indicator_viz.views import IndicatorSerializer
+        from django_d3_indicator_viz.serializers import IndicatorSerializer
         import json
         return json.dumps(IndicatorSerializer(self).data)
 
