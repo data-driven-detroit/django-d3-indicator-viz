@@ -778,48 +778,26 @@ class IndicatorDataVisual(models.Model):
 
 
 def assemble_header_data(location_id):
-    from django.db import connection
-
     # Indicators with no category will be shown in the header area
     # They have no category and hence to section so they don't get pulled with
     # the first-section query.
 
     # Use database-specific date extraction
     # PostgreSQL uses EXTRACT, SQLite uses strftime
-    if connection.vendor == 'postgresql':
-        year_match_sql = "EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)"
-    else:  # SQLite and others
-        year_match_sql = "strftime('%Y', iv.end_date) = strftime('%Y', indicator_data_visual.end_date)"
 
-    header_data_visuals = (
-        IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
-        .select_related("indicator")
-        .prefetch_related('indicatordatavisualsource_set__source')
-        .extra(
-            select={
-                'header_value': f'''
-                    SELECT iv.value
-                    FROM indicator_value iv
-                    JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
-                    WHERE iv.indicator_id = indicator_data_visual.indicator_id
-                      AND {year_match_sql}
-                      AND iv.location_id = %s
-                      AND idvs.data_visual_id = indicator_data_visual.id
-                    ORDER BY idvs.priority, iv.end_date DESC
-                    LIMIT 1
-                '''
-            },
-            select_params=(location_id,)
-        )
-        .order_by("indicator__sort_order")
+    return IndicatorValue.objects.filter(
+        location_id='0600000US2616322000',
+        indicator__category_id__isnull=True,
+    ).select_related(
+        'indicator', 'source'
+    ).order_by(
+        'location_id',
+        'indicator_id',
+        'indicator__indicatordatavisual__indicatordatavisualsource__priority',
+        '-end_date',
+    ).distinct(
+        'location_id',
+        'indicator_id',
     )
 
-    return [
-        {
-            "indicator_name": hdv.indicator.name,
-            "source_name": hdv.indicatordatavisualsource_set.first().source.name if hdv.indicatordatavisualsource_set.first() else None,
-            "year": str(hdv.end_date.year) if hdv.end_date else None,
-            "value": hdv.header_value if hdv.header_value else None,
-        }
-        for hdv in header_data_visuals
-    ]
+    
