@@ -693,7 +693,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     }
 
     return render(
-        request, "django_d3_indicator_viz/profile.html",
+        request, template_path,
         {
             "sections": sections,
             "profile_data_json": json.dumps(profile_data),
