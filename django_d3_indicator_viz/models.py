@@ -1,6 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
-from django.contrib.gis.db.models.functions import SimplifyPreserveTopology
+from django.contrib.gis.db.models.functions import Simplify
 from django.db.models import Window, Prefetch, F, Q, OuterRef
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -348,7 +348,7 @@ class Location(models.Model):
 
         else:
             # If you do need the geometry pull it in a simplified form
-            qs = qs.annotate(geometry=SimplifyPreserveTopology("geometry", tolerance=0.005))
+            qs = qs.annotate(geometry=Simplify("geometry", tolerance=0.005, preserve_topology=True))
 
         return qs
 
