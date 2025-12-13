@@ -1,7 +1,7 @@
 from django.core.serializers import serialize
 from django.db.models import Q, OuterRef, Subquery, Prefetch
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template import loader
 from django_filters import rest_framework as filters
 from rest_framework import routers, serializers, viewsets
@@ -19,6 +19,15 @@ from .models import (
     IndicatorFilterOption,
     LocationType,
     assemble_header_data,
+)
+from .serializers import (
+    CategorySerializer,
+    DataVisualSerializer,
+    IndicatorValueSerializer,
+    IndicatorFilterOptionSerializer,
+    LocationSerializer,
+    LocationTypeSerializer,
+    ColorScaleSerializer,
 )
 from django_d3_indicator_viz.indicator_value_aggregator import (
     aggregation_result,
@@ -633,28 +642,26 @@ def __build_indicator_values_dict_list(indicator_values):
 
 
 def profile(request, location_id, template_name="django_d3_indicator_viz/profile.html"):
-    location = Location.objects.get(id=location_id)
+    from django.shortcuts import get_object_or_404
+
+    location = get_object_or_404(Location, id=location_id)
     location_type = location.location_type
 
     # limit to the two closest parent locations
     parent_locations = location.get_parents()
-    
+
     # The display siblings only focusing on the bounding box that roughly
     # covers the map, where all siblings skips the geometry for a speed-up
     display_siblings = location.get_siblings(nearby=True)
 
     display_siblings_geojson = serialize(
         "geojson",
-        sibling_locations,
+        display_siblings,
         geometry_field="geometry",
         fields=("id", "name", "location_type"),
     )
 
     all_siblings = location.get_siblings(defer_geom=True)
-
-    # Only need to send the first section to the template, the rest will
-    # get pulled from the next_section view below
-    first_section = Section.objects.first()
 
     # Collect all locations for lookup (primary + parents + siblings)
     all_locations = [location] + list(parent_locations) + list(all_siblings)
@@ -672,17 +679,29 @@ def profile(request, location_id, template_name="django_d3_indicator_viz/profile
 
     header_data = assemble_header_data(location_id)
 
+    # Get all sections for client-side loading
+    sections = Section.objects.all().order_by('sort_order')
+
+    # Build profile data for JavaScript (locations, filter options, etc.)
+    profile_data = {
+        "filterOptions": IndicatorFilterOptionSerializer(filter_options, many=True).data,
+        "colorScales": ColorScaleSerializer(color_scales, many=True).data,
+        "locationTypes": LocationTypeSerializer(location_types, many=True).data,
+        "locations": {
+            "primary": LocationSerializer(location).data,
+            "parents": LocationSerializer(parent_locations, many=True).data,
+            "siblings": LocationSerializer(all_siblings, many=True).data,
+        },
+    }
+
     return render(
         request, template_name,
         {
-            "first_section": first_section,
+            "sections": sections,
+            "profile_data_json": json.dumps(profile_data),
             "primary_loc_id": location_id,
             "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
-            "sibling_loc_ids": ",".join(loc.id for loc in sibling_locations),
-            "filter_options_json": json.dumps(IndicatorFilterOptionSerializer(filter_options, many=True).data),
-            "color_scales_json": json.dumps(ColorScaleSerializer(color_scales, many=True).data),
-            "location_types_json": json.dumps(LocationTypeSerializer(location_types, many=True).data),
-            "locations_json": json.dumps(LocationSerializer(all_locations, many=True).data),
+            "sibling_loc_ids": ",".join(loc.id for loc in all_siblings),
             "header_data": header_data,
             "location": location,
             "location_type": location_type,
@@ -701,14 +720,13 @@ def next_section(request):
     if not next_section:
         return HttpResponse("")
 
-    # Get location context from query parameters
     primary_loc_id = request.GET.get('primary_loc_id')
-    parent_loc_ids = request.GET.get('parent_loc_ids', '').split(',') if request.GET.get('parent_loc_ids') else []
-    sibling_loc_ids = request.GET.get('sibling_loc_ids', '').split(',') if request.GET.get('sibling_loc_ids') else []
+    parent_loc_ids = request.GET.get('parent_loc_ids', '')
+    sibling_loc_ids = request.GET.get('sibling_loc_ids', '')
 
-    # Filter out empty strings
-    parent_loc_ids = [loc_id for loc_id in parent_loc_ids if loc_id]
-    sibling_loc_ids = [loc_id for loc_id in sibling_loc_ids if loc_id]
+    # If you hit '', you'll get a list with [''] on split, so handle that case
+    parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
+    sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
 
     return render(
         request, "django_d3_indicator_viz/section.html",
@@ -718,8 +736,29 @@ def next_section(request):
     )
 
 
-def next_section_data(request):
-    pass
+def section_data(request, location_id, section_id):
+    """
+    API endpoint that returns all data needed for a section.
+
+    Returns JSON matching the structure expected by SectionLoader.
+    """
+    from django.shortcuts import get_object_or_404
+
+    location = get_object_or_404(Location, id=location_id)
+    section = get_object_or_404(Section, id=section_id)
+
+    # Get comparison locations
+    parent_locations = location.get_parents()
+    sibling_locations = location.get_siblings(defer_geom=True)
+
+    # Get all section data using the model method
+    section_json = section.get_section_json_data(
+        primary_location=location,
+        parent_locations=parent_locations,
+        sibling_locations=sibling_locations
+    )
+
+    return JsonResponse(section_json)
 
 
 # Create your views here.

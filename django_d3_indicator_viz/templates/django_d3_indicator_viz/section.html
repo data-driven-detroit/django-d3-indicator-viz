@@ -12,9 +12,6 @@
     {% for category in section.category_set.all %}
     <div class="section-container"
          data-category-id="{{ category.id }}"
-         {% if category_scales %}{% with scale=category_scales|dict_get:category.id %}{% if scale %}
-         data-axis-scale='{{ scale|tojson }}'
-         {% endif %}{% endwith %}{% endif %}>
         <section class="stat-row">
             <div class="section-intro">
                 <h2 class="header-for-columns">

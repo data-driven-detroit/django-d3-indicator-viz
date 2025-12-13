@@ -36,14 +36,24 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-    def __get_indicators(self, location_id, partition_by):
+    def __get_indicators(self, location_ids, partition_by):
+        """
+        Private method to get indicator values with windowing/partitioning logic.
+
+        Args:
+            location_ids: List of location IDs to fetch data for
+            partition_by: List of fields to partition by in Window function
+
+        Returns:
+            QuerySet of IndicatorValue objects
+        """
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=OuterRef('indicator__indicatordatavisual'),
             source=OuterRef('source')
         ).values('priority')[:1]
 
         return IndicatorValue.objects.filter(
-            location_id=location_id,
+            location_id__in=location_ids,
             indicator__category__section_id=self.id
         ).annotate(
             source_priority=priority_subquery,
@@ -55,43 +65,117 @@ class Section(models.Model):
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
-        ).select_related('filter_option', 'location', 'source')
+        ).select_related('filter_option', 'location', 'source', 'indicator')
 
     def get_annotated_indicators(self, location_id):
-        # NO filter_option_id
-        return self.__get_indicators(location_id, [F('indicator_id')])
+        """For backwards compatibility - single location."""
+        return self.__get_indicators([location_id], [F('indicator_id'), F('location_id')])
 
     def get_filtered_values(self, location_id):
         """
-        This queries from the point of view of the IndicatorValue, but 
+        For backwards compatibility - single location.
+        This queries from the point of view of the IndicatorValue, but
         filters to the values that fall in this section.
         """
+        return self.__get_indicators([location_id], [F('indicator_id'), F('location_id'), F('filter_option_id')])
 
-        return self.__get_indicators(location_id, [F('indicator_id'), F('filter_option_id')])
+    def get_section_data(self, primary_location, parent_locations=None, sibling_locations=None):
+        """
+        Get all indicator values needed for this section, including comparison locations.
 
-    def get_hydrated_categories(self, location_id):
-        annotated_indicators = self.get_annotated_indicators(location_id)
-        filtered_values = self.get_filtered_values(location_id)
+        This method intelligently determines which locations to fetch data for based on
+        the location_comparison_type set on the data visuals in this section.
 
+        Args:
+            primary_location: Location object for the primary location
+            parent_locations: QuerySet or list of parent Location objects (optional)
+            sibling_locations: QuerySet or list of sibling Location objects (optional)
+
+        Returns:
+            QuerySet of IndicatorValue objects for all relevant locations
+        """
+        # Start with primary location
+        location_ids = [primary_location.id]
+
+        # Get comparison types needed for this section
+        comparison_types = self.get_comparison_types()
+
+        # Add parent locations if needed
+        if 'parents' in comparison_types and parent_locations:
+            location_ids.extend([loc.id for loc in parent_locations])
+
+        # Add sibling locations if needed
+        if 'siblings' in comparison_types and sibling_locations:
+            location_ids.extend([loc.id for loc in sibling_locations])
+
+        # Fetch all indicator values with proper partitioning
+        # Partition by indicator, location, and filter_option to get most recent data
+        # for each combination
+        return self.__get_indicators(
+            location_ids,
+            [F('indicator_id'), F('location_id'), F('filter_option_id')]
+        )
+
+    def get_section_json_data(self, primary_location, parent_locations=None, sibling_locations=None):
+        """
+        Get all data needed for SectionLoader in a structured format.
+
+        Returns a dictionary matching the structure expected by the JavaScript SectionLoader.
+
+        Args:
+            primary_location: Location object for the primary location
+            parent_locations: QuerySet or list of parent Location objects (optional)
+            sibling_locations: QuerySet or list of sibling Location objects (optional)
+
+        Returns:
+            dict: Complete section data ready for serialization
+        """
+        from django_d3_indicator_viz.serializers import (
+            CategorySerializer,
+            DataVisualSerializer,
+            IndicatorValueSerializer,
+        )
+
+        # Get categories with their indicators
         categories = Category.objects.filter(
-          section_id=self.id
-        ).prefetch_related(
-          Prefetch(
-              'indicator_set__indicatorvalue_set',
-              queryset=annotated_indicators,
-              to_attr='annotated_indicators'
-          ),
-          Prefetch(
-              'indicator_set__indicatorvalue_set',
-              queryset=filtered_values,
-              to_attr='filtered_values'
-          ),
-          'indicator_set__indicatordatavisual_set'
-        ).select_related('section')
+            section=self
+        ).prefetch_related('indicator_set').order_by('sort_order')
 
-        return categories
-    
+        # Get all data visuals for this section
+        indicator_ids = []
+        for category in categories:
+            indicator_ids.extend([ind.id for ind in category.indicator_set.all()])
+
+        data_visuals = IndicatorDataVisual.objects.filter(
+            indicator_id__in=indicator_ids
+        ).select_related('indicator').prefetch_related('indicatordatavisualsource_set__source')
+
+        # Get all indicator values using the smart fetching method
+        indicator_values = self.get_section_data(
+            primary_location,
+            parent_locations,
+            sibling_locations
+        )
+
+        # Build the response structure
+        return {
+            'section': {
+                'id': self.id,
+                'name': self.name,
+                'sort_order': self.sort_order,
+            },
+            'categories': CategorySerializer(categories, many=True).data,
+            'dataVisuals': DataVisualSerializer(data_visuals, many=True).data,
+            'indicatorValues': IndicatorValueSerializer(indicator_values, many=True).data,
+        }
+
     def get_comparison_types(self):
+        """
+        Returns list of comparison types needed for this section.
+
+        Returns:
+            list: Comparison types like ['parents', 'siblings', None]
+        """
         return [
             i["location_comparison_type"] for i in (
                 IndicatorDataVisual.objects
@@ -201,22 +285,25 @@ class Location(models.Model):
     
     def get_parents(self):
         parent_location_types = self.location_type.parent_location_types.all()
-        return Location.objects.extra(
+        parent_type_ids = list(parent_location_types.values_list("id", flat=True))
+
+        # Use Django ORM instead of PostgreSQL-specific SQL
+        # This is compatible with both PostgreSQL and SQLite
+        queryset = Location.objects.exclude(
+            location_type_id=self.location_type.id
+        ).filter(
+            location_type_id__in=parent_type_ids
+        ).extra(
             select={"area": "st_area(geometry)"},
             where=[
-                "location_type_id <> %s",
-                "location_type_id = any(%s)",
                 "st_area(geometry) > (select st_area(geometry) from location where id = %s)",
                 "st_contains(geometry, (select st_pointonsurface(geometry) from location where id = %s))",
             ],
-            params=[
-                self.location_type.id,
-                list(parent_location_types.values_list("id", flat=True)),
-                self.id,
-                self.id,
-            ],
+            params=[self.id, self.id],
             order_by=["area"],
         )[:2]
+
+        return queryset
 
     def sibling_box(self, margins=(1.5, 1.5, 2, 5)):
         """
@@ -691,28 +778,38 @@ class IndicatorDataVisual(models.Model):
 
 
 def assemble_header_data(location_id):
+    from django.db import connection
+
     # Indicators with no category will be shown in the header area
     # They have no category and hence to section so they don't get pulled with
     # the first-section query.
+
+    # Use database-specific date extraction
+    # PostgreSQL uses EXTRACT, SQLite uses strftime
+    if connection.vendor == 'postgresql':
+        year_match_sql = "EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)"
+    else:  # SQLite and others
+        year_match_sql = "strftime('%Y', iv.end_date) = strftime('%Y', indicator_data_visual.end_date)"
+
     header_data_visuals = (
         IndicatorDataVisual.objects.filter(indicator__category_id__isnull=True)
         .select_related("indicator")
         .prefetch_related('indicatordatavisualsource_set__source')
         .extra(
             select={
-                'header_value': '''
+                'header_value': f'''
                     SELECT iv.value
                     FROM indicator_value iv
                     JOIN indicator_data_visual_source idvs ON iv.source_id = idvs.source_id
                     WHERE iv.indicator_id = indicator_data_visual.indicator_id
-                      AND EXTRACT(YEAR FROM iv.end_date) = EXTRACT(YEAR FROM indicator_data_visual.end_date)
+                      AND {year_match_sql}
                       AND iv.location_id = %s
                       AND idvs.data_visual_id = indicator_data_visual.id
                     ORDER BY idvs.priority, iv.end_date DESC
                     LIMIT 1
                 '''
             },
-            select_params=(location.id,)
+            select_params=(location_id,)
         )
         .order_by("indicator__sort_order")
     )

@@ -1,43 +1,18 @@
-[build-system]
-requires = ["setuptools>=69.3"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "django-d3-indicator-viz"
-version = "1.0.5"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
 dependencies = [
-    "django>=4.2.6",
+    "django>=5.2.8",
+    "django-admin-sortable>=2.3",
+    "django-admin-sortable2>=2.3",
+    "django-filter>=25.2",
+    "django-import-export>=4.3.14",
+    "django-rest-framework>=0.1.0",
+    "factory-boy>=3.3.3",
+    "faker>=38.2.0",
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
 ]
-description = "A Django app for scaffolding models for categorized and filterable indicator data, and visualizing that data in a variety of formats using the Apache ECharts library."
-readme = "README.rst"
-requires-python = ">= 3.10"
-authors = [
-    {name = "Brian Herron", email = "herronrb@gvsu.edu"},
-]
-classifiers = [
-    "Environment :: Web Environment",
-    "Framework :: Django",
-    "Framework :: Django :: 4.2.6",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Internet :: WWW/HTTP",
-    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
-]
-
-[project.urls]
-Homepage = "https://github.com/data-driven-detroit/django-d3-indicator-viz"
-
-[tools.setuptools]
-include-package-data = true
-
-[tools.setuptools.find]
-where = ["."]
-include = ["django_d3_indicator_viz*"]

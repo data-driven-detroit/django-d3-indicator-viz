@@ -1,23 +1,156 @@
-<script id="reference-data" type="application/json">
-    {
-      "filterOptions": {{ filter_options_json|safe }},
-      "colorScales": {{ color_scales_json|safe }},
-      "locationTypes": {{ location_types_json|safe }},
-      "locations": {{ locations_json|safe }},
-      "primaryLocId": "{{ primary_loc_id }}",
-      "parentLocIds": "{{ parent_loc_ids }}",
-      "siblingLocIds": "{{ sibling_loc_ids }}"
-    }
+<script id="profile-data" type="application/json">
+    {{ profile_data_json|safe }}
 </script>
-<main>
-    {% include "django_d3_indicator_viz/section.html" with section=first_section primary_loc_id=primary_loc_id parent_loc_ids=parent_loc_ids sibling_loc_ids=sibling_loc_ids %}
+<main id="sections-container">
+    {% for section in sections %}
+    <article id="section-{{ section.id }}" class="section-placeholder" data-section-id="{{ section.id }}" data-section-name="{{ section.name }}">
+        <header class="section-contents">
+            <h1>{{ section.name }}</h1>
+        </header>
+        <div class="loading-placeholder">
+            <div class="skeleton-loader">
+                <div class="skeleton-chart"></div>
+                <div class="skeleton-chart"></div>
+                <div class="skeleton-chart"></div>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
     {% block content %}{% endblock %}
 </main>
-<script type="module">
-    import { loadAllCharts } from "/static/chartloader.js";
 
-    document.addEventListener('DOMContentLoaded', loadAllCharts);
-    document.body.addEventListener('htmx:afterSettle', loadAllCharts);
+<style>
+    .section-placeholder {
+        min-height: 300px;
+        margin-bottom: 2rem;
+    }
+
+    .loading-placeholder {
+        padding: 2rem;
+    }
+
+    .skeleton-loader {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .skeleton-chart {
+        height: 250px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 8px;
+    }
+
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    .section-loaded .loading-placeholder {
+        display: none;
+    }
+</style>
+
+<script type="module">
+    import SectionLoader from "/static/sectionloader.js";
+
+    // Get profile data from script tag
+    const profileData = JSON.parse(document.getElementById('profile-data').textContent);
+
+    // Store loaded sections
+    const loadedSections = new Set();
+
+    /**
+     * Loads data for a section and renders its charts
+     */
+    async function loadSection(sectionId) {
+        if (loadedSections.has(sectionId)) {
+            return; // Already loaded
+        }
+
+        const article = document.querySelector(`article[data-section-id="${sectionId}"]`);
+        if (!article) {
+            console.error('Section article not found:', sectionId);
+            return;
+        }
+
+        try {
+            // Fetch section data from API
+            const response = await fetch(`api/section-data/{{ primary_loc_id }}/${sectionId}/`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const sectionData = await response.json();
+
+            // Merge profile data with section data
+            const fullData = {
+                ...sectionData,
+                ...profileData
+            };
+
+            // Remove placeholder content
+            const placeholder = article.querySelector('.loading-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            // Add section content (this will be rendered by the API or template)
+            // For now, we'll assume the API returns HTML or we need to build it
+            // TODO: Implement section HTML rendering
+
+            // Load the charts using SectionLoader
+            const loader = new SectionLoader(fullData);
+            loader.drawAll();
+
+            // Mark as loaded
+            article.classList.add('section-loaded');
+            article.classList.remove('section-placeholder');
+            loadedSections.add(sectionId);
+
+        } catch (error) {
+            console.error('Error loading section:', sectionId, error);
+            const placeholder = article.querySelector('.loading-placeholder');
+            if (placeholder) {
+                placeholder.innerHTML = '<p style="color: red;">Error loading section data</p>';
+            }
+        }
+    }
+
+    /**
+     * Sets up Intersection Observer to load sections as they come into view
+     */
+    function setupLazyLoading() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const article = entry.target;
+                    const sectionId = article.dataset.sectionId;
+                    loadSection(sectionId);
+                    observer.unobserve(article); // Stop observing once loaded
+                }
+            });
+        }, {
+            rootMargin: '100px' // Start loading 100px before section is visible
+        });
+
+        // Observe all section placeholders
+        document.querySelectorAll('.section-placeholder').forEach(article => {
+            observer.observe(article);
+        });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        setupLazyLoading();
+        setupDataButtons();
+    });
 
     // Handle show/hide data button clicks
     function setupDataButtons() {
@@ -55,7 +188,4 @@
             });
         });
     }
-
-    document.addEventListener('DOMContentLoaded', setupDataButtons);
-    document.body.addEventListener('htmx:afterSettle', setupDataButtons);
 </script>

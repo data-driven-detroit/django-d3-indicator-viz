@@ -19,6 +19,6 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('demo/<slug:location_slug>/', demo, name='demo'),
+    path('profile/<str:location_id>/', profile, name='profile'),
+    path('api/section-data/<str:location_id>/<int:section_id>/', section_data, name='section_data'),
 ]
