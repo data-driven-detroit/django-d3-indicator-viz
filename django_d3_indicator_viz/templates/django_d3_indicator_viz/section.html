@@ -13,6 +13,7 @@
     <div class="section-container"
          data-category-id="{{ category.id }}"
         <section class="stat-row">
+
             <div class="section-intro">
                 <h2 class="header-for-columns">
                     <a class="permalink section" href="#{{ category.anchor }}" id="{{ category.anchor }}" title="Permalink">
@@ -21,6 +22,7 @@
                 </h2>
                 <aside></aside>
             </div>
+
             <div class="section-visuals">
                 {% for indicator in category.indicator_set.all %}
                 {% with data_visual=indicator.indicatordatavisual_set.first %}
@@ -34,8 +36,6 @@
                     </h3>
                     <div class="chart-container"
                         data-indicator-id="{{ indicator.id }}"
-                        data-indicator='{{ indicator.to_json }}'
-                        data-visual='{{ data_visual.to_json }}'
                         id="indicator-{{ data_visual.indicator_id }}-{{ data_visual.data_visual_type }}-container">
                     </div>
                     {% if data_visual.data_visual_type != 'ban' and data_visual.data_visual_type != 'min_med_max' %}
