@@ -486,8 +486,7 @@ class Indicator(models.Model):
             columns=Value(data_visual.columns),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
-        ).select_related( 'filter_option', 'location', 'source', 'indicator')
-        .first()
+        ).select_related( 'filter_option', 'location', 'source', 'indicator').first()
 
 
 class IndicatorFilterType(models.Model):
