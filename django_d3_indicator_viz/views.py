@@ -641,6 +641,29 @@ def __build_indicator_values_dict_list(indicator_values):
     ]
 
 
+def roll_section(section, location):
+    return {
+        "name": section.name,
+        "anchor": section.anchor,
+        "sort_order": section.sort_order,
+        "categories": [
+            {
+                "id": category.id,
+                "name": category.name,
+                "anchor": category.anchor,
+                "indicators": [
+                    {
+                        "id": indicator.id,
+                        "name": indicator.name,
+                        "rate_per": indicator.rate_per,
+                        "visual_metadata": indicator.get_visual_metadata(location),
+                    } for indicator in category.indicator_set.all()
+                ]
+            } for category in section.category_set.all()
+        ]
+    }
+
+
 def profile(request, location_id, template_path="django_d3_indicators_viz/profile.html"):
     location = get_object_or_404(Location, id=location_id)
     location_type = location.location_type
@@ -678,13 +701,9 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     header_data = assemble_header_data(location_id)
     
     # Get the first section, but as an iterator, not individually.
-    sections = Section.objects.all().order_by('sort_order')[:1]
-    
-    # This is required so we don't have to call a function in the template :(
-    for section in sections:
-      for category in section.category_set.all():
-          for indicator in category.indicator_set.all():
-              indicator.visual_metadata = indicator.get_visual_metadata(location)
+    section = Section.objects.all().order_by('sort_order').first()
+
+    sections = [roll_section(section, location)]
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
@@ -728,6 +747,8 @@ def get_section(request):
     parent_loc_ids = request.GET.get('parent_loc_ids', '')
     sibling_loc_ids = request.GET.get('sibling_loc_ids', '')
 
+    location = Location.objects.get(id=primary_loc_id)
+
     # If you hit '', you'll get a list with [''] on split, so handle that case
     parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
     sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
@@ -735,7 +756,7 @@ def get_section(request):
     return render(
         request, "django_d3_indicator_viz/section.html",
         {
-            "section": next_section,
+            "section": roll_section(next_section, location),
         }
     )
 
