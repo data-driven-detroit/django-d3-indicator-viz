@@ -777,13 +777,13 @@ def section_data(request, location_id, section_id):
 
     # Get comparison locations
     parent_locations = location.get_parents()
-    sibling_locations = location.get_siblings(defer_geom=True)
+    # sibling_locations = location.get_siblings(defer_geom=True)
 
     # Get all section data using the model method
     section_json = section.get_section_json_data(
         primary_location=location,
-        parent_locations=parent_locations,
-        sibling_locations=sibling_locations
+        parent_locations=",".join(parent_locations),
+        sibling_locations="", # TODO (Mike): We don't use these on SDC now
     )
 
     return JsonResponse(section_json)
