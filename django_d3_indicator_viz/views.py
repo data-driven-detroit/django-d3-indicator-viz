@@ -641,6 +641,22 @@ def __build_indicator_values_dict_list(indicator_values):
     ]
 
 
+def roll_indicators(category):
+    result = []
+    for indicator in category.indicator_set.all():
+        meta = indicator.get_visual_metadata(location)
+        if not meta: continue
+        result.append(
+            {
+                "id": indicator.id,
+                "name": indicator.name,
+                "rate_per": indicator.rate_per,
+                "visual_metadata": meta
+            }
+        )
+    return result
+
+
 def roll_section(section, location):
     return {
         "name": section.name,
@@ -651,14 +667,7 @@ def roll_section(section, location):
                 "id": category.id,
                 "name": category.name,
                 "anchor": category.anchor,
-                "indicators": [
-                    {
-                        "id": indicator.id,
-                        "name": indicator.name,
-                        "rate_per": indicator.rate_per,
-                        "visual_metadata": indicator.get_visual_metadata(location),
-                    } for indicator in category.indicator_set.all()
-                ]
+                "indicators": roll_indicators(category)            
             } for category in section.category_set.all()
         ]
     }

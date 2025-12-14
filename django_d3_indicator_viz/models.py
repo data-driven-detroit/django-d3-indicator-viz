@@ -466,6 +466,11 @@ class Indicator(models.Model):
     def get_visual_metadata(self, location):
         # Tech debt in not combining these models
         data_visual = self.indicatordatavisual_set.first()
+
+        if not data_visual:
+            print(f"{self.name} doesn't have a data visual set.")
+            # We filter out nones in the views
+            return None
         
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=data_visual,
