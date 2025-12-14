@@ -36,7 +36,7 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-    def get_indicator_values(self, location_ids):
+    def get_indicator_values(self, locations):
         """
         The javascript works with a list of indicators, and it does all 
         the selecting for the appropriate indicators client-side.
@@ -47,7 +47,7 @@ class Section(models.Model):
         ).values('priority')[:1]
 
         return IndicatorValue.objects.filter(
-            location_id__in=location_ids,
+            location__in=location_ids,
             indicator__category__section_id=self.id
         ).annotate(
             source_priority=priority_subquery,
