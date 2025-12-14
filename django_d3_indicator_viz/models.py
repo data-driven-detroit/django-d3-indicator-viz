@@ -483,11 +483,11 @@ class Indicator(models.Model):
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
             data_visual_type=Value(data_visual.data_visual_type),
-            columns=Value(data_visual.data_visual_type),
-            indicator_id=Value(data_visual.indicator_id),
+            columns=Value(data_visual.columns),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related( 'filter_option', 'location', 'source', 'indicator')
+        .first()
 
 
 class IndicatorFilterType(models.Model):
