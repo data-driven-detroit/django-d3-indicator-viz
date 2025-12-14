@@ -676,7 +676,7 @@ def roll_section(section, location):
                 "anchor": category.anchor,
                 "indicators": roll_indicators(category, location)            
             } for category in section.category_set.all()
-        ]
+        ],
         "indicator_values": [] # This is what we're going to populate
     }
 
