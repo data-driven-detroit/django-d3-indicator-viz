@@ -47,7 +47,7 @@ class Section(models.Model):
         ).values('priority')[:1]
 
         return IndicatorValue.objects.filter(
-            location__in=location_ids,
+            location__in=locations,
             indicator__category__section_id=self.id
         ).annotate(
             source_priority=priority_subquery,
