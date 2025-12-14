@@ -757,6 +757,9 @@ def get_section(request):
         request, "django_d3_indicator_viz/section.html",
         {
             "section": roll_section(next_section, location),
+            "primary_loc_id": primary_loc_id,
+            "parent_loc_ids": parent_loc_ids,
+            "sibling_loc_ids": sibling_loc_ids,
         }
     )
 
