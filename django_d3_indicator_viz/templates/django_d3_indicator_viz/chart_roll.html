@@ -1,23 +1,9 @@
 <script id="profile-data" type="application/json">
     {{ profile_data_json|safe }}
 </script>
-<main id="sections-container">
+<main id="sections-container" data-profile-data="{{ profile_data_json|safe }}">
     {% for section in sections %}
     {% include "django_d3_indicator_viz/section.html" %}
-    {% comment %}
-    <article id="section-{{ section.id }}" class="section-placeholder" data-section-id="{{ section.id }}" data-section-name="{{ section.name }}">
-        <header class="section-contents">
-            <h1>{{ section.name }}</h1>
-        </header>
-        <div class="loading-placeholder">
-            <div class="skeleton-loader">
-                <div class="skeleton-chart"></div>
-                <div class="skeleton-chart"></div>
-                <div class="skeleton-chart"></div>
-            </div>
-        </div>
-    </article>
-    {% endcomment %}
     {% endfor %}
     {% block content %}{% endblock %}
 </main>
