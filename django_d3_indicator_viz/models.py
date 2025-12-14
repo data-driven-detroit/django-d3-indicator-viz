@@ -1,6 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
-from django.db.models import Window, Prefetch, F, Q, OuterRef
+from django.db.models import Window, Prefetch, F, Q, OuterRef, Value
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
@@ -455,18 +455,37 @@ class Indicator(models.Model):
     # A formatter string for displaying the indicator value, such as ${value} for dollars or {value}% for percentage
     formatter = models.TextField(null=True, blank=True)
 
-    def to_json(self):
-        """Returns JSON representation of this indicator for use in templates."""
-        from django_d3_indicator_viz.serializers import IndicatorSerializer
-        import json
-        return json.dumps(IndicatorSerializer(self).data)
+    class Meta:
+        db_table = "indicator"
+        ordering = ["sort_order"]
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        db_table = "indicator"
-        ordering = ["sort_order"]
+
+    def get_visual_metadata(self, location):
+        # Tech debt in not combining these models
+        data_visual = self.indicatordatavisual_set.first()
+        
+        priority_subquery = IndicatorDataVisualSource.objects.filter(
+            data_visual=data_visual,
+            source=OuterRef('source')
+        ).values('priority')[:1]
+
+        return IndicatorValue.objects.filter(
+            location=location,
+            indicator=self,
+        ).annotate(
+            source_priority=priority_subquery,
+            rn=Window(
+                expression=RowNumber(),
+                partition_by=[F('indicator_id'), F('location_id')],
+                order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
+            ),
+            data_visual_type=Value(data_visual.data_visual_type),
+        ).filter(
+            Q(rn=1) | Q(data_visual_type='line')
+        ).select_related( 'filter_option', 'location', 'source', 'indicator')
 
 
 class IndicatorFilterType(models.Model):
