@@ -641,7 +641,7 @@ def __build_indicator_values_dict_list(indicator_values):
     ]
 
 
-def roll_indicators(category):
+def roll_indicators(category, location):
     result = []
     for indicator in category.indicator_set.all():
         meta = indicator.get_visual_metadata(location)
@@ -667,7 +667,7 @@ def roll_section(section, location):
                 "id": category.id,
                 "name": category.name,
                 "anchor": category.anchor,
-                "indicators": roll_indicators(category)            
+                "indicators": roll_indicators(category, location)            
             } for category in section.category_set.all()
         ]
     }
