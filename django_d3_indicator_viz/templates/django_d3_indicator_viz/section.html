@@ -25,7 +25,7 @@
 
             <div class="section-visuals">
                 {% for indicator in category.indicator_set.all %}
-                {% with data_visual=indicator.indicatordatavisual_set.first %}
+                {% with data_visual=indicator.visual_metadata.first %}
                 <div class="column-{{ data_visual.columns }} data-visual-container">
                     <h3 class="chart-title">
                         {{ indicator.name }}

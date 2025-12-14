@@ -679,6 +679,12 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     
     # Get the first section, but as an iterator, not individually.
     sections = Section.objects.all().order_by('sort_order')[:1]
+    
+    # This is required so we don't have to call a function in the template :(
+    for section in sections:
+      for category in section.category_set.all():
+          for indicator in category.indicator_set.all():
+              indicator.visual_metadata = indicator.build_visual(location)
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
