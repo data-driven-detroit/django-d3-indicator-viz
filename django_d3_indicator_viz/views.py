@@ -684,7 +684,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     for section in sections:
       for category in section.category_set.all():
           for indicator in category.indicator_set.all():
-              indicator.visual_metadata = indicator.build_visual(location)
+              indicator.visual_metadata = indicator.get_visual_metadata(location)
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
