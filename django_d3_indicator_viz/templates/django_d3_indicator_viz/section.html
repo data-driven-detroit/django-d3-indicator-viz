@@ -2,7 +2,7 @@
 
 <article id="{{ section.anchor }}">
     <header class="section-contents"
-        hx-get="{% url "next_section" %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}&sibling_loc_ids={{ sibling_loc_ids }}"
+        hx-get="{% url "next_section" %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}"
         hx-trigger="revealed"
         hx-swap="afterend"
         hx-target="closest article"
