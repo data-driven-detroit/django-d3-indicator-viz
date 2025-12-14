@@ -1,6 +1,6 @@
 {% load humanize madlibs %}
 
-<article id="{{ section.anchor }}">
+<article id="{{ section.anchor }}" data-indicator-values="{{ section.indicator_values }}">
     <header class="section-contents"
         hx-get="{% url "next_section" %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}"
         hx-trigger="revealed"
@@ -35,7 +35,15 @@
                         ({% if data_visual.data_visual_type == 'line' %}{{ data_visual.start_date.year }} - {% endif %}{{ data_visual.end_date.year }})
                     </h3>
                     <div class="chart-container"
+                         {% comment %} This is a lot -- drop these into json? (probably no){% endcomment %}
                         data-indicator-id="{{ indicator.id }}"
+                        data-visual-type="{{ data_visual.data_visual_type }}"
+                        data-source-id="{{ data_visual.source_id }}"
+                        data-comparison-type="{{ data_visual.location_comparison_type|default:'' }}"
+                        data-color-scale-id="{{ data_visual.color_scale_id|default:'' }}"
+                        data-formatter="{{ indicator.formatter }}"
+                        data-indicator-type="{{ indicator.type }}"
+                        data-rate-per="{{ indicator.rate_per }}"
                         id="indicator-{{ indicator.id }}-{{ data_visual.data_visual_type }}-container">
                     </div>
                     {% if data_visual.data_visual_type != 'ban' and data_visual.data_visual_type != 'min_med_max' %}

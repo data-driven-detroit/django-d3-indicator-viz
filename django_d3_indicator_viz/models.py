@@ -46,7 +46,7 @@ class Section(models.Model):
             source=OuterRef('source')
         ).values('priority')[:1]
 
-        return IndicatorValue.objects.filter(
+        qs = IndicatorValue.objects.filter(
             location__in=locations,
             indicator__category__section_id=self.id
         ).annotate(
@@ -61,6 +61,24 @@ class Section(models.Model):
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related('filter_option', 'location', 'source', 'indicator')
 
+        return = [
+            {
+                "id": iv.id,
+                "indicator": iv.indicator.id,
+
+                "location": iv.location.id,
+                "source": iv.source.id,
+                "filter_option": iv.filter_option,
+                "start_date": iv.start_date,
+                "end_date": iv.end_date,
+                "value": iv.value,
+                "value_moe": iv.value_moe,
+                "count": iv.count,
+                "count_moe": iv.count_moe,
+                "universe": iv.universe,
+                "universe_moe": iv.universe_moe,
+            } for iv in qs
+        ]
 
     def get_comparison_types(self):
         """
@@ -382,6 +400,8 @@ class Indicator(models.Model):
             ),
             data_visual_type=Value(data_visual.data_visual_type),
             columns=Value(data_visual.columns),
+            location_comparison_type=Value(data_visual.location_comparison_type),
+            color_scale_id=Value(data_visual.color_scale_id),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related( 'filter_option', 'location', 'source', 'indicator').first()

@@ -655,7 +655,9 @@ def roll_indicators(category, location):
                 "id": indicator.id,
                 "name": indicator.name,
                 "rate_per": indicator.rate_per,
-                "visual_metadata": meta
+                "visual_metadata": meta,
+                "formatter": indicator.formatter,
+                "type": indicator.indicator_type
             }
         )
     return result
@@ -677,7 +679,7 @@ def roll_section(section, location):
                 "indicators": roll_indicators(category, location)            
             } for category in section.category_set.all()
         ],
-        "indicator_values": [] # This is what we're going to populate
+        "indicator_values": json.dumps(section.get_indicator_values(location)),
     }
 
 
