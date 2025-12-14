@@ -36,7 +36,7 @@
                     </h3>
                     <div class="chart-container"
                         data-indicator-id="{{ indicator.id }}"
-                        id="indicator-{{ data_visual.indicator_id }}-{{ data_visual.data_visual_type }}-container">
+                        id="indicator-{{ indicator.id }}-{{ data_visual.data_visual_type }}-container">
                     </div>
                     {% if data_visual.data_visual_type != 'ban' and data_visual.data_visual_type != 'min_med_max' %}
                     <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Show data</button>
