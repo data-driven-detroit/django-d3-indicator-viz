@@ -61,7 +61,7 @@ class Section(models.Model):
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related('filter_option', 'location', 'source', 'indicator')
 
-        return = [
+        return [
             {
                 "id": iv.id,
                 "indicator": iv.indicator.id,
