@@ -36,16 +36,10 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-    def __get_indicators(self, location_ids, partition_by):
+    def get_indicator_values(self, location_ids):
         """
-        Private method to get indicator values with windowing/partitioning logic.
-
-        Args:
-            location_ids: List of location IDs to fetch data for
-            partition_by: List of fields to partition by in Window function
-
-        Returns:
-            QuerySet of IndicatorValue objects
+        The javascript works with a list of indicators, and it does all 
+        the selecting for the appropriate indicators client-side.
         """
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=OuterRef('indicator__indicatordatavisual'),
@@ -59,7 +53,7 @@ class Section(models.Model):
             source_priority=priority_subquery,
             rn=Window(
                 expression=RowNumber(),
-                partition_by=partition_by,
+                partition_by=[F('indicator_id'), F('location_id')],
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
@@ -67,107 +61,6 @@ class Section(models.Model):
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related('filter_option', 'location', 'source', 'indicator')
 
-    def get_annotated_indicators(self, location_id):
-        """For backwards compatibility - single location."""
-        return self.__get_indicators([location_id], [F('indicator_id'), F('location_id')])
-
-    def get_filtered_values(self, location_id):
-        """
-        For backwards compatibility - single location.
-        This queries from the point of view of the IndicatorValue, but
-        filters to the values that fall in this section.
-        """
-        return self.__get_indicators([location_id], [F('indicator_id'), F('location_id'), F('filter_option_id')])
-
-    def get_section_data(self, primary_location, parent_locations=None, sibling_locations=None):
-        """
-        Get all indicator values needed for this section, including comparison locations.
-
-        This method intelligently determines which locations to fetch data for based on
-        the location_comparison_type set on the data visuals in this section.
-
-        Args:
-            primary_location: Location object for the primary location
-            parent_locations: QuerySet or list of parent Location objects (optional)
-            sibling_locations: QuerySet or list of sibling Location objects (optional)
-
-        Returns:
-            QuerySet of IndicatorValue objects for all relevant locations
-        """
-        # Start with primary location
-        location_ids = [primary_location.id]
-
-        # Get comparison types needed for this section
-        comparison_types = self.get_comparison_types()
-
-        # Add parent locations if needed
-        if 'parents' in comparison_types and parent_locations:
-            location_ids.extend([loc.id for loc in parent_locations])
-
-        # Add sibling locations if needed
-        if 'siblings' in comparison_types and sibling_locations:
-            location_ids.extend([loc.id for loc in sibling_locations])
-
-        # Fetch all indicator values with proper partitioning
-        # Partition by indicator, location, and filter_option to get most recent data
-        # for each combination
-        return self.__get_indicators(
-            location_ids,
-            [F('indicator_id'), F('location_id'), F('filter_option_id')]
-        )
-
-    def get_section_json_data(self, primary_location, parent_locations=None, sibling_locations=None):
-        """
-        Get all data needed for SectionLoader in a structured format.
-
-        Returns a dictionary matching the structure expected by the JavaScript SectionLoader.
-
-        Args:
-            primary_location: Location object for the primary location
-            parent_locations: QuerySet or list of parent Location objects (optional)
-            sibling_locations: QuerySet or list of sibling Location objects (optional)
-
-        Returns:
-            dict: Complete section data ready for serialization
-        """
-        from django_d3_indicator_viz.serializers import (
-            CategorySerializer,
-            DataVisualSerializer,
-            IndicatorValueSerializer,
-        )
-
-        # Get categories with their indicators
-        categories = Category.objects.filter(
-            section=self
-        ).prefetch_related('indicator_set').order_by('sort_order')
-
-        # Get all data visuals for this section
-        indicator_ids = []
-        for category in categories:
-            indicator_ids.extend([ind.id for ind in category.indicator_set.all()])
-
-        data_visuals = IndicatorDataVisual.objects.filter(
-            indicator_id__in=indicator_ids
-        ).select_related('indicator').prefetch_related('indicatordatavisualsource_set__source')
-
-        # Get all indicator values using the smart fetching method
-        indicator_values = self.get_section_data(
-            primary_location,
-            parent_locations,
-            sibling_locations
-        )
-
-        # Build the response structure
-        return {
-            'section': {
-                'id': self.id,
-                'name': self.name,
-                'sort_order': self.sort_order,
-            },
-            'categories': CategorySerializer(categories, many=True).data,
-            'dataVisuals': DataVisualSerializer(data_visuals, many=True).data,
-            'indicatorValues': IndicatorValueSerializer(indicator_values, many=True).data,
-        }
 
     def get_comparison_types(self):
         """

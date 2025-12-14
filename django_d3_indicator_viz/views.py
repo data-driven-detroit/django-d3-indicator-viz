@@ -642,6 +642,10 @@ def __build_indicator_values_dict_list(indicator_values):
 
 
 def roll_indicators(category, location):
+    """
+    Annoying that this is necessary, but we're handling the case where 
+    there isn't a data visual associated with an indicator.
+    """
     result = []
     for indicator in category.indicator_set.all():
         meta = indicator.get_visual_metadata(location)
@@ -658,6 +662,9 @@ def roll_indicators(category, location):
 
 
 def roll_section(section, location):
+    """
+    Pre computing some things.
+    """
     return {
         "name": section.name,
         "anchor": section.anchor,
@@ -670,6 +677,7 @@ def roll_section(section, location):
                 "indicators": roll_indicators(category, location)            
             } for category in section.category_set.all()
         ]
+        "indicator_values": [] # This is what we're going to populate
     }
 
 
@@ -771,31 +779,6 @@ def get_section(request):
             "sibling_loc_ids": "",
         }
     )
-
-
-def section_data(request, location_id, section_id):
-    """
-    API endpoint that returns all data needed for a section.
-
-    Returns JSON matching the structure expected by SectionLoader.
-    """
-    from django.shortcuts import get_object_or_404
-
-    location = get_object_or_404(Location, id=location_id)
-    section = get_object_or_404(Section, id=section_id)
-
-    # Get comparison locations
-    parent_locations = location.get_parents()
-    # sibling_locations = location.get_siblings(defer_geom=True)
-
-    # Get all section data using the model method
-    section_json = section.get_section_json_data(
-        primary_location=location,
-        parent_locations=",".join(parent_locations),
-        sibling_locations="", # TODO (Mike): We don't use these on SDC now
-    )
-
-    return JsonResponse(section_json)
 
 
 # Create your views here.
