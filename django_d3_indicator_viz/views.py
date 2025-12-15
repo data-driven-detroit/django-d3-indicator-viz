@@ -746,7 +746,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
             "profile_data_json": json.dumps(profile_data),
             "primary_loc_id": location_id,
             "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
-            "sibling_loc_ids": ",".join(loc.id for loc in all_siblings),
+            "sibling_loc_ids": "", # ",".join(loc.id for loc in all_siblings),
             "header_data": header_data,
             "location": location,
             "location_type": location_type,
