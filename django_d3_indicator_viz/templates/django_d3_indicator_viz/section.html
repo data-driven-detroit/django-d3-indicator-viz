@@ -54,11 +54,11 @@
                 {% endfor %}
             </div>
         </section>
-        {% for indicator in category.indicator_set.all %}
-        {% with data_visual=indicator.indicatordatavisual_set.first %}
+        {% for indicator in category.indicators %}
+        {% with data_visual=indicator.visual_metadata %}
         <section id="indicator-{{ indicator.id }}-datatable-container" data-category-id="{{ category.id }}" data-indicator-id="{{ indicator.id }}" class="data-drawer" style="display: none;">
             <h3 class="chart-title">
-                <span>{{ indicator.name }} ({{ data_visual.end_date.year }} {% with sources=data_visual.indicatordatavisualsource_set.all %}{% if sources %}{{ sources.0.source.name }}{% else %}[NO SOURCE]{% endif %}{% endwith %}){% if indicator.qualifier %} <span style="font-weight: normal;">{{ indicator.qualifier }}</span>{% endif %}</span>
+                <span>{{ indicator.name }} ({{ data_visual.end_date.year }}){% if indicator.qualifier %} <span style="font-weight: normal;">{{ indicator.qualifier }}</span>{% endif %}</span>
                 <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Hide data</button>
             </h3>
             <table class="full-width">
