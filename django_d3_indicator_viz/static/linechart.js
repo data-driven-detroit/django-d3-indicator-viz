@@ -65,7 +65,7 @@ export default class LineChart {
 
         // set up the container
         this.container.classList.add('line-chart-container');
-        this.container.style.height = '300px';
+        this.container.style.height = '240px';
 
         // dispose the old chart (if redrawing)
         if (this.chart) {
