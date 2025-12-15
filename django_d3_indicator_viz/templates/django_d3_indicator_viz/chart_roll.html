@@ -141,6 +141,11 @@
         setupDataButtons();
     });
 
+    // Re-setup buttons when HTMX loads new content
+    document.body.addEventListener('htmx:load', () => {
+        setupDataButtons();
+    });
+
     // Handle show/hide data button clicks
     function setupDataButtons() {
         document.querySelectorAll('.show-data-button').forEach(button => {
