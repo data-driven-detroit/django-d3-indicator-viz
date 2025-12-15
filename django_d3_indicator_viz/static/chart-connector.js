@@ -62,7 +62,7 @@ function drawChart(container, allValues) {
 
     // Filter values for this indicator and source
     const indicatorValues = allValues.filter(v =>
-        v.indicator === indicatorId && v.source === sourceId
+        v.indicator_id === indicatorId && v.source_id === sourceId
     );
 
     if (!indicatorValues.length) {
@@ -74,7 +74,7 @@ function drawChart(container, allValues) {
     const primaryLocation = window.profileData.locations.primary;
 
     // Filter for primary location
-    const primaryValues = indicatorValues.filter(v => v.location === primaryLocation.id);
+    const primaryValues = indicatorValues.filter(v => v.location_id === primaryLocation.id);
 
     // Get comparison locations if needed
     let compareLocations = [];
@@ -89,7 +89,7 @@ function drawChart(container, allValues) {
     // Filter for comparison locations
     if (compareLocations.length > 0) {
         const compareLocationIds = compareLocations.map(loc => loc.id);
-        compareValues = indicatorValues.filter(v => compareLocationIds.includes(v.location));
+        compareValues = indicatorValues.filter(v => compareLocationIds.includes(v.location_id));
     }
 
     // Get color scale if specified
