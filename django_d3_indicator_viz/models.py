@@ -397,10 +397,10 @@ class Indicator(models.Model):
                 partition_by=[F('indicator_id'), F('location_id')],
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
-            data_visual_type=Value(data_visual.data_visual_type),
-            columns=Value(data_visual.columns),
-            location_comparison_type=Value(data_visual.location_comparison_type),
-            color_scale_id=Value(data_visual.color_scale_id),
+            data_visual_type=Value(data_visual.data_visual_type, output_field=models.TextField()),
+            columns=Value(data_visual.columns, output_field=models.IntegerField()),
+            location_comparison_type=Value(data_visual.location_comparison_type, output_field=models.TextField()),
+            color_scale_id=Value(data_visual.color_scale_id, output_field=models.IntegerField()),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
         ).select_related( 'filter_option', 'location', 'source', 'indicator').first()
