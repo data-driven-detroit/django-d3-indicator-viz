@@ -12,9 +12,11 @@ import MinMedMaxChart from './minmedmaxchart.js';
 import DonutChart from './donutchart.js';
 import DataTable from './datatable.js';
 
+
 /**
  * Draw all charts in a container.
  */
+
 function drawCharts(container = document) {
     // Find all sections with indicator values
     const sections = container.querySelectorAll('article[data-indicator-values]');
@@ -30,7 +32,8 @@ function drawCharts(container = document) {
         const chartContainers = section.querySelectorAll('.chart-container[data-indicator-id]');
 
         chartContainers.forEach(chartContainer => {
-            drawChart(chartContainer, allValues);
+            console.log(allValues);
+            // drawChart(chartContainer, allValues);
         });
 
         // Mark as drawn
