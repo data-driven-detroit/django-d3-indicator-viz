@@ -210,3 +210,6 @@ document.body.addEventListener('htmx:afterSettle', function(evt) {
 document.addEventListener('DOMContentLoaded', function() {
     drawCharts();
 });
+
+// Export for manual usage
+export default { drawAll: drawCharts };

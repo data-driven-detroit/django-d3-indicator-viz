@@ -96,8 +96,7 @@
             // TODO: Implement section HTML rendering
 
             // Load the charts using SectionLoader
-            const loader = new SectionLoader(fullData);
-            loader.drawAll();
+            SectionLoader.drawAll();
 
             // Mark as loaded
             article.classList.add('section-loaded');
