@@ -19,8 +19,13 @@ import DataTable from './datatable.js';
 
 function drawCharts(container = document) {
     // Find all sections with indicator values
-    const sections = container.querySelectorAll('article[data-indicator-values]');
-    
+    let sections = Array.from(container.querySelectorAll('article[data-indicator-values]'));
+
+    // If the container itself is an article with indicator values, include it
+    if (container.matches && container.matches('article[data-indicator-values]')) {
+        sections.push(container);
+    }
+
     sections.forEach(section => {
         // Skip if already drawn
         if (section.dataset.chartsDrawn === 'true') return;
