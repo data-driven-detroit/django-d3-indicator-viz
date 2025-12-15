@@ -3,7 +3,7 @@
 <article id="{{ section.anchor }}" data-indicator-values='{{ section.indicator_values|safe }}'>
     <header class="section-contents"
         hx-get="{% url "next_section" %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}"
-        hx-trigger="revealed"
+        hx-trigger="intersect once"
         hx-swap="afterend"
         hx-target="closest article"
     >

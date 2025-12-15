@@ -102,12 +102,15 @@ export default class DataTable {
             row.appendChild(valueCell);
             let valueMoeCell = document.createElement('td');
             valueMoeCell.className = 'context';
-            let valueMoePlusMinus = document.createElement('span');
-            valueMoePlusMinus.innerHTML = '&plusmn;';
-            valueMoeCell.appendChild(valueMoePlusMinus);
-            let valueMoe = document.createElement('span');
-            valueMoe.textContent = formatData(sortedData[index].value_moe, this.indicator.formatter);
-            valueMoeCell.appendChild(valueMoe);
+            // Show blank for null MOE instead of "No data"
+            if (sortedData[index].value_moe !== null && sortedData[index].value_moe !== undefined) {
+                let valueMoePlusMinus = document.createElement('span');
+                valueMoePlusMinus.innerHTML = '&plusmn;';
+                valueMoeCell.appendChild(valueMoePlusMinus);
+                let valueMoe = document.createElement('span');
+                valueMoe.textContent = formatData(sortedData[index].value_moe, this.indicator.formatter);
+                valueMoeCell.appendChild(valueMoe);
+            }
             row.appendChild(valueMoeCell);
 
             let countCell = document.createElement('td');
@@ -115,12 +118,15 @@ export default class DataTable {
             row.appendChild(countCell);
             let countMoeCell = document.createElement('td');
             countMoeCell.className = 'context';
-            let countMoePlusMinus = document.createElement('span');
-            countMoePlusMinus.innerHTML = '&plusmn;';
-            countMoeCell.appendChild(countMoePlusMinus);
-            let countMoe = document.createElement('span');
-            countMoe.textContent = formatData(sortedData[index].count_moe, null);
-            countMoeCell.appendChild(countMoe);
+            // Show blank for null MOE instead of "No data"
+            if (sortedData[index].count_moe !== null && sortedData[index].count_moe !== undefined) {
+                let countMoePlusMinus = document.createElement('span');
+                countMoePlusMinus.innerHTML = '&plusmn;';
+                countMoeCell.appendChild(countMoePlusMinus);
+                let countMoe = document.createElement('span');
+                countMoe.textContent = formatData(sortedData[index].count_moe, null);
+                countMoeCell.appendChild(countMoe);
+            }
             row.appendChild(countMoeCell);
 
             this.compareLocations.forEach((loc, locIndex) => {
@@ -134,24 +140,30 @@ export default class DataTable {
                 row.appendChild(valueCell);
                 let valueMoeCell = document.createElement('td');
                 valueMoeCell.className = 'context';
-                let valueMoePlusMinus = document.createElement('span');
-                valueMoePlusMinus.innerHTML = '&plusmn;';
-                valueMoeCell.appendChild(valueMoePlusMinus);
-                let valueMoe = document.createElement('span');
-                valueMoe.textContent = formatData(compareDataItem.value_moe, this.indicator.formatter);
-                valueMoeCell.appendChild(valueMoe);
+                // Show blank for null MOE instead of "No data"
+                if (compareDataItem.value_moe !== null && compareDataItem.value_moe !== undefined) {
+                    let valueMoePlusMinus = document.createElement('span');
+                    valueMoePlusMinus.innerHTML = '&plusmn;';
+                    valueMoeCell.appendChild(valueMoePlusMinus);
+                    let valueMoe = document.createElement('span');
+                    valueMoe.textContent = formatData(compareDataItem.value_moe, this.indicator.formatter);
+                    valueMoeCell.appendChild(valueMoe);
+                }
                 row.appendChild(valueMoeCell);
                 let countCell = document.createElement('td');
                 countCell.textContent = formatData(compareDataItem.count, null);
                 row.appendChild(countCell);
                 let countMoeCell = document.createElement('td');
                 countMoeCell.className = 'context';
-                let countMoePlusMinus = document.createElement('span');
-                countMoePlusMinus.innerHTML = '&plusmn;';
-                countMoeCell.appendChild(countMoePlusMinus);
-                let countMoe = document.createElement('span');
-                countMoe.textContent = formatData(compareDataItem.count_moe, null);
-                countMoeCell.appendChild(countMoe);
+                // Show blank for null MOE instead of "No data"
+                if (compareDataItem.count_moe !== null && compareDataItem.count_moe !== undefined) {
+                    let countMoePlusMinus = document.createElement('span');
+                    countMoePlusMinus.innerHTML = '&plusmn;';
+                    countMoeCell.appendChild(countMoePlusMinus);
+                    let countMoe = document.createElement('span');
+                    countMoe.textContent = formatData(compareDataItem.count_moe, null);
+                    countMoeCell.appendChild(countMoe);
+                }
                 row.appendChild(countMoeCell);
             });
             

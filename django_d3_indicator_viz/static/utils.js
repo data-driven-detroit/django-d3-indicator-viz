@@ -137,9 +137,21 @@ function getComparisonPhrases(baseValue, comparisonValue, indicatorType) {
         0: ['less than 10 percent', 'of', valueFieldPhrase],
     };
 
+    // Handle edge cases where comparison isn't possible
+    if (comparisonValue === null || comparisonValue === undefined || comparisonValue === 0 ||
+        baseValue === null || baseValue === undefined) {
+        return ['N/A', '', ''];
+    }
+
     let index = baseValue / comparisonValue * 100;
-    
-    return phrases[Object.keys(phrases).findLast(key => index >= key)]
+
+    // Handle negative or invalid index values
+    if (isNaN(index) || index < 0) {
+        return ['N/A', '', ''];
+    }
+
+    const matchingKey = Object.keys(phrases).findLast(key => index >= key);
+    return phrases[matchingKey] || ['N/A', '', ''];
 }
 
 /**
