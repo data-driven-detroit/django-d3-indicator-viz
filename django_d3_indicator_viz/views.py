@@ -735,7 +735,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
         "locations": {
             "primary": LocationSerializer(location).data,
             "parents": LocationSerializer(parent_locations, many=True).data,
-            "siblings": LocationSerializer(all_siblings, many=True).data,
+            "siblings": [] # LocationSerializer(all_siblings, many=True).data,
         },
     }
 
