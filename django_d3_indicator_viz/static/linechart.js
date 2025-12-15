@@ -19,10 +19,9 @@ export default class LineChart {
      * @param {Array} locationTypes the location types
      * @param {Array} colorScales the color scales
      * @param {Object} chartOptions the chart options for echarts
-     * @param {Object} axisScale optional shared axis scale {min, max}
      */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions,
-        locationTypes, colorScales, chartOptions = {}, axisScale = null) {
+        locationTypes, colorScales, chartOptions = {}) {
 
         this.visual = visual;
         this.container = container;
@@ -35,7 +34,6 @@ export default class LineChart {
         this.locationTypes = locationTypes;
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
-        this.axisScale = axisScale;
         this.chart = null;
 
         this.draw();
@@ -152,15 +150,9 @@ export default class LineChart {
                 type: 'value',
                 position: 'right',
                 show: true,
-                // Set 0-100 range for percentages to show full scale
                 ...(this.indicator.indicator_type === 'percentage' && {
                     min: 0,
                     max: 100
-                }),
-                // Apply shared axis scale if provided (overrides percentage defaults)
-                ...(this.axisScale && {
-                    min: this.axisScale.min,
-                    max: this.axisScale.max
                 })
             },
             series: seriesData

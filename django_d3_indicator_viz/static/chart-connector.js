@@ -150,8 +150,7 @@ function drawChart(container, allValues) {
                 window.profileData.filterOptions,
                 window.profileData.colorScales,
                 comparisonType,
-                chartOptions,
-                null  // axisScale - could read from category container if needed
+                chartOptions
             );
             break;
 
@@ -167,8 +166,7 @@ function drawChart(container, allValues) {
                 window.profileData.filterOptions,
                 window.profileData.locationTypes,
                 window.profileData.colorScales,
-                chartOptions,
-                null  // axisScale
+                chartOptions
             );
             break;
 
