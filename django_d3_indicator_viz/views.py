@@ -657,7 +657,8 @@ def roll_indicators(category, location):
                 "rate_per": indicator.rate_per,
                 "visual_metadata": meta,
                 "formatter": indicator.formatter,
-                "type": indicator.indicator_type
+                "type": indicator.indicator_type,
+                "qualifier": indicator.qualifier
             }
         )
     return result
