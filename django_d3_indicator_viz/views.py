@@ -679,7 +679,7 @@ def roll_section(section, primary_location, comparison_locations):
                 "indicators": roll_indicators(category, primary_location)            
             } for category in section.category_set.all()
         ],
-        "indicator_values": json.dumps(section.get_indicator_values([primary_location, **comparison_locations])),
+        "indicator_values": json.dumps(section.get_indicator_values([primary_location, *comparison_locations])),
     }
 
 
@@ -725,7 +725,7 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     # FIXME (Mike): This creates a list with these unpacks, to then 
     # create another list within 'roll_section.' try to avoid this many
     # list creations.
-    sections = [roll_section(section, location, [**parents, **all_siblings])]
+    sections = [roll_section(section, location, [*parents, *all_siblings])]
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
