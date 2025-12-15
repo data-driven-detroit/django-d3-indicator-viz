@@ -67,7 +67,7 @@ class Section(models.Model):
                 "indicator": iv.indicator.id,
                 "location": iv.location.id,
                 "source": iv.source.id,
-                "filter_option": iv.filter_option.id,
+                "filter_option": iv.filter_option.id if iv.filter_option else None,
                 "start_date": iv.start_date.isoformat(),
                 "end_date": iv.end_date.isoformat(),
                 "value": iv.value,
