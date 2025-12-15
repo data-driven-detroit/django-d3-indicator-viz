@@ -54,6 +54,8 @@ class Section(models.Model):
             rn=Window(
                 expression=RowNumber(),
                 partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id')],
+                # FIXME(Mike): Ordering by date desc flips the order for the line chart so we may need
+                # to sort again after this somewhere -- for now we're handling it in the js.
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')

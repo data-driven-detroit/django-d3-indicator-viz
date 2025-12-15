@@ -58,7 +58,11 @@ export default class LineChart {
         // create a series for each location
         let seriesNames = [this.location.name];
         let seriesData = {};
-        seriesData[this.location.id] = [].concat(this.indicatorData);
+        // Sort data chronologically (oldest to newest) for proper line chart display
+        let sortedData = [].concat(this.indicatorData).sort((a, b) =>
+            new Date(a.end_date) - new Date(b.end_date)
+        );
+        seriesData[this.location.id] = sortedData;
         seriesData = Object.values(seriesData);
 
         // set up the container
