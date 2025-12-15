@@ -1,3 +1,4 @@
+{% load static %}
 <script id="profile-data" type="application/json">
     {{ profile_data_json|safe }}
 </script>
@@ -47,7 +48,7 @@
 </style>
 
 <script type="module">
-    import SectionLoader from "/static/chart-connector.js";
+    import SectionLoader from "{% static 'chart-connector.js' %}";
 
     // Get profile data from script tag
     const profileData = JSON.parse(document.getElementById('profile-data').textContent);
