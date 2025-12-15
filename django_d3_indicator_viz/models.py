@@ -53,7 +53,7 @@ class Section(models.Model):
             source_priority=priority_subquery,
             rn=Window(
                 expression=RowNumber(),
-                partition_by=[F('indicator_id'), F('location_id')],
+                partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id')],
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
