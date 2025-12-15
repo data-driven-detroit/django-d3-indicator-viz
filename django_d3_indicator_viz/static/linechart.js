@@ -150,8 +150,13 @@ export default class LineChart {
             yAxis: {
                 type: 'value',
                 position: 'right',
-                show: false,
-                // Apply shared axis scale if provided
+                show: true,
+                // Set 0-100 range for percentages to show full scale
+                ...(this.indicator.indicator_type === 'percentage' && {
+                    min: 0,
+                    max: 100
+                }),
+                // Apply shared axis scale if provided (overrides percentage defaults)
                 ...(this.axisScale && {
                     min: this.axisScale.min,
                     max: this.axisScale.max
