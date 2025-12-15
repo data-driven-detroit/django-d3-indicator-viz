@@ -206,6 +206,24 @@ function drawChart(container, allValues) {
         default:
             container.innerHTML = `<p>Unknown chart type: ${visualType}</p>`;
     }
+
+    // Create data table for chart types that support it (not ban or min_med_max)
+    if (['column', 'line', 'donut'].includes(visualType)) {
+        const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
+        if (tableContainer) {
+            new DataTable(
+                visual,
+                tableContainer,
+                indicator,
+                primaryLocation,
+                primaryValues,
+                compareLocations,
+                compareValues,
+                window.profileData.filterOptions,
+                chartOptions
+            );
+        }
+    }
 }
 
 // Listen for HTMX events - htmx:load fires on the newly loaded content
