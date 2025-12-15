@@ -1,6 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
-from django.db.models import Window, Prefetch, F, Q, OuterRef, Value
+from django.db.models import Window, Prefetch, F, Q, OuterRef, Value, Min, Max
 from django.db.models.functions import RowNumber
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import ValidationError
@@ -383,13 +383,13 @@ class Indicator(models.Model):
             print(f"{self.name} doesn't have a data visual set.")
             # We filter out nones in the views
             return None
-        
+
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=data_visual,
             source=OuterRef('source')
         ).values('priority')[:1]
 
-        return IndicatorValue.objects.filter(
+        base_query = IndicatorValue.objects.filter(
             location=location,
             indicator=self,
         ).annotate(
@@ -405,7 +405,22 @@ class Indicator(models.Model):
             color_scale_id=Value(data_visual.color_scale_id, output_field=models.IntegerField()),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line')
-        ).select_related( 'filter_option', 'location', 'source', 'indicator').first()
+        ).select_related('filter_option', 'location', 'source', 'indicator')
+
+        result = base_query.first()
+
+        # For line charts, get the full date range instead of just the first row
+        if result and data_visual.data_visual_type == 'line':
+            date_range = base_query.aggregate(
+                min_start=Min('start_date'),
+                max_end=Max('end_date')
+            )
+            if date_range['min_start']:
+                result.start_date = date_range['min_start']
+            if date_range['max_end']:
+                result.end_date = date_range['max_end']
+
+        return result
 
 
 class IndicatorFilterType(models.Model):
