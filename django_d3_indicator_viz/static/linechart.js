@@ -74,14 +74,24 @@ export default class LineChart {
 
         // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
+        let grid = { containLabel: true };
+        if (window.innerWidth >= 1200) {
+            grid.left = '0px';
+            grid.right = '0px';
+            grid.top = '10px';
+            grid.bottom = '10px';
+        } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
+            grid.top = '20px';
+            grid.bottom = '20px';
+        } else {
+            grid.top = '20px';
+            grid.bottom = '20px';
+            grid.left = '0px';
+        }
         let option = {
             ...this.chartOptions,
             color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
-            grid: {
-                left: 0,
-                right: 0,
-                containLabel: true
-            },
+            grid: grid,
             legend: {
                 show: seriesData.length > 1,
                 bottom: '0',
