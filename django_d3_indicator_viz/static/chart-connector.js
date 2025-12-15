@@ -32,8 +32,7 @@ function drawCharts(container = document) {
         const chartContainers = section.querySelectorAll('.chart-container[data-indicator-id]');
 
         chartContainers.forEach(chartContainer => {
-            console.log(allValues);
-            // drawChart(chartContainer, allValues);
+            drawChart(chartContainer, allValues);
         });
 
         // Mark as drawn
