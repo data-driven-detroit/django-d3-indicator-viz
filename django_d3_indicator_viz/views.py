@@ -774,7 +774,7 @@ def get_section(request):
     lst_sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
 
     location = Location.objects.get(id=primary_loc_id)
-    parent_locations = Location.objects.get(id__in=lst_parent_loc_ids)
+    parent_locations = Location.objects.filter(id__in=lst_parent_loc_ids)
 
     return render(
         request, "django_d3_indicator_viz/section.html",
