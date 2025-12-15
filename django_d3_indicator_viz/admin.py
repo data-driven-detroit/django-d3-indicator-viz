@@ -106,7 +106,7 @@ class CustomLocationAdmin(ImportExportMixin, admin.ModelAdmin):
 admin.site.register(CustomLocation, CustomLocationAdmin)
 
 
-class IndicatorSourceAdmin(ImportExportMixin):
+class IndicatorSourceAdmin(ImportExportMixin, model.ModelAdmin):
     list_display = ["id", "name"]
     readonly_fields = ("id",)
     ordering = ["name"]
