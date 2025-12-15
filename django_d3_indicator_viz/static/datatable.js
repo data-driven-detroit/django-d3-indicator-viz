@@ -63,9 +63,19 @@ export default class DataTable {
         let tbody = document.createElement('tbody');
         let filterOptions = this.indicatorData.map(item => {
             let option = this.filterOptions.find(o => o.id === item.filter_option_id)?.name;
-            if (!option) {
-                option = item.end_date.substring(0, 4);
+            let year = item.end_date.substring(0, 4);
+
+            // For line charts, include the year with the label
+            if (this.visual.data_visual_type === 'line') {
+                if (option) {
+                    option = `${option} (${year})`;
+                } else {
+                    option = year;
+                }
+            } else if (!option) {
+                option = year;
             }
+
             return option;
         });
         let aggregateNoticePresent = false;
