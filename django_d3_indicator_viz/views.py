@@ -663,9 +663,9 @@ def roll_indicators(category, location):
     return result
 
 
-def roll_section(section, location):
+def roll_section(section, primary_location, comparison_locations):
     """
-    Pre computing some things.
+    Pre computing some things. 
     """
     return {
         "name": section.name,
@@ -676,10 +676,10 @@ def roll_section(section, location):
                 "id": category.id,
                 "name": category.name,
                 "anchor": category.anchor,
-                "indicators": roll_indicators(category, location)            
+                "indicators": roll_indicators(category, primary_location)            
             } for category in section.category_set.all()
         ],
-        "indicator_values": json.dumps(section.get_indicator_values(location)),
+        "indicator_values": json.dumps(section.get_indicator_values([primary_location, **comparison_locations])),
     }
 
 
@@ -705,11 +705,11 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
         geometry_field="geometry",
         fields=("id", "name", "location_type"),
     )
-
-    all_siblings = location.get_siblings(defer_geom=True)
-
-    # Collect all locations for lookup (primary + parents + siblings)
-    all_locations = [location] + list(parent_locations) + list(all_siblings)
+    
+    # TODO (Mike): We'll eventually have to put this back, but for now 
+    # we don't compare with siblings, and when we do we have to get to
+    # all siblings within parents -- which is different than display.
+    # all_siblings = location.get_siblings(defer_geom=True)
 
     # This is messy, but these are needed globally and can't be called from within
     # the tree. These are expected to be complete even down to the charts layer ...
@@ -721,8 +721,11 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     
     # Get the first section, but as an iterator, not individually.
     section = Section.objects.all().order_by('sort_order').first()
-
-    sections = [roll_section(section, location)]
+    
+    # FIXME (Mike): This creates a list with these unpacks, to then 
+    # create another list within 'roll_section.' try to avoid this many
+    # list creations.
+    sections = [roll_section(section, location, [**parents, **all_siblings])]
 
     # Build profile data for JavaScript (locations, filter options, etc.)
     profile_data = {
