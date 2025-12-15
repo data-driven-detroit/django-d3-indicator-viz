@@ -769,16 +769,17 @@ def get_section(request):
     parent_loc_ids = request.GET.get('parent_loc_ids', '')
     sibling_loc_ids = request.GET.get('sibling_loc_ids', '')
 
-    location = Location.objects.get(id=primary_loc_id)
-
     # If you hit '', you'll get a list with [''] on split, so handle that case
     lst_parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
     lst_sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
 
+    location = Location.objects.get(id=primary_loc_id)
+    parent_locations = Location.objects.get(id__in=lst_parent_loc_ids)
+
     return render(
         request, "django_d3_indicator_viz/section.html",
         {
-            "section": roll_section(next_section, location),
+            "section": roll_section(next_section, location, parent_locations),
             "primary_loc_id": primary_loc_id,
             "parent_loc_ids": parent_loc_ids,
             "sibling_loc_ids": "",
