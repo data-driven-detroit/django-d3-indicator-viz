@@ -65,10 +65,9 @@ class Section(models.Model):
             {
                 "id": iv.id,
                 "indicator": iv.indicator.id,
-
                 "location": iv.location.id,
                 "source": iv.source.id,
-                "filter_option": iv.filter_option,
+                "filter_option": iv.filter_option.id,
                 "start_date": iv.start_date.isoformat(),
                 "end_date": iv.end_date.isoformat(),
                 "value": iv.value,
