@@ -61,7 +61,13 @@ export default class DataTable {
 
         // set up the table body
         let tbody = document.createElement('tbody');
-        let filterOptions = this.indicatorData.map(item => {
+
+        // Sort data chronologically (oldest to newest) for consistent display
+        let sortedData = [].concat(this.indicatorData).sort((a, b) =>
+            new Date(a.end_date) - new Date(b.end_date)
+        );
+
+        let filterOptions = sortedData.map(item => {
             let option = this.filterOptions.find(o => o.id === item.filter_option_id)?.name;
             let year = item.end_date.substring(0, 4);
 
@@ -88,8 +94,8 @@ export default class DataTable {
             
             let valueCell = document.createElement('td');
             valueCell.className = 'value';
-            valueCell.textContent = formatData(this.indicatorData[index].value, this.indicator.formatter);
-            if (showAggregateNotice(this.indicatorData[index])) {
+            valueCell.textContent = formatData(sortedData[index].value, this.indicator.formatter);
+            if (showAggregateNotice(sortedData[index])) {
                 valueCell.innerHTML += '*';
                 aggregateNoticePresent = true;
             }
@@ -100,12 +106,12 @@ export default class DataTable {
             valueMoePlusMinus.innerHTML = '&plusmn;';
             valueMoeCell.appendChild(valueMoePlusMinus);
             let valueMoe = document.createElement('span');
-            valueMoe.textContent = formatData(this.indicatorData[index].value_moe, this.indicator.formatter);
+            valueMoe.textContent = formatData(sortedData[index].value_moe, this.indicator.formatter);
             valueMoeCell.appendChild(valueMoe);
             row.appendChild(valueMoeCell);
 
             let countCell = document.createElement('td');
-            countCell.textContent = formatData(this.indicatorData[index].count, null);
+            countCell.textContent = formatData(sortedData[index].count, null);
             row.appendChild(countCell);
             let countMoeCell = document.createElement('td');
             countMoeCell.className = 'context';
@@ -113,16 +119,16 @@ export default class DataTable {
             countMoePlusMinus.innerHTML = '&plusmn;';
             countMoeCell.appendChild(countMoePlusMinus);
             let countMoe = document.createElement('span');
-            countMoe.textContent = formatData(this.indicatorData[index].count_moe, null);
+            countMoe.textContent = formatData(sortedData[index].count_moe, null);
             countMoeCell.appendChild(countMoe);
             row.appendChild(countMoeCell);
 
             this.compareLocations.forEach((loc, locIndex) => {
                 let valueCell = document.createElement('td');
                 valueCell.className = 'value';
-                let compareDataItem = this.compareData.find(d => d.location_id === loc.id 
-                    && ((!d.filter_option_id  || d.filter_option_id === this.indicatorData[index].filter_option_id)
-                    && d.end_date === this.indicatorData[index].end_date)
+                let compareDataItem = this.compareData.find(d => d.location_id === loc.id
+                    && ((!d.filter_option_id  || d.filter_option_id === sortedData[index].filter_option_id)
+                    && d.end_date === sortedData[index].end_date)
                 );
                 valueCell.textContent = formatData(compareDataItem.value, this.indicator.formatter);
                 row.appendChild(valueCell);
