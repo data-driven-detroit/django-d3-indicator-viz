@@ -203,9 +203,9 @@ function drawChart(container, allValues) {
     }
 }
 
-// Listen for HTMX events
-document.body.addEventListener('htmx:afterSettle', function(evt) {
-    drawCharts(evt.detail.target);
+// Listen for HTMX events - htmx:load fires on the newly loaded content
+document.body.addEventListener('htmx:load', function(evt) {
+    drawCharts(evt.detail.elt);
 });
 
 // Draw on page load
