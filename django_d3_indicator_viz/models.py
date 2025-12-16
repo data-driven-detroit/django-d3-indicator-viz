@@ -683,7 +683,7 @@ def assemble_header_data(location_id):
     # PostgreSQL uses EXTRACT, SQLite uses strftime
 
     return IndicatorValue.objects.filter(
-        location_id='0600000US2616322000',
+        location_id=location_id,
         indicator__category_id__isnull=True,
     ).select_related(
         'indicator', 'source'
