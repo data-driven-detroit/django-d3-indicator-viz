@@ -182,16 +182,10 @@ export default class LineChart {
                         data: data,
                         // make sure the location being viewed sits above the other locations
                         z: data[0].location_id === this.location.id ? 3 : 2,
-                        // only show a symbol for the location being viewed on the last data point
-                        showSymbol: false,
-                        markPoint: {
-                            symbol: 'circle',
-                            symbolSize: data[0].location_id === this.location.id  ? 10 : 0,
-                            data: [{
-                                type: 'coordinate',
-                                coord: [data[data.length-1].end_date, data[data.length-1].value]
-                            }]
-                        },
+                        // show symbols at all data points to make gaps visible
+                        showSymbol: true,
+                        symbolSize: data[0].location_id === this.location.id ? 8 : 6,
+                        connectNulls: false,
                         lineStyle: {
                             width: 4
                         },
