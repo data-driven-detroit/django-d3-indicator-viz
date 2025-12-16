@@ -8,6 +8,7 @@
 import Ban from './ban.js';
 import ColumnChart from './columnchart.js';
 import LineChart from './linechart.js';
+import MultiLineChart from './multilinechart.js';
 import MinMedMaxChart from './minmedmaxchart.js';
 import DonutChart from './donutchart.js';
 import DataTable from './datatable.js';
@@ -170,6 +171,22 @@ function drawChart(container, allValues) {
             );
             break;
 
+        case 'multiline':
+            new MultiLineChart(
+                visual,
+                container,
+                indicator,
+                primaryLocation,
+                primaryValues,
+                compareLocations,
+                compareValues,
+                window.profileData.filterOptions,
+                window.profileData.locationTypes,
+                window.profileData.colorScales,
+                chartOptions
+            );
+            break;
+
         case 'min_med_max':
             new MinMedMaxChart(
                 visual,
@@ -206,7 +223,7 @@ function drawChart(container, allValues) {
     }
 
     // Create data table for chart types that support it (not ban or min_med_max)
-    if (['column', 'line', 'donut'].includes(visualType)) {
+    if (['column', 'line', 'multiline', 'donut'].includes(visualType)) {
         const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
         if (tableContainer) {
             new DataTable(

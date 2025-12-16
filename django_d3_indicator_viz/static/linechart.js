@@ -61,6 +61,23 @@ export default class LineChart {
             new Date(a.end_date) - new Date(b.end_date)
         );
         seriesData[this.location.id] = sortedData;
+
+        // If location comparison is enabled (parents or siblings), add comparison locations as separate series
+        if (['parents', 'siblings'].includes(this.visual.location_comparison_type)) {
+            this.compareData.forEach(item => {
+                if (!seriesData[item.location_id]) {
+                    seriesData[item.location_id] = [];
+                }
+                seriesData[item.location_id].push(item);
+            });
+            // Sort each comparison series chronologically
+            Object.keys(seriesData).forEach(locationId => {
+                if (locationId != this.location.id) {
+                    seriesData[locationId].sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+                }
+            });
+        }
+
         seriesData = Object.values(seriesData);
 
         // set up the container
@@ -163,6 +180,9 @@ export default class LineChart {
                 type: 'value',
                 position: 'right',
                 show: true,
+                axisLabel: {
+                    formatter: (value) => formatData(value, this.indicator.formatter, true)
+                },
                 ...(this.indicator.indicator_type === 'percentage' && {
                     min: 0,
                     max: 100

@@ -60,7 +60,7 @@ class Section(models.Model):
             ),
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
-            Q(rn=1) | Q(data_visual_type='line')
+            Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
         ).select_related('filter_option', 'location', 'source', 'indicator')
 
         return [
@@ -404,13 +404,13 @@ class Indicator(models.Model):
             location_comparison_type=Value(data_visual.location_comparison_type, output_field=models.TextField()),
             color_scale_id=Value(data_visual.color_scale_id, output_field=models.IntegerField()),
         ).filter(
-            Q(rn=1) | Q(data_visual_type='line')
+            Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
         ).select_related('filter_option', 'location', 'source', 'indicator')
 
         result = base_query.first()
 
         # For line charts, get the full date range instead of just the first row
-        if result and data_visual.data_visual_type == 'line':
+        if result and data_visual.data_visual_type in ['line', 'multiline']:
             date_range = base_query.filter(source=result.source).aggregate(
                 min_start=Min('start_date'),
                 max_end=Max('end_date')
@@ -541,12 +541,13 @@ class DataVisualType(models.TextChoices):
     """
     Represents the type of data visualizations that can be created for indicators.
     """
-    
+
     BAN = "ban",
     COLUMN = "column",
     DONUT = "donut",
     MIN_MED_MAX = "min_med_max",
     LINE = "line",
+    MULTILINE = "multiline",
 
     def __str__(self):
         return self.name
