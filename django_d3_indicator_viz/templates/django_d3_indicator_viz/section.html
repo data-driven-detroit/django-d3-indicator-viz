@@ -63,6 +63,11 @@
             </h3>
             <table class="full-width">
             </table>
+            {% if data_visual.source %}
+            <div class="data-source">
+                <p><small>Source: {{ data_visual.source.name }}</small></p>
+            </div>
+            {% endif %}
         </section>
         {% endwith %}
         {% endfor %}
