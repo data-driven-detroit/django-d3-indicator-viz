@@ -76,17 +76,20 @@ export default class LineChart {
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let grid = { containLabel: true };
         if (window.innerWidth >= 1200) {
-            grid.left = '0px';
-            grid.right = '0px';
+            grid.left = '5px';
+            grid.right = '5px';
             grid.top = '10px';
             grid.bottom = '10px';
         } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
+            grid.left = '5px';
+            grid.right = '5px';
             grid.top = '20px';
             grid.bottom = '20px';
         } else {
             grid.top = '20px';
             grid.bottom = '20px';
-            grid.left = '0px';
+            grid.left = '5px';
+            grid.right = '5px';
         }
         let option = {
             ...this.chartOptions,
