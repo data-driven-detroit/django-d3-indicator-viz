@@ -95,19 +95,21 @@ export default class MultiLineChart {
         // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let grid = { containLabel: true };
+        // Add extra bottom padding if there will be a legend
+        const hasLegend = seriesData.length > 1;
         if (window.innerWidth >= 1200) {
             grid.left = '5px';
             grid.right = '5px';
             grid.top = '10px';
-            grid.bottom = '10px';
+            grid.bottom = hasLegend ? '35px' : '10px';
         } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
             grid.left = '5px';
             grid.right = '5px';
             grid.top = '20px';
-            grid.bottom = '20px';
+            grid.bottom = hasLegend ? '40px' : '20px';
         } else {
             grid.top = '20px';
-            grid.bottom = '20px';
+            grid.bottom = hasLegend ? '40px' : '20px';
             grid.left = '5px';
             grid.right = '5px';
         }
@@ -116,13 +118,15 @@ export default class MultiLineChart {
             color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
-                show: seriesData.length > 1,
-                bottom: '0',
+                show: hasLegend,
+                bottom: '5px',
                 left: '0',
                 icon: 'rect',
                 selectedMode: false,
+                itemGap: 15,
                 textStyle: {
-                    fontWeight: 'bold',
+                    fontSize: 12,
+                    fontWeight: 'normal',
                 }
             },
             tooltip: {
