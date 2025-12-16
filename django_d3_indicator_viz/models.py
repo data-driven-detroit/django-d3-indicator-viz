@@ -411,7 +411,7 @@ class Indicator(models.Model):
 
         # For line charts, get the full date range instead of just the first row
         if result and data_visual.data_visual_type == 'line':
-            date_range = base_query.aggregate(
+            date_range = base_query.filter(source=result.source).aggregate(
                 min_start=Min('start_date'),
                 max_end=Max('end_date')
             )
