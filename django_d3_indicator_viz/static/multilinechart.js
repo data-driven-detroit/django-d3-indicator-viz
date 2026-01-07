@@ -85,7 +85,7 @@ export default class MultiLineChart {
 
         // set up the container
         this.container.classList.add('line-chart-container');
-        this.container.style.height = '200px';
+        this.container.style.height = '240px';
 
         // dispose the old chart (if redrawing)
         if (this.chart) {
@@ -137,8 +137,10 @@ export default class MultiLineChart {
                     type: 'none'
                 },
                 formatter: params => {
+                    // With time axis, get year from the data object's end_date
+                    let year = params[0].data.end_date.getFullYear();
                     return buildTooltipContent(
-                        params[0].name.substring(0, 4),
+                        year,
                         params[0].data,
                         this.indicator,
                         this.compareLocations,
@@ -147,31 +149,18 @@ export default class MultiLineChart {
                 }
             },
             xAxis: {
-                type: 'category',
-                data: seriesData[0].map(item => item.end_date),
+                type: 'time',
                 boundaryGap: false,
                 axisLabel: {
-                    width: 100,
-                    overflow: 'break',
                     showMinLabel: true,
                     showMaxLabel: true,
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
                     formatter: (value) => {
-                        let data = seriesData[0].find(item => item.end_date === value);
-                        return '{bold|' + value.substring(0, 4) + ': ' + '}'
-                            + '{normal|' + formatData(data.value, this.indicator.formatter, true) + '}'
-                            + (showAggregateNotice(data) ? '*' : '');
+                        return new Date(value).getFullYear();
                     },
-                    rich: {
-                        normal: {
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
-                        },
-                        bold: {
-                            fontWeight: 'bold',
-                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
-                        }
-                    }
+                    fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
+                    fontWeight: 'bold'
                 },
                 axisTick: {
                     show: false
@@ -186,10 +175,14 @@ export default class MultiLineChart {
             yAxis: {
                 type: 'value',
                 position: 'right',
-                show: false,
+                show: true,
                 axisLabel: {
                     formatter: (value) => formatData(value, this.indicator.formatter, true)
-                }
+                },
+                ...(this.indicator.indicator_type === 'percentage' && {
+                    min: 0,
+                    max: 100
+                })
             },
             series: seriesData
                 .map((data, index) => {
@@ -197,7 +190,14 @@ export default class MultiLineChart {
                         // Use filter option name if we have multiple series by filter, otherwise location name
                         name: seriesNames[index],
                         type: 'line',
-                        data: data,
+                        encode: {
+                            x: 'end_date',
+                            y: 'value'
+                        },
+                        data: data.map(item => ({
+                            ...item,
+                            end_date: new Date(item.end_date)
+                        })),
                         z: 3,
                         symbol: 'circle',
                         showSymbol: true,
