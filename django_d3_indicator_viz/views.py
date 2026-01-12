@@ -503,6 +503,9 @@ def __aggregate_indicator_value_set(
         "value_moe": None,
         "values_considered": None,
         "values_aggregated": None,
+        "active_data": (
+            indicator_values[0]["active_data"] if indicator_values else True
+        ),
     }
 
     if data_visual.indicator.indicator_type == "count":
@@ -636,6 +639,7 @@ def __build_indicator_values_dict_list(indicator_values):
             "count_moe": iv.count_moe,
             "universe": iv.universe,
             "universe_moe": iv.universe_moe,
+            "active_data": iv.active_data,
         }
         for iv in indicator_values
     ]
