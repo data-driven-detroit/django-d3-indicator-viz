@@ -20,15 +20,19 @@ function getTableContainer(indicatorId) {
 
 /**
  * Format a number.
- * 
+ *
  * @param {number} number - The number to be formatted.
  * @param {string} formatter - The formatter string.
  * @param {boolean} [round=false] - Whether to round the value.
+ * @param {boolean} [activeData=true] - Whether the data is active (if false, returns 'xx').
  * @returns {string} The formatted value.
  */
-function formatData(number, formatter, round = false) {
+function formatData(number, formatter, round = false, activeData = true) {
     if (number === null) {
         return 'No data';
+    }
+    if (!activeData) {
+        return 'xx';
     }
     let valueToFormat = round ? Math.round(number) : number;
     if (formatter) {
@@ -40,7 +44,7 @@ function formatData(number, formatter, round = false) {
 
 /**
  * Build the content for a tooltip.
- * 
+ *
  * @param {string} name - The name to be displayed in the tooltip.
  * @param {Object} data - The data to be displayed in the tooltip.
  * @param {Object} indicator - The indicator object.
@@ -48,21 +52,23 @@ function formatData(number, formatter, round = false) {
  * @param {Array} compareData - The data for the locations to compare against.
  */
 function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
+    let isActive = data.active_data !== false;
     let tooltipContent = `<div class='tooltip-value'>
-        <strong>${name}</strong>: 
-        ${formatData(data.value, indicator.formatter, true)}${showAggregateNotice(data) ? '*' : ''}
+        <strong>${name}</strong>:
+        ${formatData(data.value, indicator.formatter, true, isActive)}${showAggregateNotice(data) ? '*' : ''}
     </div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
-            let locationData = compareData.find(d => d.location_id === location.id 
+            let locationData = compareData.find(d => d.location_id === location.id
                 && data.filter_option_id === d.filter_option_id
                 && data.end_date === d.end_date);
             if (locationData) {
+                let isCompareActive = locationData.active_data !== false;
                 let comparisonPhrases = getComparisonPhrases(data.value, locationData.value, indicator.indicator_type);
                 tooltipContent += `<div class='tooltip-comparison'>
-                    <strong>${comparisonPhrases[0]}</strong> 
-                    ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}: 
-                    ${formatData(locationData.value, indicator.formatter, true)}
+                    <strong>${comparisonPhrases[0]}</strong>
+                    ${comparisonPhrases[1]} ${comparisonPhrases[2]} ${location.name}:
+                    ${formatData(locationData.value, indicator.formatter, true, isCompareActive)}
                 </div>`;
             } else {
                 tooltipContent += `<div class='tooltip-comparison'>

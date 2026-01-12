@@ -68,6 +68,12 @@ export default class ColumnChart {
         }
         seriesData = Object.values(seriesData);
 
+        // Check if all data is inactive
+        let allDataInactive = this.indicatorData.every(item => item.active_data === false);
+        if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
+            allDataInactive = allDataInactive && this.compareData.every(item => item.active_data === false);
+        }
+
         // set up the container
         this.container.classList.add('column-chart-container');
         if (window.innerWidth < 768) {
@@ -144,7 +150,9 @@ export default class ColumnChart {
         }
         let option = {
             ...this.chartOptions, // This upacks the options set in the chartloader.js file
-            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: allDataInactive
+                ? ['#CCCCCC', '#999999', '#777777', '#555555']
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
                 show: seriesData.length > 1,
@@ -186,7 +194,8 @@ export default class ColumnChart {
                         position: window.innerWidth >= 1200 ? 'top' : 'right',
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
-                            return formatData(params.data.value, this.indicator.formatter, true) 
+                            let isActive = params.data.active_data !== false;
+                            return formatData(params.data.value, this.indicator.formatter, true, isActive)
                                 + (showAggregateNotice(params.data) ? '*' : '');
                         }
                     },

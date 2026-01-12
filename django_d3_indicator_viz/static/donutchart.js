@@ -66,11 +66,12 @@ export default class DonutChart {
             // update the last selected index
             this.lastSelectedIndex = params.selected[0].dataIndex[0];
             let data = this.chart.getOption().series[0].data[params.selected[0].dataIndex[0]];
+            let isActive = data.active_data !== false;
             this.chart.setOption({
                 title: {
-                    text: 
+                    text:
                         '{normal|' + data.name + ' '
-                        + formatData(data.value, this.indicator.formatter, true) 
+                        + formatData(data.value, this.indicator.formatter, true, isActive)
                         + (showAggregateNotice(data) ? '*' : '') + '}'
                 },
                 legend: {
@@ -127,10 +128,11 @@ export default class DonutChart {
             dataItem = this.chart.getOption().series[0].data[this.lastSelectedIndex];
             dataItemIndex = this.lastSelectedIndex;
         }
+        let isActive = dataItem.active_data !== false;
         this.chart.setOption({
             // set the title to the hovered item or the previously selected item
             title: {
-                text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true) 
+                text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true, isActive)
                         + (showAggregateNotice(dataItem) ? '*' : '')
             },
             legend: {
@@ -195,6 +197,9 @@ export default class DonutChart {
             }
         });
 
+        // Check if all data is inactive
+        let allDataInactive = this.indicatorData.every(item => item.active_data === false);
+
         // dispose the old chart (if redrawing)
         if (this.chart) {
             this.chart.dispose();
@@ -204,7 +209,9 @@ export default class DonutChart {
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         this.option = {
             ...this.chartOptions,
-            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: allDataInactive
+                ? ['#CCCCCC', '#999999', '#777777', '#555555']
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: {
                 left: 0,
                 right: '80px',

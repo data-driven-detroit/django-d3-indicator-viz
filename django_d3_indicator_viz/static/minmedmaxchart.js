@@ -67,6 +67,9 @@ export default class MinMedMaxChart {
         }
         minMedMax.push(Math.max(...values));
 
+        // Check if data is inactive
+        let isActive = this.indicatorData.active_data !== false;
+
         // dispose the old chart (if redrawing)
         if (this.chart) {
             this.chart.dispose();
@@ -105,14 +108,14 @@ export default class MinMedMaxChart {
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
                     formatter: (value) => {
-                        let label = value === minMedMax[0] 
-                            ? 'Min: ' 
-                            : value === minMedMax[1] 
-                                ? 'Median: ' 
+                        let label = value === minMedMax[0]
+                            ? 'Min: '
+                            : value === minMedMax[1]
+                                ? 'Median: '
                                 : 'Max: ';
-                        
-                        return '{bold|' + label + '}' 
-                            + '{normal|' + formatData(value, this.indicator.formatter, true) + '}'
+
+                        return '{bold|' + label + '}'
+                            + '{normal|' + formatData(value, this.indicator.formatter, true, isActive) + '}'
                             + (value === this.indicatorData.value && showAggregateNotice(this.indicatorData) ? '*' : '');
                     },
                     rich: {
@@ -151,14 +154,15 @@ export default class MinMedMaxChart {
             },
             series: [{
                 data: [{
-                    value: [this.indicatorData.value, 0], 
-                    label: this.location.name, 
+                    value: [this.indicatorData.value, 0],
+                    label: this.location.name,
                     indicatorData: this.indicatorData
                 }],
                 type: 'scatter',
                 symbolSize: 15,
                 itemStyle: {
-                    opacity: 1
+                    opacity: 1,
+                    color: isActive ? undefined : '#999999'
                 },
                 emphasis: {
                     disabled: true

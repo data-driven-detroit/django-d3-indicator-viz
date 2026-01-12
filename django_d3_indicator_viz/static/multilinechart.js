@@ -83,6 +83,9 @@ export default class MultiLineChart {
 
         seriesData = Object.values(seriesData);
 
+        // Check if all data is inactive
+        let allDataInactive = this.indicatorData.every(item => item.active_data === false);
+
         // set up the container
         this.container.classList.add('line-chart-container');
         this.container.style.height = '240px';
@@ -115,7 +118,9 @@ export default class MultiLineChart {
         }
         let option = {
             ...this.chartOptions,
-            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: allDataInactive
+                ? ['#CCCCCC', '#999999', '#777777', '#555555']
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
                 show: hasLegend,

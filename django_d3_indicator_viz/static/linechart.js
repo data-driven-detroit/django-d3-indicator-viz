@@ -80,6 +80,12 @@ export default class LineChart {
 
         seriesData = Object.values(seriesData);
 
+        // Check if all data is inactive
+        let allDataInactive = this.indicatorData.every(item => item.active_data === false);
+        if (['parents', 'siblings'].includes(this.visual.location_comparison_type)) {
+            allDataInactive = allDataInactive && this.compareData.every(item => item.active_data === false);
+        }
+
         // set up the container
         this.container.classList.add('line-chart-container');
         this.container.style.height = '240px';
@@ -112,7 +118,9 @@ export default class LineChart {
         }
         let option = {
             ...this.chartOptions,
-            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: allDataInactive
+                ? ['#CCCCCC', '#999999', '#777777', '#555555']
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
                 show: hasLegend,
@@ -156,8 +164,9 @@ export default class LineChart {
                     alignMaxLabel: 'right',
                     formatter: (value) => {
                         let data = seriesData[0].find(item => item.end_date === value);
+                        let isActive = data.active_data !== false;
                         return '{bold|' + value.substring(0, 4) + ': ' + '}'
-                            + '{normal|' + formatData(data.value, this.indicator.formatter, true) + '}'
+                            + '{normal|' + formatData(data.value, this.indicator.formatter, true, isActive) + '}'
                             + (showAggregateNotice(data) ? '*' : '');
                     },
                     rich: {
