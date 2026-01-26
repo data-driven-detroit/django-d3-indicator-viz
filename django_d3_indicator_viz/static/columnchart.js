@@ -59,9 +59,14 @@ export default class ColumnChart {
         seriesData[this.location.id] = [].concat(this.indicatorData);
         if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
             this.compareData.forEach(item => {
+                // Skip items with null values
+                if (item.value === null || item.value === undefined) {
+                    return;
+                }
                 if (!seriesData[item.location_id]) {
-                    seriesData[item.location_id] = []
-                    seriesNames.push(this.compareLocations.find(loc => loc.id === item.location_id).name);
+                    seriesData[item.location_id] = [];
+                    let location = this.compareLocations.find(loc => loc.id === item.location_id);
+                    seriesNames.push(location ? location.name : 'Unknown');
                 }
                 seriesData[item.location_id].push(item);
             });

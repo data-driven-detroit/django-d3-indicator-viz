@@ -140,6 +140,19 @@ export default class DataTable {
                     && ((!d.filter_option_id  || d.filter_option_id === sortedData[index].filter_option_id)
                     && d.end_date === sortedData[index].end_date)
                 );
+
+                // Handle case where comparison data is missing
+                if (!compareDataItem) {
+                    valueCell.textContent = 'No data';
+                    valueCell.style.color = '#999999';
+                    row.appendChild(valueCell);
+                    // Add empty cells for MOE, count, and count MOE
+                    row.appendChild(document.createElement('td'));
+                    row.appendChild(document.createElement('td'));
+                    row.appendChild(document.createElement('td'));
+                    return;
+                }
+
                 let isCompareActive = compareDataItem.active_data !== false;
                 valueCell.textContent = formatData(compareDataItem.value, this.indicator.formatter, false, isCompareActive);
                 row.appendChild(valueCell);

@@ -111,6 +111,7 @@ export default class Ban {
         if (this.visual.location_comparison_type) {
             this.compareLocations.forEach((loc, index) => {
                 let locCompareData = this.compareData.find(d => d.location_id === loc.id)
+                    || { value: null, active_data: false };
                 let isCompareActive = locCompareData.active_data !== false;
                 let compareEl = document.createElement('div');
                 compareEl.className = 'ban-compare';
