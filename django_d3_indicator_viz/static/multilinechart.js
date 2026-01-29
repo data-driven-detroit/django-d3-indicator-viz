@@ -153,8 +153,9 @@ export default class MultiLineChart {
                     let item = params.data;
                     let year = new Date(item.end_date).getFullYear();
                     let isActive = item.active_data !== false;
+                    let shouldRound = this.indicator.indicator_type !== 'rate';
                     return `<strong>${params.seriesName}</strong> (${year})<br/>` +
-                           formatData(item.value, this.indicator.formatter, true, isActive);
+                           formatData(item.value, this.indicator.formatter, shouldRound, isActive);
                 }
             },
             xAxis: {
@@ -184,7 +185,7 @@ export default class MultiLineChart {
                 position: 'right',
                 show: true,
                 axisLabel: {
-                    formatter: (value) => formatData(value, this.indicator.formatter, true)
+                    formatter: (value) => formatData(value, this.indicator.formatter, this.indicator.indicator_type !== 'rate')
                 },
                 ...(this.indicator.indicator_type === 'percentage' && {
                     min: 0,

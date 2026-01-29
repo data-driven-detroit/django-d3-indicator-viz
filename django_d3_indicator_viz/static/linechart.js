@@ -165,8 +165,9 @@ export default class LineChart {
                     formatter: (value) => {
                         let data = seriesData[0].find(item => item.end_date === value);
                         let isActive = data.active_data !== false;
+                        let shouldRound = this.indicator.indicator_type !== 'rate';
                         return '{bold|' + value.substring(0, 4) + ': ' + '}'
-                            + '{normal|' + formatData(data.value, this.indicator.formatter, true, isActive) + '}'
+                            + '{normal|' + formatData(data.value, this.indicator.formatter, shouldRound, isActive) + '}'
                             + (showAggregateNotice(data) ? '*' : '');
                     },
                     rich: {
@@ -194,7 +195,7 @@ export default class LineChart {
                 position: 'right',
                 show: true,
                 axisLabel: {
-                    formatter: (value) => formatData(value, this.indicator.formatter, true)
+                    formatter: (value) => formatData(value, this.indicator.formatter, this.indicator.indicator_type !== 'rate')
                 },
                 ...(this.indicator.indicator_type === 'percentage' && {
                     min: 0,
