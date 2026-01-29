@@ -152,7 +152,7 @@ export default class LineChart {
                 }
             },
             xAxis: {
-                type: 'category',
+                type: 'time',
                 data: seriesData[0].map(item => item.end_date),
                 boundaryGap: false,
                 axisLabel: {

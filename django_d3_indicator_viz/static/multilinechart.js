@@ -1,7 +1,8 @@
 import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
 
 /**
- * The Multi-Line chart visualization (supports multiple filter options as separate lines).
+ * The Multi-Line chart visualization.
+ * Shows different filter options as separate lines over time.
  */
 export default class MultiLineChart {
 
@@ -12,9 +13,9 @@ export default class MultiLineChart {
      * @param {Element} container the container element
      * @param {Object} indicator the indicator object
      * @param {Object} location the location object
-     * @param {Array} indicatorData the indicator data object
-     * @param {Array} compareLocations the comparison locations
-     * @param {Array} compareData the comparison data
+     * @param {Array} indicatorData the indicator data for the primary location
+     * @param {Array} compareLocations the comparison locations (not used for multiline)
+     * @param {Array} compareData the comparison data (not used for multiline)
      * @param {Array} filterOptions the filter options
      * @param {Array} locationTypes the location types
      * @param {Array} colorScales the color scales
@@ -45,7 +46,7 @@ export default class MultiLineChart {
     }
 
     /**
-     * Draws a multi-line chart visual.
+     * Draws a multi-line chart visual with lines grouped by filter option.
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
@@ -53,35 +54,43 @@ export default class MultiLineChart {
             return;
         }
 
-        // Group data by filter option (for multiple lines) or use single series
-        let seriesData = {};
+        // Group data by filter_option_id
+        let seriesData = [];
         let seriesNames = [];
 
-        // Check if we have multiple filter options
-        let uniqueFilterOptions = [...new Set(this.indicatorData.map(d => d.filter_option_id))];
+        // Get unique filter option IDs from the data
+        let uniqueFilterOptionIds = [...new Set(this.indicatorData.map(d => d.filter_option_id))];
 
-        if (uniqueFilterOptions.length > 1 && uniqueFilterOptions.some(id => id !== null)) {
-            // Multiple filter options - create a series for each
-            uniqueFilterOptions.forEach(filterOptionId => {
-                let filterOption = this.filterOptions.find(o => o.id === filterOptionId);
-                let filterName = filterOption ? filterOption.name : 'No filter';
-                let key = `${this.location.id}-${filterOptionId}`;
-                // Sort data chronologically (oldest to newest)
-                let filteredData = this.indicatorData.filter(d => d.filter_option_id === filterOptionId);
-                seriesData[key] = filteredData.sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
-                seriesNames.push(filterName);
-            });
-        } else {
-            // Single series for the location
-            // Sort data chronologically (oldest to newest)
-            let sortedData = [].concat(this.indicatorData).sort((a, b) =>
-                new Date(a.end_date) - new Date(b.end_date)
-            );
-            seriesData[this.location.id] = sortedData;
-            seriesNames = [this.location.name];
+        // Get unique years for the category axis (sorted chronologically)
+        let uniqueYears = [...new Set(this.indicatorData.map(d => d.end_date.substring(0, 4)))]
+            .sort((a, b) => a - b);
+
+        // Create a series for each filter option
+        uniqueFilterOptionIds.forEach(filterOptionId => {
+            // Get data for this filter option, sorted chronologically
+            let filteredData = this.indicatorData
+                .filter(d => d.filter_option_id === filterOptionId)
+                .sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+
+            // Skip filter options that have no valid (non-null) values
+            let hasValidData = filteredData.some(d => d.value !== null && d.value !== undefined);
+            if (!hasValidData) {
+                return;
+            }
+
+            // Get the filter option name
+            let filterOption = this.filterOptions.find(fo => fo.id === filterOptionId);
+            let seriesName = filterOption ? filterOption.name : 'Unknown';
+
+            seriesData.push(filteredData);
+            seriesNames.push(seriesName);
+        });
+
+        // If no valid series data, show no data message
+        if (seriesData.length === 0) {
+            this.container.innerHTML = 'No data';
+            return;
         }
-
-        seriesData = Object.values(seriesData);
 
         // Check if all data is inactive
         let allDataInactive = this.indicatorData.every(item => item.active_data === false);
@@ -98,6 +107,7 @@ export default class MultiLineChart {
         // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let grid = { containLabel: true };
+
         // Add extra bottom padding if there will be a legend
         const hasLegend = seriesData.length > 1;
         if (window.innerWidth >= 1200) {
@@ -116,6 +126,7 @@ export default class MultiLineChart {
             grid.left = '5px';
             grid.right = '5px';
         }
+
         let option = {
             ...this.chartOptions,
             color: allDataInactive
@@ -135,35 +146,26 @@ export default class MultiLineChart {
                 }
             },
             tooltip: {
-                show: 'true',
-                trigger: 'axis',
+                show: true,
+                trigger: 'item',
                 triggerOn: 'mousemove',
-                axisPointer: {
-                    type: 'none'
-                },
                 formatter: params => {
-                    // With time axis, get year from the data object's end_date
-                    let year = params[0].data.end_date.getFullYear();
-                    return buildTooltipContent(
-                        year,
-                        params[0].data,
-                        this.indicator,
-                        this.compareLocations,
-                        this.compareData
-                    );
+                    let item = params.data;
+                    let year = new Date(item.end_date).getFullYear();
+                    let isActive = item.active_data !== false;
+                    return `<strong>${params.seriesName}</strong> (${year})<br/>` +
+                           formatData(item.value, this.indicator.formatter, true, isActive);
                 }
             },
             xAxis: {
-                type: 'time',
+                type: 'category',
+                data: uniqueYears,
                 boundaryGap: false,
                 axisLabel: {
                     showMinLabel: true,
                     showMaxLabel: true,
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
-                    formatter: (value) => {
-                        return new Date(value).getFullYear();
-                    },
                     fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
                     fontWeight: 'bold'
                 },
@@ -189,36 +191,37 @@ export default class MultiLineChart {
                     max: 100
                 })
             },
-            series: seriesData
-                .map((data, index) => {
-                    return {
-                        // Use filter option name if we have multiple series by filter, otherwise location name
-                        name: seriesNames[index],
-                        type: 'line',
-                        encode: {
-                            x: 'end_date',
-                            y: 'value'
-                        },
-                        data: data.map(item => ({
-                            ...item,
-                            end_date: new Date(item.end_date)
-                        })),
-                        z: 3,
-                        symbol: 'circle',
-                        showSymbol: true,
-                        symbolSize: 8,
-                        connectNulls: false,
-                        clip: false,
-                        lineStyle: {
-                            width: 4
-                        },
-                        emphasis: {
-                            disabled: true
-                        },
-                        cursor: 'default'
-                    }
-                })
-        }
+            series: seriesData.map((data, index) => {
+                return {
+                    name: seriesNames[index],
+                    type: 'line',
+                    // Map data to category axis format
+                    // Each item needs to align with the category (year)
+                    data: data.map(item => {
+                        return {
+                            value: item.value,
+                            // Store original item properties we need for tooltip
+                            end_date: item.end_date,
+                            active_data: item.active_data
+                        };
+                    }),
+                    z: 3 - index,  // First series on top
+                    symbol: 'circle',
+                    showSymbol: true,
+                    symbolSize: 8,
+                    connectNulls: false,  // Don't connect across null values (creates gaps)
+                    clip: false,
+                    lineStyle: {
+                        width: 4
+                    },
+                    emphasis: {
+                        disabled: true
+                    },
+                    cursor: 'default'
+                };
+            })
+        };
+
         this.chart.setOption(option);
     }
 }
