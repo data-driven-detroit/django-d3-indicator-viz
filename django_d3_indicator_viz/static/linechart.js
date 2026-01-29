@@ -163,15 +163,10 @@ export default class LineChart {
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
                     formatter: (value) => {
-                        // For time axis, value is a timestamp - convert to year for comparison
-                        let year = new Date(value).getFullYear();
-                        let data = seriesData[0].find(item => new Date(item.end_date).getFullYear() === year);
-                        if (!data) {
-                            return String(year);
-                        }
+                        let data = seriesData[0].find(item => item.end_date === value);
                         let isActive = data.active_data !== false;
                         let shouldRound = this.indicator.indicator_type !== 'rate';
-                        return '{bold|' + year + ': ' + '}'
+                        return '{bold|' + value.substring(0, 4) + ': ' + '}'
                             + '{normal|' + formatData(data.value, this.indicator.formatter, shouldRound, isActive) + '}'
                             + (showAggregateNotice(data) ? '*' : '');
                     },
