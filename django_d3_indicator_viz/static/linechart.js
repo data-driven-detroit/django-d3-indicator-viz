@@ -20,8 +20,9 @@ export default class LineChart {
      * @param {Array} colorScales the color scales
      * @param {Object} chartOptions the chart options for echarts
      */
-    constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions,
-        locationTypes, colorScales, chartOptions = {}) {
+    constructor(visual, container, indicator, location, indicatorData, 
+        compareLocations, compareData, filterOptions, locationTypes, 
+        colorScales, chartOptions = {}) {
 
         this.visual = visual;
         this.container = container;
@@ -48,43 +49,46 @@ export default class LineChart {
      * Draws a column chart visual.
      */
     draw() {
+        // If there isn't any indicator data for the indicator, just write it
         if (!this.indicatorData || !this.indicatorData.length) {
             this.container.innerHTML = 'No data';
             return;
         }
-
-        // create a series for each location
-        let seriesNames = [this.location.name];
-        let seriesData = {};
-        // Sort data chronologically (oldest to newest) for proper line chart display
-        let sortedData = [].concat(this.indicatorData).sort((a, b) =>
-            new Date(a.end_date) - new Date(b.end_date)
+        
+        // This may not be necessary -- we're mostly concerned about passing 
+        // the location metadata to the series in the correct order
+        const compareLookup = Object.fromEntries(
+            this.compareLocations.map(l => [l.id, l])
         );
-        seriesData[this.location.id] = sortedData;
 
-        // If location comparison is enabled (parents or siblings), add comparison locations as separate series
-        if (['parents', 'siblings'].includes(this.visual.location_comparison_type)) {
-            this.compareData.forEach(item => {
-                if (!seriesData[item.location_id]) {
-                    seriesData[item.location_id] = [];
-                }
-                seriesData[item.location_id].push(item);
-            });
-            // Sort each comparison series chronologically
-            Object.keys(seriesData).forEach(locationId => {
-                if (locationId != this.location.id) {
-                    seriesData[locationId].sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
-                }
-            });
-        }
+        // Need a list of lists from the compare data
+        let compareGroups = Object.groupBy(this.compareData, item => item.location_id);
+        let compareSeriesMeta = Object.keys(compareGroups).map(k => compareLookup[k]);
 
-        seriesData = Object.values(seriesData);
+        // Parse date string as local time (not UTC) to avoid timezone issues
+        const parseLocalDate = (dateStr) => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        };
 
-        // Check if all data is inactive
-        let allDataInactive = this.indicatorData.every(item => item.active_data === false);
-        if (['parents', 'siblings'].includes(this.visual.location_comparison_type)) {
-            allDataInactive = allDataInactive && this.compareData.every(item => item.active_data === false);
-        }
+        // Awkward, but idk better than dealing with missing dates by hand
+        // and in theory we could have logic to allow for different resolutions.
+        // which is a TODO
+        let compareSeriesData = Object.values(compareGroups).map(
+            j => j.map(i => [parseLocalDate(i.start_date), i])
+        )
+
+        // TODO: Need to deal with having comparisons NOT enabled
+        let allLocationMeta = [
+            this.location,
+            ...compareSeriesMeta
+        ];
+
+        // Use start_date for axis positioning
+        let seriesData = [
+            this.indicatorData.map(i => [parseLocalDate(i.start_date), i]),
+            ...compareSeriesData,
+        ]
 
         // set up the container
         this.container.classList.add('line-chart-container');
@@ -98,29 +102,26 @@ export default class LineChart {
         // configure the chart
         this.chart = echarts.init(this.container, null, { renderer: 'svg' });
         let grid = { containLabel: true };
+
         // Add extra bottom padding if there will be a legend
         const hasLegend = seriesData.length > 1;
+
+        // Keeps the grid sensible -- it was getting squashed
         if (window.innerWidth >= 1200) {
-            grid.left = '5px';
-            grid.right = '5px';
             grid.top = '10px';
-            grid.bottom = hasLegend ? '35px' : '10px';
-        } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
             grid.left = '5px';
             grid.right = '5px';
-            grid.top = '20px';
-            grid.bottom = hasLegend ? '40px' : '20px';
+            grid.bottom = hasLegend ? '35px' : '10px';
         } else {
             grid.top = '20px';
-            grid.bottom = hasLegend ? '40px' : '20px';
             grid.left = '5px';
             grid.right = '5px';
+            grid.bottom = hasLegend ? '40px' : '20px';
         }
+        
         let option = {
             ...this.chartOptions,
-            color: allDataInactive
-                ? ['#CCCCCC', '#999999', '#777777', '#555555']
-                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
             grid: grid,
             legend: {
                 show: hasLegend,
@@ -135,12 +136,9 @@ export default class LineChart {
                 }
             },
             tooltip: {
-                show: 'true',
+                show: true,
                 trigger: 'axis',
                 triggerOn: 'mousemove',
-                axisPointer: {
-                    type: 'none'
-                },
                 formatter: params => {
                     return buildTooltipContent(
                         params[0].name.substring(0, 4), 
@@ -153,8 +151,8 @@ export default class LineChart {
             },
             xAxis: {
                 type: 'time',
-                data: seriesData[0].map(item => item.end_date),
                 boundaryGap: false,
+                minInterval: 365 * 24 * 60 * 60 * 1000,  // 1 year in milliseconds
                 axisLabel: {
                     width: 100,
                     overflow: 'break',
@@ -162,14 +160,7 @@ export default class LineChart {
                     showMaxLabel: true,
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
-                    formatter: (value) => {
-                        let data = seriesData[0].find(item => item.end_date === value);
-                        let isActive = data.active_data !== false;
-                        let shouldRound = this.indicator.indicator_type !== 'rate';
-                        return '{bold|' + value.substring(0, 4) + ': ' + '}'
-                            + '{normal|' + formatData(data.value, this.indicator.formatter, shouldRound, isActive) + '}'
-                            + (showAggregateNotice(data) ? '*' : '');
-                    },
+                    formatter: value => String(new Date(value).getFullYear()),
                     rich: {
                         normal: {
                             fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
@@ -204,25 +195,28 @@ export default class LineChart {
             },
             series: seriesData
                 .map(data => {
+                    let leadingRow = data[0][1];
+
+                    // data is an array of [timestamp, data]
                     return {
                         // consolidate to two series names - the name of the location being viewed and the name of the 
                         // other locations
                         // if there are only two series, use the location name for the second series name
-                        name: data[0].location_id === this.location.id
+                        name: leadingRow.location_id === this.location.id
                             ? this.location.name 
                             : this.visual.location_comparison_type === 'parents'
-                                ? this.compareLocations.find(l => l.id === data[0].location_id).name
+                                ? this.compareLocations.find(l => l.id === leadingRow.location_id).name
                                 : 'Other ' 
                                     + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name 
                                     + 's',
                         type: 'line',
-                        data: data,
+                        data: data.map(([timestamp, item]) => [timestamp, item.value]),
                         // make sure the location being viewed sits above the other locations
-                        z: data[0].location_id === this.location.id ? 3 : 2,
+                        z: leadingRow.location_id === this.location.id ? 3 : 2,
                         // show symbols at all data points to make gaps visible
                         symbol: 'circle',
                         showSymbol: true,
-                        symbolSize: data[0].location_id === this.location.id ? 8 : 6,
+                        symbolSize: leadingRow.location_id === this.location.id ? 8 : 6,
                         connectNulls: false,
                         clip: false,
                         lineStyle: {
@@ -234,7 +228,7 @@ export default class LineChart {
                         cursor: 'default'
                     }
                 })
-        }
-        this.chart.setOption(option);
+         }
+         this.chart.setOption(option);
     }
 }

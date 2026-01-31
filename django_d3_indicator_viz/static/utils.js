@@ -217,6 +217,91 @@ const DataVisualComparisonMode = {
 }
 
 /**
+ * Analyze a list of lists of timestamps and determine appropriate axis interval and formatter.
+ *
+ * @param {Array<Array<Date|number>>} seriesTimestamps - List of lists of timestamps (Date objects or ms)
+ * @returns {Object} { minInterval: number, formatter: function, unit: string }
+ */
+function getTimeAxisConfig(seriesTimestamps) {
+    // Flatten and convert all timestamps to milliseconds
+    const allTimestamps = seriesTimestamps
+        .flat()
+        .map(t => t instanceof Date ? t.getTime() : t)
+        .filter(t => !isNaN(t))
+        .sort((a, b) => a - b);
+
+    if (allTimestamps.length < 2) {
+        // Default to yearly if not enough data points
+        return {
+            minInterval: 365 * 24 * 60 * 60 * 1000,
+            formatter: value => String(new Date(value).getFullYear()),
+            unit: 'year'
+        };
+    }
+
+    // Find minimum gap between consecutive timestamps
+    let minGap = Infinity;
+    for (let i = 1; i < allTimestamps.length; i++) {
+        const gap = allTimestamps[i] - allTimestamps[i - 1];
+        if (gap > 0 && gap < minGap) {
+            minGap = gap;
+        }
+    }
+
+    // Time intervals in milliseconds
+    const MINUTE = 60 * 1000;
+    const HOUR = 60 * MINUTE;
+    const DAY = 24 * HOUR;
+    const MONTH = 30 * DAY;
+    const YEAR = 365 * DAY;
+
+    // Determine appropriate interval based on minimum gap
+    if (minGap >= YEAR * 0.9) {
+        return {
+            minInterval: YEAR,
+            formatter: value => String(new Date(value).getFullYear()),
+            unit: 'year'
+        };
+    } else if (minGap >= MONTH * 0.9) {
+        return {
+            minInterval: MONTH,
+            formatter: value => {
+                const d = new Date(value);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            },
+            unit: 'month'
+        };
+    } else if (minGap >= DAY * 0.9) {
+        return {
+            minInterval: DAY,
+            formatter: value => {
+                const d = new Date(value);
+                return `${d.getMonth() + 1}/${d.getDate()}`;
+            },
+            unit: 'day'
+        };
+    } else if (minGap >= HOUR * 0.9) {
+        return {
+            minInterval: HOUR,
+            formatter: value => {
+                const d = new Date(value);
+                return `${d.getHours()}:00`;
+            },
+            unit: 'hour'
+        };
+    } else {
+        return {
+            minInterval: MINUTE,
+            formatter: value => {
+                const d = new Date(value);
+                return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+            },
+            unit: 'minute'
+        };
+    }
+}
+
+/**
  * Exports utility functions for data visualization.
  */
 export {
@@ -227,6 +312,7 @@ export {
     getComparisonPhrases,
     showAggregateNotice,
     buildAggregateNotice,
+    getTimeAxisConfig,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };
