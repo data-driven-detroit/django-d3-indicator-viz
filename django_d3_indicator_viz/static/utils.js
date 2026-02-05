@@ -63,7 +63,7 @@ function formatData(number, formatter, round = false, activeData = true) {
 function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
     let tooltipContent = `<div class='tooltip-value'>
         <strong>${name}</strong>:
-        ${formatData(data.value, indicator.formatter, true, isActive)}${showAggregateNotice(data) ? '*' : ''}
+        ${formatData(data.value, indicator.formatter, true, true)}${showAggregateNotice(data) ? '*' : ''}
     </div>`;
     if (compareLocations) {
         compareLocations.forEach((location, index) => {
