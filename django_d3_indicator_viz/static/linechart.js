@@ -140,6 +140,7 @@ export default class LineChart {
                 trigger: 'axis',
                 triggerOn: 'mousemove',
                 formatter: params => {
+                    console.log(params);
                     return buildTooltipContent(
                         params[0].name.substring(0, 4), 
                         params[0].data, 

@@ -98,7 +98,7 @@ export default class DataTable {
 
             let valueCell = document.createElement('td');
             valueCell.className = 'value';
-            valueCell.textContent = formatData(sortedData[index].value, this.indicator.formatter, false, isActive);
+            valueCell.textContent = formatData(sortedData[index].value, this.indicator.formatter, 1, isActive);
             if (showAggregateNotice(sortedData[index])) {
                 valueCell.innerHTML += '*';
                 aggregateNoticePresent = true;
@@ -112,13 +112,13 @@ export default class DataTable {
                 valueMoePlusMinus.innerHTML = '&plusmn;';
                 valueMoeCell.appendChild(valueMoePlusMinus);
                 let valueMoe = document.createElement('span');
-                valueMoe.textContent = formatData(sortedData[index].value_moe, this.indicator.formatter, false, isActive);
+                valueMoe.textContent = formatData(sortedData[index].value_moe, this.indicator.formatter, 1, isActive);
                 valueMoeCell.appendChild(valueMoe);
             }
             row.appendChild(valueMoeCell);
 
             let countCell = document.createElement('td');
-            countCell.textContent = formatData(sortedData[index].count, null, false, isActive);
+            countCell.textContent = formatData(sortedData[index].count, null, 1, isActive);
             row.appendChild(countCell);
             let countMoeCell = document.createElement('td');
             countMoeCell.className = 'context';
@@ -128,7 +128,7 @@ export default class DataTable {
                 countMoePlusMinus.innerHTML = '&plusmn;';
                 countMoeCell.appendChild(countMoePlusMinus);
                 let countMoe = document.createElement('span');
-                countMoe.textContent = formatData(sortedData[index].count_moe, null, false, isActive);
+                countMoe.textContent = formatData(sortedData[index].count_moe, null, 1, isActive);
                 countMoeCell.appendChild(countMoe);
             }
             row.appendChild(countMoeCell);
@@ -154,7 +154,7 @@ export default class DataTable {
                 }
 
                 let isCompareActive = compareDataItem.active_data !== false;
-                valueCell.textContent = formatData(compareDataItem.value, this.indicator.formatter, false, isCompareActive);
+                valueCell.textContent = formatData(compareDataItem.value, this.indicator.formatter, 1, isCompareActive);
                 row.appendChild(valueCell);
                 let valueMoeCell = document.createElement('td');
                 valueMoeCell.className = 'context';
@@ -164,12 +164,12 @@ export default class DataTable {
                     valueMoePlusMinus.innerHTML = '&plusmn;';
                     valueMoeCell.appendChild(valueMoePlusMinus);
                     let valueMoe = document.createElement('span');
-                    valueMoe.textContent = formatData(compareDataItem.value_moe, this.indicator.formatter, false, isCompareActive);
+                    valueMoe.textContent = formatData(compareDataItem.value_moe, this.indicator.formatter, 1, isCompareActive);
                     valueMoeCell.appendChild(valueMoe);
                 }
                 row.appendChild(valueMoeCell);
                 let countCell = document.createElement('td');
-                countCell.textContent = formatData(compareDataItem.count, null, false, isCompareActive);
+                countCell.textContent = formatData(compareDataItem.count, null, 1, isCompareActive);
                 row.appendChild(countCell);
                 let countMoeCell = document.createElement('td');
                 countMoeCell.className = 'context';
@@ -179,7 +179,7 @@ export default class DataTable {
                     countMoePlusMinus.innerHTML = '&plusmn;';
                     countMoeCell.appendChild(countMoePlusMinus);
                     let countMoe = document.createElement('span');
-                    countMoe.textContent = formatData(compareDataItem.count_moe, null, false, isCompareActive);
+                    countMoe.textContent = formatData(compareDataItem.count_moe, null, 1, isCompareActive);
                     countMoeCell.appendChild(countMoe);
                 }
                 row.appendChild(countMoeCell);

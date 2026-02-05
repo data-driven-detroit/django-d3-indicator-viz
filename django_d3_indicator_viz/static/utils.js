@@ -34,11 +34,20 @@ function formatData(number, formatter, round = false, activeData = true) {
     if (!activeData) {
         return 'xx';
     }
-    let valueToFormat = round ? Math.round(number) : number;
-    if (formatter) {
-        return formatter.replace('{value}', valueToFormat.toLocaleString());
+    let valueToFormat;
+    let localeOptions;
+    if (round === true) {
+        valueToFormat = Math.round(number);
+    } else if (typeof round === 'number') {
+        valueToFormat = number;
+        localeOptions = { maximumFractionDigits: round };
     } else {
-        return valueToFormat.toLocaleString();
+        valueToFormat = number;
+    }
+    if (formatter) {
+        return formatter.replace('{value}', valueToFormat.toLocaleString(undefined, localeOptions));
+    } else {
+        return valueToFormat.toLocaleString(undefined, localeOptions);
     }
 }
 
@@ -52,7 +61,6 @@ function formatData(number, formatter, round = false, activeData = true) {
  * @param {Array} compareData - The data for the locations to compare against.
  */
 function buildTooltipContent(name, data, indicator, compareLocations, compareData) {
-    let isActive = data.active_data !== false;
     let tooltipContent = `<div class='tooltip-value'>
         <strong>${name}</strong>:
         ${formatData(data.value, indicator.formatter, true, isActive)}${showAggregateNotice(data) ? '*' : ''}
