@@ -56,7 +56,7 @@ class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
 admin.site.register(Section, SectionAdmin)
 
 
-class CategoryAdmin(ImportExportMixin, SortableAdminMixin):
+class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
     list_display = ["id", "section", "name", "sort_order"]
     readonly_fields = ("id","section_link")
     inlines = [IndicatorInline]
