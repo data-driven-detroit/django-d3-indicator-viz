@@ -77,6 +77,10 @@ export default class LineChart {
         let compareSeriesData = Object.values(compareGroups).map(
             j => j.map(i => [parseLocalDate(i.start_date), i])
         )
+        
+        // Reverse these so the right items show up on the line charts.
+        compareSeriesMeta.reverse();
+        compareSeriesData.reverse();
 
         // TODO: Need to deal with having comparisons NOT enabled
         let allLocationMeta = [
