@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db import models as django_models
+from django import forms
 from django.forms import TextInput
 from django.urls import reverse
 from django.utils.html import format_html
@@ -25,12 +26,23 @@ class HiddenFromIndex(admin.ModelAdmin):
         return {}
 
 
+class DisableExistingForm(forms.ModelForm):
+    """Disables all fields for existing instances so inlines are read-only,
+    but keeps fields editable on new (empty) rows."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            for field in self.fields.values():
+                field.disabled = True
+
+
 class IndicatorInline(SortableTabularInline):
     model = Indicator
     ordering = ["sort_order"]
     extra = 0
     fields = ["name"]
-    readonly_fields = ["name"]
+    form = DisableExistingForm
     show_change_link = True
 
 
@@ -39,7 +51,7 @@ class CategoryInline(SortableTabularInline):
     ordering = ["sort_order"]
     extra = 0
     fields = ["name"]
-    readonly_fields = ["name"]
+    form = DisableExistingForm
     show_change_link = True
 
 
