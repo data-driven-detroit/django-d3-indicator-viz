@@ -25,7 +25,6 @@ class HiddenFromIndex(admin.ModelAdmin):
         return {}
 
 
-
 class IndicatorInline(SortableTabularInline):
     model = Indicator
     ordering = ["sort_order"]
@@ -57,7 +56,7 @@ class SectionAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
 admin.site.register(Section, SectionAdmin)
 
 
-class CategoryAdmin(ImportExportMixin, SortableAdminMixin, HiddenFromIndex):
+class CategoryAdmin(ImportExportMixin, SortableAdminMixin):
     list_display = ["id", "section", "name", "sort_order"]
     readonly_fields = ("id","section_link")
     inlines = [IndicatorInline]
