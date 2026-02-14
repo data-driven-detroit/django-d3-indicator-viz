@@ -202,7 +202,7 @@ export default class DataTable {
 
         // Copy to clipboard button
         let copyButton = document.createElement('button');
-        copyButton.className = 'show-data-button';
+        copyButton.className = 'copy-data-button';
         copyButton.textContent = 'Copy to clipboard';
         copyButton.addEventListener('click', () => {
             let blob = new Blob([table.outerHTML], { type: 'text/html' });
