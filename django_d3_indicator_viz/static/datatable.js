@@ -205,7 +205,9 @@ export default class DataTable {
         copyButton.className = 'copy-data-button';
         copyButton.textContent = 'Copy to clipboard';
         copyButton.addEventListener('click', () => {
-            let blob = new Blob([table.outerHTML], { type: 'text/html' });
+            let title = this.container.querySelector('.chart-title span')?.textContent || '';
+            let html = (title ? `<b>${title}</b>` : '') + table.outerHTML;
+            let blob = new Blob([html], { type: 'text/html' });
             navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]).then(() => {
                 copyButton.textContent = 'Copied!';
                 setTimeout(() => { copyButton.textContent = 'Copy to clipboard'; }, 2000);
