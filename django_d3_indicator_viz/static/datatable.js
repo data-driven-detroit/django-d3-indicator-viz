@@ -199,5 +199,18 @@ export default class DataTable {
             footer.appendChild(footerRow);
             table.appendChild(footer);
         }
+
+        // Copy to clipboard button
+        let copyButton = document.createElement('button');
+        copyButton.className = 'show-data-button';
+        copyButton.textContent = 'Copy to clipboard';
+        copyButton.addEventListener('click', () => {
+            let blob = new Blob([table.outerHTML], { type: 'text/html' });
+            navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]).then(() => {
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => { copyButton.textContent = 'Copy to clipboard'; }, 2000);
+            });
+        });
+        table.after(copyButton);
     }
 }
