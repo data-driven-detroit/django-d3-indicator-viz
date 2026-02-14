@@ -54,6 +54,12 @@ export default class MultiLineChart {
             return;
         }
 
+        // Parse date string as local time (not UTC) to avoid timezone issues
+        const parseLocalDate = (dateStr) => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        };
+
         // Group data by filter_option_id
         let seriesData = [];
         let seriesNames = [];
@@ -61,16 +67,12 @@ export default class MultiLineChart {
         // Get unique filter option IDs from the data
         let uniqueFilterOptionIds = [...new Set(this.indicatorData.map(d => d.filter_option_id))];
 
-        // Get unique years for the category axis (sorted chronologically)
-        let uniqueYears = [...new Set(this.indicatorData.map(d => d.end_date.substring(0, 4)))]
-            .sort((a, b) => a - b);
-
         // Create a series for each filter option
         uniqueFilterOptionIds.forEach(filterOptionId => {
             // Get data for this filter option, sorted chronologically
             let filteredData = this.indicatorData
                 .filter(d => d.filter_option_id === filterOptionId)
-                .sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
+                .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
             // Skip filter options that have no valid (non-null) values
             let hasValidData = filteredData.some(d => d.value !== null && d.value !== undefined);
@@ -147,28 +149,41 @@ export default class MultiLineChart {
             },
             tooltip: {
                 show: true,
-                trigger: 'item',
+                trigger: 'axis',
                 triggerOn: 'mousemove',
                 formatter: params => {
-                    let item = params.data;
-                    let year = new Date(item.end_date).getFullYear();
-                    let isActive = item.active_data !== false;
+                    const year = new Date(params[0].value[0]).getFullYear();
                     let shouldRound = this.indicator.indicator_type !== 'rate';
-                    return `<strong>${params.seriesName}</strong> (${year})<br/>` +
-                           formatData(item.value, this.indicator.formatter, shouldRound, isActive);
+                    let content = `<strong>${year}</strong>`;
+                    params.forEach(p => {
+                        let item = p.data.item;
+                        let isActive = item.active_data !== false;
+                        content += `<br/>${p.marker} ${p.seriesName}: ${formatData(item.value, this.indicator.formatter, shouldRound, isActive)}`;
+                    });
+                    return content;
                 }
             },
             xAxis: {
-                type: 'category',
-                data: uniqueYears,
+                type: 'time',
                 boundaryGap: false,
+                minInterval: 365 * 24 * 60 * 60 * 1000,
                 axisLabel: {
+                    width: 100,
+                    overflow: 'break',
                     showMinLabel: true,
                     showMaxLabel: true,
                     alignMinLabel: 'left',
                     alignMaxLabel: 'right',
-                    fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
-                    fontWeight: 'bold'
+                    formatter: value => String(new Date(value).getFullYear()),
+                    rich: {
+                        normal: {
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75,
+                        },
+                        bold: {
+                            fontWeight: 'bold',
+                            fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75
+                        }
+                    }
                 },
                 axisTick: {
                     show: false
@@ -196,16 +211,10 @@ export default class MultiLineChart {
                 return {
                     name: seriesNames[index],
                     type: 'line',
-                    // Map data to category axis format
-                    // Each item needs to align with the category (year)
-                    data: data.map(item => {
-                        return {
-                            value: item.value,
-                            // Store original item properties we need for tooltip
-                            end_date: item.end_date,
-                            active_data: item.active_data
-                        };
-                    }),
+                    data: data.map(item => ({
+                        value: [parseLocalDate(item.start_date), item.value],
+                        item: item
+                    })),
                     z: 3 - index,  // First series on top
                     symbol: 'circle',
                     showSymbol: true,

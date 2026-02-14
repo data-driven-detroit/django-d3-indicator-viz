@@ -310,6 +310,17 @@ function getTimeAxisConfig(seriesTimestamps) {
 }
 
 /**
+ * Parse a date string as local time (not UTC) to avoid timezone issues.
+ *
+ * @param {string} dateStr - A date string in 'YYYY-MM-DD' format.
+ * @returns {Date} The parsed date in local time.
+ */
+function parseLocalDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+/**
  * Exports utility functions for data visualization.
  */
 export {
@@ -321,6 +332,7 @@ export {
     showAggregateNotice,
     buildAggregateNotice,
     getTimeAxisConfig,
+    parseLocalDate,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };

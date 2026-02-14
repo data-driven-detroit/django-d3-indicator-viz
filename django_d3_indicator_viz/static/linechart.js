@@ -144,12 +144,12 @@ export default class LineChart {
                 trigger: 'axis',
                 triggerOn: 'mousemove',
                 formatter: params => {
-                    console.log(params);
+                    const year = new Date(params[0].value[0]).getFullYear();
                     return buildTooltipContent(
-                        params[0].name.substring(0, 4), 
-                        params[0].data, 
-                        this.indicator, 
-                        this.compareLocations, 
+                        String(year),
+                        params[0].data.item,
+                        this.indicator,
+                        this.compareLocations,
                         this.compareData
                     );
                 }
@@ -215,7 +215,7 @@ export default class LineChart {
                                     + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name 
                                     + 's',
                         type: 'line',
-                        data: data.map(([timestamp, item]) => [timestamp, item.value]),
+                        data: data.map(([timestamp, item]) => ({ value: [timestamp, item.value], item: item })),
                         // make sure the location being viewed sits above the other locations
                         z: leadingRow.location_id === this.location.id ? 3 : 2,
                         // show symbols at all data points to make gaps visible
