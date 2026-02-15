@@ -210,7 +210,7 @@ export default class DataTable {
             let html = (
                 (title ? `<b>${title}</b>` : '') 
                 + table.outerHTML 
-                + (sourceText ? `<i>${sourceText}</i>; Data Driven Detroit` : 'Data Driven Detroit')
+                + (sourceText ? `<i>${sourceText}; Data Driven Detroit</i>` : '<i>Data Driven Detroit</i>')
             );
             let blob = new Blob([html], { type: 'text/html' });
             navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]).then(() => {
