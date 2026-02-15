@@ -207,7 +207,11 @@ export default class DataTable {
         copyButton.addEventListener('click', () => {
             let title = this.container.querySelector('.chart-title span')?.textContent || '';
             let sourceText = sourceLine?.querySelector('span')?.textContent || '';
-            let html = (title ? `<b>${title}</b>` : '') + table.outerHTML + (sourceText ? `<i>${sourceText}</i>` : '');
+            let html = (
+                (title ? `<b>${title}</b>` : '') 
+                + table.outerHTML 
+                + (sourceText ? `<i>${sourceText}</i>; Data Driven Detroit` : 'Data Driven Detroit')
+            );
             let blob = new Blob([html], { type: 'text/html' });
             navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]).then(() => {
                 copyButton.textContent = 'Copied!';
