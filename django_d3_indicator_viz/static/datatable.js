@@ -213,6 +213,18 @@ export default class DataTable {
                 setTimeout(() => { copyButton.textContent = 'Copy to clipboard'; }, 2000);
             });
         });
-        table.after(copyButton);
+        let sourceLine = table.nextElementSibling;
+        if (sourceLine && sourceLine.classList.contains('chart-title')) {
+            sourceLine.style.display = 'flex';
+            sourceLine.style.justifyContent = 'space-between';
+            sourceLine.style.alignItems = 'center';
+            sourceLine.appendChild(copyButton);
+        } else {
+            let wrapper = document.createElement('div');
+            wrapper.style.textAlign = 'right';
+            wrapper.style.marginTop = '0.5rem';
+            wrapper.appendChild(copyButton);
+            table.after(wrapper);
+        }
     }
 }
