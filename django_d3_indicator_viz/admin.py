@@ -77,6 +77,12 @@ class CategoryAdmin(ImportExportMixin, SortableAdminMixin, admin.ModelAdmin):
         models.TextField: {"widget": TextInput(attrs={"style": "width: 500px"})},
     }
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "about":
+            kwargs.pop("widget", None)
+            return db_field.formfield(**kwargs)
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
     def section_link(self, obj):
         meta = obj.section._meta
         url = reverse(f"admin:{meta.app_label}_{meta.model_name}_change", args=[obj.section_id])
