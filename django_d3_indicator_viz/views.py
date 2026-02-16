@@ -680,8 +680,9 @@ def roll_section(section, primary_location, comparison_locations):
             {
                 "id": category.id,
                 "name": category.name,
+                "about": category.about,
                 "anchor": category.anchor,
-                "indicators": roll_indicators(category, primary_location)            
+                "indicators": roll_indicators(category, primary_location)
             } for category in section.category_set.all()
         ],
         "indicator_values": json.dumps(section.get_indicator_values([primary_location, *comparison_locations])),
