@@ -119,36 +119,27 @@ export default class Ban {
                 if (!isCompareActive) {
                     compareEl.style.color = '#999999';
                 }
-                let comparePhraseIndicatorTypes = ['percentage', 'rate', 'index', 'median', 'average'];
-                let useComparisonPhrase = comparePhraseIndicatorTypes.includes(this.indicator.indicator_type);
-                if (useComparisonPhrase) {
-                    let phrases = getComparisonPhrases(
-                        this.indicatorData.value,
-                        locCompareData.value,
-                        this.indicator.indicator_type
-                    );
-                    let comparePhraseEl = document.createElement('strong');
-                    comparePhraseEl.className = 'ban-compare-phrase';
-                    comparePhraseEl.textContent = phrases[0];
-                    compareEl.appendChild(comparePhraseEl);
-                    if (phrases[1] !== '') {
-                        let comparePhraseEl2 = document.createElement('span');
-                        comparePhraseEl2.className = 'ban-compare-phrase';
-                        comparePhraseEl2.textContent = ' ' + phrases[1];
-                        comparePhraseEl.appendChild(comparePhraseEl2);
-                        compareEl.appendChild(comparePhraseEl2);
-                    }
-                    let comparePhraseEl3 = document.createElement('span');
-                    comparePhraseEl3.className = 'ban-compare-phrase';
-                    comparePhraseEl3.textContent = ' ' + phrases[2];
-                    compareEl.appendChild(comparePhraseEl3);
+                let phrases = getComparisonPhrases(
+                    this.indicatorData.value,
+                    locCompareData.value,
+                    this.indicator.indicator_type
+                );
+                let comparePhraseEl = document.createElement('strong');
+                comparePhraseEl.className = 'ban-compare-phrase';
+                comparePhraseEl.textContent = phrases[0];
+                compareEl.appendChild(comparePhraseEl);
+                if (phrases[1] !== '') {
+                    let comparePhraseEl2 = document.createElement('span');
+                    comparePhraseEl2.className = 'ban-compare-phrase';
+                    comparePhraseEl2.textContent = ' ' + phrases[1];
+                    comparePhraseEl.appendChild(comparePhraseEl2);
+                    compareEl.appendChild(comparePhraseEl2);
                 }
-                let compareLocEl;
-                if (useComparisonPhrase) {
-                    compareLocEl = document.createElement('span');
-                } else {
-                    compareLocEl = document.createElement('strong');
-                }
+                let comparePhraseEl3 = document.createElement('span');
+                comparePhraseEl3.className = 'ban-compare-phrase';
+                comparePhraseEl3.textContent = ' ' + phrases[2];
+                compareEl.appendChild(comparePhraseEl3);
+                let compareLocEl = document.createElement('span');
                 compareLocEl.className = 'ban-compare-location';
                 compareLocEl.textContent = loc.name + ': ';
                 compareEl.appendChild(compareLocEl);
