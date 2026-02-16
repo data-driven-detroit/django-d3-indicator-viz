@@ -1,4 +1,4 @@
-import { formatData, getComparisonPhrases, showAggregateNotice, buildAggregateNotice } from "./utils.js";
+import { formatData, getComparisonPhrases, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
 
 /**
  * The BAN (Big Ass Number) visualization.
@@ -73,7 +73,9 @@ export default class Ban {
             valueEl.style.color = '#999999';
         }
         valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
+        let highMoe = hasHighMoe(this.indicatorData);
         valueEl.textContent = formatData(this.indicatorData.value, this.indicator.formatter, roundValue, isActive)
+            + (highMoe ? '\u2020' : '')
             + (showAggregateNotice(this.indicatorData) ? '*' : '');
         valueContainerEl.appendChild(valueEl);
         let moeContainers = [];
@@ -181,6 +183,11 @@ export default class Ban {
         if (showAggregateNotice(this.indicatorData)) {
             this.container.appendChild(buildAggregateNotice(this.indicatorData.values_considered, 
                 this.indicatorData.values_aggregated));
+        }
+
+        // add high MOE notice to the category aside
+        if (highMoe) {
+            addHighMoeNotice(this.container);
         }
 
         // set up the event listeners for the MOE containers to show/hide on hover and touch

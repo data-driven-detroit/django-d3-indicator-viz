@@ -1,4 +1,4 @@
-import { formatData, showAggregateNotice, buildAggregateNotice } from "./utils.js";
+import { formatData, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
 
 /**
  * The DataTable visualization.
@@ -99,6 +99,10 @@ export default class DataTable {
             let valueCell = document.createElement('td');
             valueCell.className = 'value';
             valueCell.textContent = formatData(sortedData[index].value, this.indicator.formatter, 1, isActive);
+            if (hasHighMoe(sortedData[index])) {
+                valueCell.innerHTML += '\u2020';
+                addHighMoeNotice(this.container);
+            }
             if (showAggregateNotice(sortedData[index])) {
                 valueCell.innerHTML += '*';
                 aggregateNoticePresent = true;

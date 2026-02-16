@@ -321,6 +321,32 @@ function parseLocalDate(dateStr) {
 }
 
 /**
+ * Check if a data item has a high margin of error (greater than 10% of the value).
+ *
+ * @param {Object} data the data item with value and value_moe properties
+ * @returns {boolean} true if the margin of error is greater than 10% of the value
+ */
+function hasHighMoe(data) {
+    return data.value_moe && data.value
+        && Math.abs(data.value_moe) > Math.abs(data.value) * 0.1;
+}
+
+/**
+ * Add a high MOE notice to the category aside if not already present.
+ *
+ * @param {Element} container the chart container element
+ */
+function addHighMoeNotice(container) {
+    let aside = container.closest('.stat-row')?.querySelector('aside');
+    if (aside && !aside.querySelector('.high-moe-notice')) {
+        let noticeEl = document.createElement('p');
+        noticeEl.className = 'high-moe-notice';
+        noticeEl.textContent = '\u2020 Margin of error is greater than 10% of the value; use with caution.';
+        aside.appendChild(noticeEl);
+    }
+}
+
+/**
  * Exports utility functions for data visualization.
  */
 export {
@@ -333,6 +359,8 @@ export {
     buildAggregateNotice,
     getTimeAxisConfig,
     parseLocalDate,
+    hasHighMoe,
+    addHighMoeNotice,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };

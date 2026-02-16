@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, DataVisualComparisonMode } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, DataVisualComparisonMode } from "./utils.js";
 
 /**
  * The Column chart visualization.
@@ -200,7 +200,10 @@ export default class ColumnChart {
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
                             let isActive = params.data.active_data !== false;
+                            let highMoe = hasHighMoe(params.data);
+                            if (highMoe) addHighMoeNotice(this.container);
                             return formatData(params.data.value, this.indicator.formatter, true, isActive)
+                                + (highMoe ? '\u2020' : '')
                                 + (showAggregateNotice(params.data) ? '*' : '');
                         }
                     },

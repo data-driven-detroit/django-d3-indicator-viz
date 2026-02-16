@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
 
 /**
  * The Donut chart visualization.
@@ -72,6 +72,7 @@ export default class DonutChart {
                     text:
                         '{normal|' + data.name + ' '
                         + formatData(data.value, this.indicator.formatter, true, isActive)
+                        + (hasHighMoe(data) ? '\u2020' : '')
                         + (showAggregateNotice(data) ? '*' : '') + '}'
                 },
                 legend: {
@@ -133,6 +134,7 @@ export default class DonutChart {
             // set the title to the hovered item or the previously selected item
             title: {
                 text: dataItem.name + ' ' + formatData(dataItem.value, this.indicator.formatter, true, isActive)
+                        + (hasHighMoe(dataItem) ? '\u2020' : '')
                         + (showAggregateNotice(dataItem) ? '*' : '')
             },
             legend: {
@@ -333,9 +335,14 @@ export default class DonutChart {
         this.chart.dispatchAction({
             type: 'select',
             seriesIndex: 0,
-            dataIndex: this.option.series[0].data.findIndex(item => 
+            dataIndex: this.option.series[0].data.findIndex(item =>
                 item.value === Math.max(...data.map(item => item.value))
             )
         });
+
+        // add high MOE notice to the category aside
+        if (data.some(d => hasHighMoe(d))) {
+            addHighMoeNotice(this.container);
+        }
     }
 }

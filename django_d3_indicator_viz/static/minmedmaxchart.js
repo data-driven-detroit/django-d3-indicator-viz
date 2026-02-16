@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
 
 /**
  * The Min/Median/Max chart visualization.
@@ -113,9 +113,11 @@ export default class MinMedMaxChart {
                             : value === minMedMax[1]
                                 ? 'Median: '
                                 : 'Max: ';
-
+                        let highMoe = value === this.indicatorData.value && hasHighMoe(this.indicatorData);
+                        if (highMoe) addHighMoeNotice(this.container);
                         return '{bold|' + label + '}'
                             + '{normal|' + formatData(value, this.indicator.formatter, true, isActive) + '}'
+                            + (highMoe ? '\u2020' : '')
                             + (value === this.indicatorData.value && showAggregateNotice(this.indicatorData) ? '*' : '');
                     },
                     rich: {
