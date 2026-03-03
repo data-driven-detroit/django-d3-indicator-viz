@@ -16,6 +16,44 @@ import DataTable from './datatable.js';
 
 
 /**
+ * Compute shared y-axis scales for percentage indicators grouped by category.
+ *
+ * Returns a Map of categoryId -> { min: 0, max: roundedMax }
+ */
+function computeCategoryScales(section, allValues) {
+    const scales = new Map();
+    const categories = section.querySelectorAll('.section-container[data-category-id]');
+
+    categories.forEach(category => {
+        const categoryId = category.dataset.categoryId;
+        const pctContainers = category.querySelectorAll('.chart-container[data-indicator-type="percentage"]');
+
+        if (pctContainers.length === 0) return;
+
+        // Collect all indicator/source pairs for percentage charts in this category
+        const keys = new Set();
+        pctContainers.forEach(c => {
+            keys.add(`${c.dataset.indicatorId}:${c.dataset.sourceId}`);
+        });
+
+        // Find global max across all matching values
+        let globalMax = 0;
+        allValues.forEach(v => {
+            if (keys.has(`${v.indicator_id}:${v.source_id}`) && v.value != null) {
+                globalMax = Math.max(globalMax, v.value);
+            }
+        });
+
+        // Round up to nearest 5 for clean tick marks
+        const roundedMax = Math.ceil(globalMax / 5) * 5;
+
+        scales.set(categoryId, { min: 0, max: roundedMax });
+    });
+
+    return scales;
+}
+
+/**
  * Draw all charts in a container.
  */
 
@@ -35,11 +73,14 @@ function drawCharts(container = document) {
         // Parse indicator values
         const allValues = JSON.parse(section.dataset.indicatorValues);
 
+        // Compute shared y-axis scales for percentage indicators per category
+        const categoryScales = computeCategoryScales(section, allValues);
+
         // Find all chart containers in this section
         const chartContainers = section.querySelectorAll('.chart-container[data-indicator-id]');
 
         chartContainers.forEach(chartContainer => {
-            drawChart(chartContainer, allValues);
+            drawChart(chartContainer, allValues, categoryScales);
         });
 
         // Mark as drawn
@@ -50,7 +91,7 @@ function drawCharts(container = document) {
 /**
  * Draw a single chart.
  */
-function drawChart(container, allValues) {
+function drawChart(container, allValues, categoryScales) {
     // Get chart config from data attributes
     const indicatorId = parseInt(container.dataset.indicatorId);
     const visualType = container.dataset.visualType;
@@ -124,6 +165,15 @@ function drawChart(container, allValues) {
         color_scale_id: colorScaleId,
     };
 
+    // Look up shared axis scale for percentage indicators in this category
+    let axisScale = null;
+    if (indicator.indicator_type === 'percentage') {
+        const categoryEl = container.closest('[data-category-id]');
+        if (categoryEl && categoryScales) {
+            axisScale = categoryScales.get(categoryEl.dataset.categoryId) || null;
+        }
+    }
+
     // Draw the appropriate chart type
     switch (visualType) {
         case 'ban':
@@ -152,7 +202,8 @@ function drawChart(container, allValues) {
                 window.profileData.filterOptions,
                 window.profileData.colorScales,
                 comparisonType,
-                chartOptions
+                chartOptions,
+                axisScale
             );
             break;
 
@@ -169,7 +220,8 @@ function drawChart(container, allValues) {
                 window.profileData.filterOptions,
                 window.profileData.locationTypes,
                 window.profileData.colorScales,
-                chartOptions
+                chartOptions,
+                axisScale
             );
             break;
 

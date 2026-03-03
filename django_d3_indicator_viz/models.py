@@ -698,4 +698,15 @@ def assemble_header_data(location_id):
         'indicator_id',
     )
 
-    
+
+class CopyDataEvent(models.Model):
+    indicator = models.ForeignKey(Indicator, on_delete=models.SET_NULL, null=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True)
+    copied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'copy_data_event'
+
+    def __str__(self):
+        return f"{self.indicator} @ {self.location} — {self.copied_at:%Y-%m-%d %H:%M}"
+

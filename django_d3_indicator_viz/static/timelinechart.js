@@ -24,7 +24,7 @@ export default class TimeLineChart {
      */
     constructor(visual, container, indicator, location, indicatorData,
         compareLocations, compareData, filterOptions, locationTypes,
-        colorScales, chartOptions = {}) {
+        colorScales, chartOptions = {}, axisScale = null) {
 
         this.visual = visual;
         this.container = container;
@@ -37,6 +37,7 @@ export default class TimeLineChart {
         this.locationTypes = locationTypes;
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
+        this.axisScale = axisScale;
         this.chart = null;
 
         this.draw();
@@ -274,9 +275,9 @@ export default class TimeLineChart {
                 axisLabel: {
                     formatter: (value) => formatData(value, this.indicator.formatter, this.indicator.indicator_type !== 'rate')
                 },
-                ...(this.indicator.indicator_type === 'percentage' && {
-                    min: 0,
-                    max: 100
+                ...(this.axisScale && {
+                    min: this.axisScale.min,
+                    max: this.axisScale.max
                 })
             },
             series: groups.map(group => ({

@@ -21,7 +21,7 @@ export default class ColumnChart {
      * @param {Object} chartOptions the chart options for echarts
      */
     constructor(visual, container, indicator, location, indicatorData, compareLocations, compareData, filterOptions,
-        colorScales, dataVisualComparisonMode, chartOptions = {}) {
+        colorScales, dataVisualComparisonMode, chartOptions = {}, axisScale = null) {
 
         this.visual = visual;
         this.container = container;
@@ -34,6 +34,7 @@ export default class ColumnChart {
         this.colorScales = colorScales;
         this.chartOptions = chartOptions;
         this.dataVisualComparisonMode = dataVisualComparisonMode;
+        this.axisScale = axisScale;
         this.chart = null;
 
         this.draw();
@@ -135,9 +136,9 @@ export default class ColumnChart {
             show: false
         };
 
-        if (this.indicator.indicator_type === 'percentage') {
-            valueAxis.min = 0;
-            valueAxis.max = 100;
+        if (this.axisScale) {
+            valueAxis.min = this.axisScale.min;
+            valueAxis.max = this.axisScale.max;
         }
         let grid = { containLabel: true};
         if (window.innerWidth >= 1200) {

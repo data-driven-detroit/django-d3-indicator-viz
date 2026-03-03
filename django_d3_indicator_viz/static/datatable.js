@@ -220,6 +220,11 @@ export default class DataTable {
             navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]).then(() => {
                 copyButton.textContent = 'Copied!';
                 setTimeout(() => { copyButton.textContent = 'Copy to clipboard'; }, 2000);
+                fetch('/api/track-copy/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+                    body: JSON.stringify({ indicator_id: this.indicator.id, location_id: this.location.id }),
+                });
             });
         });
         let sourceLine = table.nextElementSibling;

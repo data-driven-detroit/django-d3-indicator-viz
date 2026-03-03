@@ -18,6 +18,7 @@ from .models import (
     CustomLocation,
     IndicatorFilterOption,
     LocationType,
+    CopyDataEvent,
     assemble_header_data,
 )
 from .serializers import (
@@ -791,6 +792,17 @@ def get_section(request):
             "sibling_loc_ids": "",
         }
     )
+
+
+def track_copy(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    data = json.loads(request.body)
+    CopyDataEvent.objects.create(
+        indicator_id=data.get('indicator_id'),
+        location_id=data.get('location_id'),
+    )
+    return JsonResponse({'status': 'ok'})
 
 
 # Create your views here.

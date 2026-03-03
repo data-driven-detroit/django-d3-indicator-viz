@@ -21,4 +21,5 @@ from .views import *
 urlpatterns = [
     path('profile/<str:location_id>/', profile, name='profile'),
     path('api/section-data/<str:location_id>/<int:section_id>/', section_data, name='section_data'),
+    path('api/track-copy/', track_copy, name='track_copy'),
 ]
