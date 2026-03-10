@@ -36,15 +36,87 @@ class Section(models.Model):
     def __str__(self):
         return self.name
 
-    def get_indicator_values(self, locations):
+    def get_indicator_values(self, locations, custom_location=None, aggregator=None):
         """
-        The javascript works with a list of indicators, and it does all 
+        The javascript works with a list of indicators, and it does all
         the selecting for the appropriate indicators client-side.
+
+        When custom_location and aggregator are provided, constituent location
+        values are queried and aggregated, then combined with comparison
+        location values.
         """
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=OuterRef('indicator__indicatordatavisual'),
             source=OuterRef('source')
         ).values('priority')[:1]
+
+        if custom_location and aggregator:
+            from .aggregation import aggregate_indicator_values, build_indicator_values_dict_list
+
+            constituent_ids = custom_location.get_constituent_ids()
+            comparison_locations = [loc for loc in locations if str(loc.id) not in [str(cid) for cid in constituent_ids]]
+
+            # Query constituent location values
+            constituent_qs = IndicatorValue.objects.filter(
+                location_id__in=constituent_ids,
+                indicator__category__section_id=self.id
+            ).select_related('filter_option', 'location', 'source', 'indicator')
+
+            # Query comparison location values (parents/siblings)
+            comparison_values = []
+            if comparison_locations:
+                comp_qs = IndicatorValue.objects.filter(
+                    location__in=comparison_locations,
+                    indicator__category__section_id=self.id
+                ).annotate(
+                    source_priority=priority_subquery,
+                    rn=Window(
+                        expression=RowNumber(),
+                        partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id')],
+                        order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
+                    ),
+                    data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
+                ).filter(
+                    Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
+                ).select_related('filter_option', 'location', 'source', 'indicator')
+
+                comparison_values = [
+                    {
+                        "id": iv.id,
+                        "indicator_id": iv.indicator.id,
+                        "location_id": iv.location.id,
+                        "source_id": iv.source.id,
+                        "filter_option_id": iv.filter_option.id if iv.filter_option else None,
+                        "start_date": iv.start_date.isoformat(),
+                        "end_date": iv.end_date.isoformat(),
+                        "value": iv.value,
+                        "value_moe": iv.value_moe,
+                        "count": iv.count,
+                        "count_moe": iv.count_moe,
+                        "universe": iv.universe,
+                        "universe_moe": iv.universe_moe,
+                    } for iv in comp_qs
+                ]
+
+            # Aggregate constituent values per data visual
+            data_visuals = IndicatorDataVisual.objects.filter(
+                indicator__category__section_id=self.id
+            )
+            aggregated_values = []
+            for dv in data_visuals:
+                aggregated = aggregate_indicator_values(
+                    custom_location, dv, constituent_qs, aggregator
+                )
+                if aggregated:
+                    for av in aggregated:
+                        # Convert dates to isoformat strings to match standard shape
+                        if hasattr(av.get("start_date", None), 'isoformat'):
+                            av["start_date"] = av["start_date"].isoformat()
+                        if hasattr(av.get("end_date", None), 'isoformat'):
+                            av["end_date"] = av["end_date"].isoformat()
+                    aggregated_values.extend(aggregated)
+
+            return aggregated_values + comparison_values
 
         qs = IndicatorValue.objects.filter(
             location__in=locations,
@@ -299,7 +371,34 @@ class CustomLocation(models.Model):
 
     def __str__(self):
         return self.name
-    
+
+    def get_constituent_ids(self):
+        return list(self.locations.values_list("id", flat=True))
+
+    def get_parents(self):
+        parent_location_types = self.location_type.parent_location_types.all()
+        constituent_ids = self.get_constituent_ids()
+
+        return Location.objects.extra(
+            select={"area": "st_area(geometry)"},
+            where=[
+                "location_type_id <> %s",
+                "location_type_id = any(%s)",
+                "st_area(geometry) > (select st_area(st_union(geometry)) from location where id = any(%s))",
+                "st_contains(geometry, (select st_pointonsurface(st_union(geometry)) from location where id = any(%s)))",
+            ],
+            params=[
+                self.location_type.id,
+                list(parent_location_types.values_list("id", flat=True)),
+                constituent_ids,
+                constituent_ids,
+            ],
+            order_by=["area"],
+        )[:2]
+
+    def get_siblings(self, nearby=False, defer_geom=False):
+        return Location.objects.filter(location_type_id=self.location_type.id)
+
     class Meta:
         db_table = "custom_location"
 
@@ -389,9 +488,15 @@ class Indicator(models.Model):
             source=OuterRef('source')
         ).values('priority')[:1]
 
+        # Duck-type: CustomLocation has get_constituent_ids, Location does not
+        if hasattr(location, 'get_constituent_ids'):
+            location_filter = {'location_id__in': location.get_constituent_ids()}
+        else:
+            location_filter = {'location': location}
+
         base_query = IndicatorValue.objects.filter(
-            location=location,
             indicator=self,
+            **location_filter,
         ).annotate(
             source_priority=priority_subquery,
             rn=Window(
@@ -697,6 +802,46 @@ def assemble_header_data(location_id):
         'location_id',
         'indicator_id',
     )
+
+
+def assemble_custom_header_data(custom_location, aggregator):
+    from .aggregation import aggregate_indicator_values
+    from types import SimpleNamespace
+
+    header_data_visuals = IndicatorDataVisual.objects.filter(
+        indicator__category_id__isnull=True
+    ).prefetch_related('indicatordatavisualsource_set__source').order_by("indicator__sort_order")
+
+    constituent_ids = custom_location.get_constituent_ids()
+    results = []
+
+    for hdv in header_data_visuals:
+        primary_source = hdv.indicatordatavisualsource_set.first()
+        source_id = primary_source.source_id if primary_source else None
+
+        indicator_values = IndicatorValue.objects.filter(
+            indicator_id=hdv.indicator_id,
+            location_id__in=constituent_ids,
+            source_id=source_id,
+            start_date=hdv.start_date,
+            end_date=hdv.end_date,
+        )
+
+        aggregated = aggregate_indicator_values(
+            custom_location, hdv, indicator_values, aggregator
+        )
+        agg_value = aggregated[0] if aggregated else None
+
+        # Build a SimpleNamespace that matches the shape consumed by templates:
+        # .indicator.name, .source.name, .value, .end_date
+        results.append(SimpleNamespace(
+            indicator=SimpleNamespace(name=hdv.indicator.name),
+            source=SimpleNamespace(name=primary_source.source.name) if primary_source else None,
+            value=agg_value["value"] if agg_value else None,
+            end_date=hdv.end_date,
+        ))
+
+    return results
 
 
 class CopyDataEvent(models.Model):

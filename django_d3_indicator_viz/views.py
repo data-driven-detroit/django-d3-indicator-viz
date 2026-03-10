@@ -20,9 +20,11 @@ from .models import (
     LocationType,
     CopyDataEvent,
     assemble_header_data,
+    assemble_custom_header_data,
 )
 from .serializers import (
     CategorySerializer,
+    CustomLocationSerializer,
     DataVisualSerializer,
     IndicatorValueSerializer,
     IndicatorFilterOptionSerializer,
@@ -33,6 +35,11 @@ from .serializers import (
 from django_d3_indicator_viz.indicator_value_aggregator import (
     aggregation_result,
     IndicatorValueAggregator,
+)
+from django_d3_indicator_viz.aggregation import (
+    build_indicator_values_dict_list,
+    aggregate_indicator_values,
+    aggregate_indicator_value_set,
 )
 
 import json
@@ -451,199 +458,21 @@ def __build_custom_profile_context(location, indicator_value_aggregator):
 def __aggregate_indicator_values(
     custom_location, data_visual, indicator_values, indicator_value_aggregator
 ):
-    grouped_values = {}
-    for iv in __build_indicator_values_dict_list(indicator_values):
-        if iv["indicator_id"] != data_visual.indicator.id:
-            continue
-        key = (iv["filter_option_id"], iv["start_date"])
-        if key not in grouped_values:
-            grouped_values[key] = []
-        grouped_values[key].append(iv)
-    aggregated_values = []
-    for (filter_option_id, start_date), ivs in grouped_values.items():
-        aggregated_value = __aggregate_indicator_value_set(
-            custom_location, data_visual, ivs, indicator_value_aggregator
-        )
-        aggregated_values.append(aggregated_value)
-    return aggregated_values
+    return aggregate_indicator_values(
+        custom_location, data_visual, indicator_values, indicator_value_aggregator
+    )
 
 
 def __aggregate_indicator_value_set(
     custom_location, data_visual, indicator_values, indicator_value_aggregator
 ):
-    aggregate_value = {
-        "location_id": str(custom_location.id),
-        "indicator_id": data_visual.indicator.id,
-        "source_id": (
-            indicator_values[0]["source_id"] if indicator_values else None
-        ),
-        "filter_option_id": (
-            indicator_values[0]["filter_option_id"]
-            if indicator_values
-            else None
-        ),
-        "start_date": (
-            indicator_values[0]["start_date"] if indicator_values else None
-        ),
-        "end_date": (
-            indicator_values[0]["end_date"] if indicator_values else None
-        ),
-        "count": indicator_value_aggregator.aggregate_count_values(
-            [iv["count"] for iv in indicator_values]
-        ).value,
-        "count_moe": indicator_value_aggregator.aggregate_count_moe_values(
-            [iv["count_moe"] for iv in indicator_values]
-        ).value,
-        "universe": indicator_value_aggregator.aggregate_count_values(
-            [iv["universe"] for iv in indicator_values]
-        ).value,
-        "universe_moe": indicator_value_aggregator.aggregate_count_moe_values(
-            [iv["universe_moe"] for iv in indicator_values]
-        ).value,
-        "value": None,
-        "value_moe": None,
-        "values_considered": None,
-        "values_aggregated": None,
-        "active_data": (
-            indicator_values[0]["active_data"] if indicator_values else True
-        ),
-    }
-
-    if data_visual.indicator.indicator_type == "count":
-        aggregate_value_result = (
-            indicator_value_aggregator.aggregate_count_values(
-                [iv["count"] for iv in indicator_values]
-            )
-        )
-        aggregate_moe_result = (
-            indicator_value_aggregator.aggregate_count_moe_values(
-                [iv["count_moe"] for iv in indicator_values]
-            )
-        )
-        aggregate_value["value"] = aggregate_value_result.value
-        aggregate_value["value_moe"] = aggregate_moe_result.value
-        aggregate_value["values_considered"] = (
-            aggregate_value_result.values_considered
-        )
-        aggregate_value["values_aggregated"] = (
-            aggregate_value_result.values_aggregated
-        )
-    elif data_visual.indicator.indicator_type == "percentage":
-        aggregate_value_result = (
-            indicator_value_aggregator.aggregate_percentage_values(
-                [iv["count"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-            )
-        )
-        aggregate_moe_result = (
-            indicator_value_aggregator.aggregate_percentage_moe_values(
-                [iv["count"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-                [iv["count_moe"] for iv in indicator_values],
-                [iv["universe_moe"] for iv in indicator_values],
-            )
-        )
-        aggregate_value["value"] = aggregate_value_result.value
-        aggregate_value["value_moe"] = aggregate_moe_result.value
-        aggregate_value["values_considered"] = (
-            aggregate_value_result.values_considered
-        )
-        aggregate_value["values_aggregated"] = (
-            aggregate_value_result.values_aggregated
-        )
-    elif data_visual.indicator.indicator_type == "median":
-        aggregate_value_result = (
-            indicator_value_aggregator.aggregate_median_values(
-                [iv["value"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-            )
-        )
-        aggregate_moe_result = (
-            indicator_value_aggregator.aggregate_median_moe_values(
-                [iv["value"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-                [iv["value_moe"] for iv in indicator_values],
-                [iv["universe_moe"] for iv in indicator_values],
-            )
-        )
-        aggregate_value["value"] = aggregate_value_result.value
-        aggregate_value["value_moe"] = aggregate_moe_result.value
-        aggregate_value["values_considered"] = (
-            aggregate_value_result.values_considered
-        )
-        aggregate_value["values_aggregated"] = (
-            aggregate_value_result.values_aggregated
-        )
-    elif data_visual.indicator.indicator_type == "average":
-        aggregate_result = indicator_value_aggregator.aggregate_average_values(
-            [iv["value"] for iv in indicator_values],
-            [iv["universe"] for iv in indicator_values],
-        )
-        aggregate_moe_result = (
-            indicator_value_aggregator.aggregate_average_moe_values(
-                [iv["value"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-                [iv["value_moe"] for iv in indicator_values],
-                [iv["universe_moe"] for iv in indicator_values],
-            )
-        )
-        aggregate_value["value"] = aggregate_result.value
-        aggregate_value["value_moe"] = aggregate_moe_result.value
-        aggregate_value["values_considered"] = (
-            aggregate_result.values_considered
-        )
-        aggregate_value["values_aggregated"] = (
-            aggregate_result.values_aggregated
-        )
-    elif data_visual.indicator.indicator_type == "rate":
-        aggregate_result = indicator_value_aggregator.aggregate_rate_values(
-            [iv["count"] for iv in indicator_values],
-            [iv["universe"] for iv in indicator_values],
-            data_visual.rate_per,
-        )
-        aggregate_moe_result = (
-            indicator_value_aggregator.aggregate_rate_moe_values(
-                [iv["count"] for iv in indicator_values],
-                [iv["universe"] for iv in indicator_values],
-                [iv["count_moe"] for iv in indicator_values],
-                [iv["universe_moe"] for iv in indicator_values],
-                data_visual.rate_per,
-            )
-        )
-        aggregate_value["value"] = aggregate_result.value
-        aggregate_value["value_moe"] = aggregate_moe_result.value
-        aggregate_value["values_considered"] = (
-            aggregate_result.values_considered
-        )
-        aggregate_value["values_aggregated"] = (
-            aggregate_result.values_aggregated
-        )
-    elif data_visual.indicator.indicator_type == "index":
-        # index aggregation not supported for custom locations in SDC
-        pass
-
-    return aggregate_value
+    return aggregate_indicator_value_set(
+        custom_location, data_visual, indicator_values, indicator_value_aggregator
+    )
 
 
 def __build_indicator_values_dict_list(indicator_values):
-    return [
-        {
-            "location_id": iv.location_id,
-            "indicator_id": iv.indicator_id,
-            "source_id": iv.source_id,
-            "filter_option_id": iv.filter_option_id,
-            "start_date": iv.start_date,
-            "end_date": iv.end_date,
-            "value": iv.value,
-            "value_moe": iv.value_moe,
-            "count": iv.count,
-            "count_moe": iv.count_moe,
-            "universe": iv.universe,
-            "universe_moe": iv.universe_moe,
-            "active_data": iv.active_data,
-        }
-        for iv in indicator_values
-    ]
+    return build_indicator_values_dict_list(indicator_values)
 
 
 def roll_indicators(category, location):
@@ -669,9 +498,9 @@ def roll_indicators(category, location):
     return result
 
 
-def roll_section(section, primary_location, comparison_locations):
+def roll_section(section, primary_location, comparison_locations, custom_location=None, aggregator=None):
     """
-    Pre computing some things. 
+    Pre computing some things.
     """
     return {
         "name": section.name,
@@ -686,20 +515,48 @@ def roll_section(section, primary_location, comparison_locations):
                 "indicators": roll_indicators(category, primary_location)
             } for category in section.category_set.all()
         ],
-        "indicator_values": json.dumps(section.get_indicator_values([primary_location, *comparison_locations])),
+        "indicator_values": json.dumps(
+            section.get_indicator_values(
+                [primary_location, *comparison_locations],
+                custom_location=custom_location,
+                aggregator=aggregator,
+            )
+        ),
     }
 
 
-def profile(request, location_id, template_path="django_d3_indicators_viz/profile.html"):
-    location = get_object_or_404(Location, id=location_id)
+def profile(request, location_id, indicator_value_aggregator=None,
+            template_path="django_d3_indicators_viz/profile.html"):
+    is_custom_location = False
+    custom_location = None
+
+    try:
+        location = Location.objects.get(id=location_id)
+    except Location.DoesNotExist:
+        try:
+            location = CustomLocation.objects.get(slug__iexact=location_id)
+            is_custom_location = True
+            custom_location = location
+        except CustomLocation.DoesNotExist:
+            from django.http import Http404
+            raise Http404
+
     location_type = location.location_type
 
     # Serialize location geometry
-    location_geojson = serialize(
-        "geojson", [location], geometry_field="geometry", fields=("id", "name")
-    )
+    if is_custom_location:
+        location_geojson = serialize(
+            "geojson",
+            Location.objects.filter(id__in=location.get_constituent_ids()),
+            geometry_field="geometry",
+            fields=("id", "name"),
+        )
+    else:
+        location_geojson = serialize(
+            "geojson", [location], geometry_field="geometry", fields=("id", "name")
+        )
 
-    # limit to the two closest parent locations
+    # Both Location and CustomLocation have get_parents()
     parent_locations = location.get_parents()
 
     # The display siblings only focusing on the bounding box that roughly
@@ -712,8 +569,8 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
         geometry_field="geometry",
         fields=("id", "name", "location_type"),
     )
-    
-    # TODO (Mike): We'll eventually have to put this back, but for now 
+
+    # TODO (Mike): We'll eventually have to put this back, but for now
     # we don't compare with siblings, and when we do we have to get to
     # all siblings within parents -- which is different than display.
     # all_siblings = location.get_siblings(defer_geom=True)
@@ -724,34 +581,48 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
     color_scales = ColorScale.objects.all()
     location_types = LocationType.objects.all()
 
-    header_data = assemble_header_data(location_id)
-    
+    if is_custom_location:
+        header_data = assemble_custom_header_data(location, indicator_value_aggregator)
+    else:
+        header_data = assemble_header_data(location_id)
+
     # Get the first section, but as an iterator, not individually.
     section = Section.objects.all().order_by('sort_order').first()
-    
-    # FIXME (Mike): This creates a list with these unpacks, to then 
+
+    # FIXME (Mike): This creates a list with these unpacks, to then
     # create another list within 'roll_section.' try to avoid this many
     # list creations.
-    sections = [roll_section(section, location, parent_locations)]
+    sections = [roll_section(
+        section, location, parent_locations,
+        custom_location=custom_location,
+        aggregator=indicator_value_aggregator,
+    )]
 
     # Build profile data for JavaScript (locations, filter options, etc.)
+    if is_custom_location:
+        primary_data = CustomLocationSerializer(location).data
+    else:
+        primary_data = LocationSerializer(location).data
+
     profile_data = {
         "filterOptions": IndicatorFilterOptionSerializer(filter_options, many=True).data,
         "colorScales": ColorScaleSerializer(color_scales, many=True).data,
         "locationTypes": LocationTypeSerializer(location_types, many=True).data,
         "locations": {
-            "primary": LocationSerializer(location).data,
+            "primary": primary_data,
             "parents": LocationSerializer(parent_locations, many=True).data,
             "siblings": [] # LocationSerializer(all_siblings, many=True).data,
         },
     }
+
+    primary_loc_id = location.slug if is_custom_location else location_id
 
     return render(
         request, template_path,
         {
             "sections": sections,
             "profile_data_json": json.dumps(profile_data),
-            "primary_loc_id": location_id,
+            "primary_loc_id": primary_loc_id,
             "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
             "sibling_loc_ids": "", # ",".join(loc.id for loc in all_siblings),
             "header_data": header_data,
@@ -760,12 +631,12 @@ def profile(request, location_id, template_path="django_d3_indicators_viz/profil
             "parent_locations": parent_locations,
             "location_geojson": location_geojson,
             "sibling_locations_geojson": display_siblings_geojson,
-            "is_custom_location": False,
+            "is_custom_location": is_custom_location,
         }
     )
 
 
-def get_section(request):
+def get_section(request, indicator_value_aggregator=None):
     after = request.GET.get("after")
     next_section = Section.objects.filter(sort_order__gt=after).first()
 
@@ -780,13 +651,25 @@ def get_section(request):
     lst_parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
     lst_sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
 
-    location = Location.objects.get(id=primary_loc_id)
+    is_custom_location = False
+    custom_location = None
+    try:
+        location = Location.objects.get(id=primary_loc_id)
+    except Location.DoesNotExist:
+        location = CustomLocation.objects.get(slug__iexact=primary_loc_id)
+        is_custom_location = True
+        custom_location = location
+
     parent_locations = Location.objects.filter(id__in=lst_parent_loc_ids)
 
     return render(
         request, "django_d3_indicator_viz/section.html",
         {
-            "section": roll_section(next_section, location, parent_locations),
+            "section": roll_section(
+                next_section, location, parent_locations,
+                custom_location=custom_location,
+                aggregator=indicator_value_aggregator,
+            ),
             "primary_loc_id": primary_loc_id,
             "parent_loc_ids": parent_loc_ids,
             "sibling_loc_ids": "",

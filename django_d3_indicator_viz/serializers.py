@@ -10,6 +10,7 @@ from .models import (
     IndicatorValue,
     IndicatorFilterOption,
     Location,
+    CustomLocation,
     LocationType,
     ColorScale,
     IndicatorSource,
@@ -80,6 +81,14 @@ class LocationTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationType
         fields = ['id', 'name', 'sort_order']
+
+
+class CustomLocationSerializer(serializers.ModelSerializer):
+    location_type_id = serializers.PrimaryKeyRelatedField(source='location_type', read_only=True)
+
+    class Meta:
+        model = CustomLocation
+        fields = ['id', 'name', 'location_type_id', 'color']
 
 
 class ColorScaleSerializer(serializers.ModelSerializer):
