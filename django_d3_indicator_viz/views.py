@@ -646,6 +646,7 @@ def get_section(request, indicator_value_aggregator=None):
     primary_loc_id = request.GET.get('primary_loc_id')
     parent_loc_ids = request.GET.get('parent_loc_ids', '')
     sibling_loc_ids = request.GET.get('sibling_loc_ids', '')
+    is_custom = request.GET.get('is_custom', 'false') == 'true'
 
     # If you hit '', you'll get a list with [''] on split, so handle that case
     lst_parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
@@ -673,6 +674,7 @@ def get_section(request, indicator_value_aggregator=None):
             "primary_loc_id": primary_loc_id,
             "parent_loc_ids": parent_loc_ids,
             "sibling_loc_ids": "",
+            "is_custom_location": is_custom,
         }
     )
 

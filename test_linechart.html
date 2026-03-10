@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LineChart Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .test-case { margin-bottom: 40px; border: 1px solid #ccc; padding: 20px; }
+        .test-case h3 { margin-top: 0; }
+        .chart-container { width: 100%; height: 300px; }
+    </style>
+</head>
+<body>
+    <h1>LineChart Test Cases</h1>
+
+    <div class="test-case">
+        <h3>Test 1: Primary location with parent comparisons - all have data</h3>
+        <div id="chart1" class="chart-container"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 2: Parent comparison has some NA values</h3>
+        <div id="chart2" class="chart-container"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 3: One parent has ALL NA values</h3>
+        <div id="chart3" class="chart-container"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 4: No comparison (single location)</h3>
+        <div id="chart4" class="chart-container"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test 5: County missing 2021 entry entirely (no row in array)</h3>
+        <div id="chart5" class="chart-container"></div>
+    </div>
+
+    <script type="module">
+        import LineChart from './django_d3_indicator_viz/static/linechart.js';
+
+        // Mock window.profileData - matches what Django serializers produce
+        window.profileData = {
+            filterOptions: [
+                { id: 1, name: 'Total', sort_order: 0 }
+            ],
+            colorScales: [
+                { id: 1, name: 'Default', colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'] }
+            ],
+            locationTypes: [
+                { id: 1, name: 'Census Tract', sort_order: 0 },
+                { id: 2, name: 'County', sort_order: 1 },
+                { id: 3, name: 'State', sort_order: 2 }
+            ],
+            locations: {
+                primary: { id: '123', name: 'Test Tract', location_type_id: 1, color: '#1f77b4' },
+                parents: [
+                    { id: '456', name: 'Test County', location_type_id: 2, color: '#ff7f0e' },
+                    { id: '789', name: 'Test State', location_type_id: 3, color: '#2ca02c' }
+                ],
+                siblings: []
+            }
+        };
+
+        // Visual config - matches Django's IndicatorDataVisual
+        const visual = {
+            id: 1,
+            indicator_id: 100,
+            data_visual_type: 'line',
+            color_scale_id: 1,
+            location_comparison_type: 'parents'
+        };
+
+        // Indicator config - matches Django's Indicator model
+        const indicator = {
+            id: 100,
+            formatter: '{value}%',
+            indicator_type: 'percentage',
+            rate_per: null
+        };
+
+        // Location - matches LocationSerializer output
+        const location = {
+            id: '123',
+            name: 'Test Tract',
+            location_type_id: 1,
+            color: '#1f77b4'
+        };
+
+        // Compare locations - matches LocationSerializer output
+        const compareLocations = [
+            { id: '456', name: 'Test County', location_type_id: 2, color: '#ff7f0e' },
+            { id: '789', name: 'Test State', location_type_id: 3, color: '#2ca02c' }
+        ];
+
+        const chartOptions = {
+            animation: false,
+            textStyle: { fontFamily: 'sans-serif', fontSize: 14 }
+        };
+
+        // ============================================
+        // Test 1: All locations have data
+        // ============================================
+        const primaryData1 = [
+            { location_id: '123', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 50, value_moe: 2, count: 100, count_moe: 5, universe: 1000, universe_moe: 10, active_data: true },
+            { location_id: '123', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 55, value_moe: 2, count: 110, count_moe: 5, universe: 1000, universe_moe: 10, active_data: true },
+            { location_id: '123', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 60, value_moe: 2, count: 120, count_moe: 5, universe: 1000, universe_moe: 10, active_data: true },
+        ];
+
+        const compareData1 = [
+            // County data - lower values
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 35, value_moe: 1, count: 1000, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 38, value_moe: 1, count: 1050, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 42, value_moe: 1, count: 1100, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            // State data - even lower
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 25, value_moe: 0.5, count: 10000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 28, value_moe: 0.5, count: 10500, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 30, value_moe: 0.5, count: 11000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+        ];
+
+        new LineChart(
+            visual,
+            document.getElementById('chart1'),
+            indicator,
+            location,
+            primaryData1,
+            compareLocations,
+            compareData1,
+            window.profileData.filterOptions,
+            window.profileData.locationTypes,
+            window.profileData.colorScales,
+            chartOptions
+        );
+
+        // ============================================
+        // Test 2: County has some NA values
+        // ============================================
+        const primaryData2 = [...primaryData1];
+
+        const compareData2 = [
+            // County data - 2021 is NA
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 35, value_moe: 1, count: 1000, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: null, value_moe: null, count: null, count_moe: null, universe: null, universe_moe: null, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 42, value_moe: 1, count: 1100, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            // State data - all good
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 25, value_moe: 0.5, count: 10000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 28, value_moe: 0.5, count: 10500, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 30, value_moe: 0.5, count: 11000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+        ];
+
+        new LineChart(
+            visual,
+            document.getElementById('chart2'),
+            indicator,
+            location,
+            primaryData2,
+            compareLocations,
+            compareData2,
+            window.profileData.filterOptions,
+            window.profileData.locationTypes,
+            window.profileData.colorScales,
+            chartOptions
+        );
+
+        // ============================================
+        // Test 3: State has ALL NA values
+        // ============================================
+        const primaryData3 = [...primaryData1];
+
+        const compareData3 = [
+            // County data - all good
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 35, value_moe: 1, count: 1000, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 38, value_moe: 1, count: 1050, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 42, value_moe: 1, count: 1100, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            // State data - ALL NA
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: null, value_moe: null, count: null, count_moe: null, universe: null, universe_moe: null, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: null, value_moe: null, count: null, count_moe: null, universe: null, universe_moe: null, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: null, value_moe: null, count: null, count_moe: null, universe: null, universe_moe: null, active_data: true },
+        ];
+
+        new LineChart(
+            visual,
+            document.getElementById('chart3'),
+            indicator,
+            location,
+            primaryData3,
+            compareLocations,
+            compareData3,
+            window.profileData.filterOptions,
+            window.profileData.locationTypes,
+            window.profileData.colorScales,
+            chartOptions
+        );
+
+        // ============================================
+        // Test 4: No comparison (single location)
+        // ============================================
+        const visualNoCompare = {
+            ...visual,
+            location_comparison_type: null
+        };
+
+        new LineChart(
+            visualNoCompare,
+            document.getElementById('chart4'),
+            indicator,
+            location,
+            primaryData1,
+            [],
+            [],
+            window.profileData.filterOptions,
+            window.profileData.locationTypes,
+            window.profileData.colorScales,
+            chartOptions
+        );
+
+        // ============================================
+        // Test 5: County missing 2021 entry entirely (no row, not null value)
+        // ============================================
+        const primaryData5 = [...primaryData1];
+
+        const compareData5 = [
+            // County data - 2021 entry simply doesn't exist
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 35, value_moe: 1, count: 1000, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            // NO 2021 entry at all
+            { location_id: '456', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 42, value_moe: 1, count: 1100, count_moe: 20, universe: 10000, universe_moe: 50, active_data: true },
+            // State data - all years present
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2020-01-01', end_date: '2020-12-31', value: 25, value_moe: 0.5, count: 10000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2021-01-01', end_date: '2021-12-31', value: 28, value_moe: 0.5, count: 10500, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+            { location_id: '789', indicator_id: 100, source_id: 1, filter_option_id: 1, start_date: '2022-01-01', end_date: '2022-12-31', value: 30, value_moe: 0.5, count: 11000, count_moe: 100, universe: 100000, universe_moe: 200, active_data: true },
+        ];
+
+        new LineChart(
+            visual,
+            document.getElementById('chart5'),
+            indicator,
+            location,
+            primaryData5,
+            compareLocations,
+            compareData5,
+            window.profileData.filterOptions,
+            window.profileData.locationTypes,
+            window.profileData.colorScales,
+            chartOptions
+        );
+    </script>
+</body>
+</html>
