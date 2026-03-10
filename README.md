@@ -48,6 +48,23 @@ class ProfileView(TemplateView):
         return d3_views.build_profile_context(self.request, self.location_slug, MyIndicatorValueAggregator)
 ```
 
+### Location Search Widget
+The package includes a self-contained location search autocomplete widget. To add it to any page in your project, include the template:
+
+```html
+{% include "django_d3_indicator_viz/location_search.html" %}
+```
+
+This renders a text input with typeahead search. As the user types (minimum 2 characters), matching locations are shown in a dropdown with their location type. Selecting a result navigates to its profile page.
+
+The widget requires that your project's URL configuration includes the library's URLs and that a URL named `profile` exists with a `location_id` parameter (see Urls section below).
+
+Features:
+- 250ms debounced search against the `api/location-search/` endpoint
+- Keyboard navigation (arrow keys, Enter, Escape)
+- Click-outside to dismiss
+- CSS scoped with `.ddiv-search-*` prefix to avoid style collisions
+
 ### Urls
 Add the profile view in ```urls.py```
 > [!IMPORTANT]

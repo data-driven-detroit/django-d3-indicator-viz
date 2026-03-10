@@ -794,6 +794,40 @@ def get_section(request):
     )
 
 
+def location_search(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'results': []})
+    locations = (
+        Location.objects
+        .filter(name__icontains=q)
+        .select_related('location_type')
+        .order_by('location_type__sort_order', 'name')[:15]
+    )
+    results = [
+        {'id': loc.id, 'name': loc.name, 'location_type': loc.location_type.name}
+        for loc in locations
+    ]
+    return JsonResponse({'results': results})
+
+
+def indicator_search(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'results': []})
+    indicators = (
+        Indicator.objects
+        .filter(name__icontains=q, category__isnull=False)
+        .select_related('category')
+        .order_by('sort_order')[:15]
+    )
+    results = [
+        {'id': ind.id, 'name': ind.name}
+        for ind in indicators
+    ]
+    return JsonResponse({'results': results})
+
+
 def track_copy(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
