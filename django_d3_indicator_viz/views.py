@@ -3,6 +3,8 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 
+from .indicator_value_aggregator import IndicatorValueAggregator
+
 from .models import (
     Section,
     Category,
@@ -78,6 +80,7 @@ def roll_section(section, primary_location, comparison_locations, custom_locatio
 
 def profile(request, location_id, indicator_value_aggregator=None,
             template_path="django_d3_indicators_viz/profile.html"):
+    indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     is_custom_location = False
     custom_location = None
 
@@ -184,6 +187,7 @@ def profile(request, location_id, indicator_value_aggregator=None,
 
 def custom_profile(request, location_slug, indicator_value_aggregator=None,
                    template_path="django_d3_indicators_viz/profile.html"):
+    indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     is_custom_location = True
 
     try:
@@ -269,6 +273,7 @@ def custom_profile(request, location_slug, indicator_value_aggregator=None,
 
 
 def get_section(request, indicator_value_aggregator=None):
+    indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     after = request.GET.get("after")
     next_section = Section.objects.filter(sort_order__gt=after).first()
 
@@ -312,6 +317,7 @@ def get_section(request, indicator_value_aggregator=None):
 
 
 def get_custom_section(request, indicator_value_aggregator=None):
+    indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     after = request.GET.get("after")
     next_section = Section.objects.filter(sort_order__gt=after).first()
 
