@@ -1,20 +1,13 @@
 from unittest import TestCase
 import unittest
 
-from django_d3_indicator_viz.indicator_value_aggregator import * 
-
-class SampleIndicatorValueAggregator(IndicatorValueAggregator):
-    def aggregate_index_values(self, index_values):
-        raise NotImplementedError
-
-    def aggregate_index_moe_values(self, index_values, index_moe_values):
-        raise NotImplementedError
+from django_d3_indicator_viz.indicator_value_aggregator import *
 
 class IndicatorValueAggregatorTests(TestCase):
 
     # create instance of the aggregator before running tests
     def setUp(self):
-        self.aggregator = SampleIndicatorValueAggregator()
+        self.aggregator = IndicatorValueAggregator()
 
     def test_aggregate_count_values(self):
         count_values = [1157, 1739, 2924, 1620]

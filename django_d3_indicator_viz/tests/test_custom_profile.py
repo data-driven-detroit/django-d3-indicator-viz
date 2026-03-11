@@ -12,14 +12,6 @@ from django_d3_indicator_viz.indicator_value_aggregator import (
 )
 
 
-class SampleAggregator(IndicatorValueAggregator):
-    def aggregate_index_values(self, index_values):
-        raise NotImplementedError
-
-    def aggregate_index_moe_values(self, index_values, index_moe_values):
-        raise NotImplementedError
-
-
 def _make_iv(**kwargs):
     """Create a SimpleNamespace that looks like an IndicatorValue row."""
     defaults = {
@@ -70,7 +62,7 @@ class TestBuildIndicatorValuesDictList(TestCase):
 class TestAggregateIndicatorValues(TestCase):
 
     def setUp(self):
-        self.aggregator = SampleAggregator()
+        self.aggregator = IndicatorValueAggregator()
 
     def test_groups_by_filter_option_and_start_date(self):
         ivs = [
@@ -111,7 +103,7 @@ class TestAggregateIndicatorValues(TestCase):
 class TestAggregateIndicatorValueSetCount(TestCase):
 
     def setUp(self):
-        self.aggregator = SampleAggregator()
+        self.aggregator = IndicatorValueAggregator()
 
     def test_count_aggregation(self):
         ivs = [
@@ -138,7 +130,7 @@ class TestAggregateIndicatorValueSetCount(TestCase):
 class TestAggregateIndicatorValueSetPercentage(TestCase):
 
     def setUp(self):
-        self.aggregator = SampleAggregator()
+        self.aggregator = IndicatorValueAggregator()
 
     def test_percentage_aggregation(self):
         # Use values from ACS handbook where MOE math works out
@@ -166,7 +158,7 @@ class TestAggregateIndicatorValueSetPercentage(TestCase):
 class TestAggregateIndicatorValueSetRate(TestCase):
 
     def setUp(self):
-        self.aggregator = SampleAggregator()
+        self.aggregator = IndicatorValueAggregator()
 
     def test_rate_aggregation(self):
         ivs = [

@@ -226,8 +226,8 @@ class IndicatorDataVisualAdmin(ImportExportMixin, SortableAdminBase, HiddenFromI
     inlines = [IndicatorDataVisualSourceInline]
 
     def primary_source_display(self, obj):
-        primary = obj.get_primary_source()
-        return primary.name if primary else "-"
+        primary_link = obj.indicatordatavisualsource_set.order_by('priority').first()
+        return primary_link.source.name if primary_link else "-"
 
     primary_source_display.short_description = "Primary Source"
 

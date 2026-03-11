@@ -11,41 +11,36 @@ include the following apps:
 - ```django.contrib.gis```
 
 ### IndicatorValueAggregator
-The package includes aggregation logic for custom aggregated locations. Logic for aggregating count, percentage, rate, 
-mean, and median values is provided. However, implementation of aggregation logic for index values is abstract and must 
-be provided by the project installing this package. If no index aggregation is needed, simply extend the base class
-and raise an error in the unneeded abstract methods:
+The package includes aggregation logic for custom aggregated locations. Logic for aggregating count, percentage, rate,
+mean, and median values is provided. Index value aggregation returns empty results by default; override
+`aggregate_index_values` and `aggregate_index_moe_values` if your project needs custom index aggregation.
 
 ```python
-from django_d3_indicator_viz import indicator_value_aggregator
+from django_d3_indicator_viz.indicator_value_aggregator import IndicatorValueAggregator
 
-class MyIndicatorValueAggregator(indicator_value_aggregator.IndicatorValueAggregator):
-    def aggregate_index_values(self, index_values):
-        raise NotImplementedError('This project does not support index aggregation.')
-
-    def aggregate_index_moe_values(self, index_values, index_moe_values):
-        raise NotImplementedError('This project does not support index MOE aggregation.')
+aggregator = IndicatorValueAggregator()
 ```
 
 ### Views
-Create the profile view in  ```views.py```
+Wire up the profile views in ```urls.py``` using the function-based views provided by the package:
 
 ```python
-from django_d3_indicator_viz import (
-    views as d3_views,
-)
-class ProfileView(TemplateView):
-    template_name = "profile.html"
+from django_d3_indicator_viz import views as d3_views
+from django_d3_indicator_viz.indicator_value_aggregator import IndicatorValueAggregator
 
-    def dispatch(self, *args, **kwargs):
-        self.location_slug = kwargs.get("location_slug")
-        if not self.location_slug:
-            raise Http404("No location_slug provided.")
+# Standard location profile
+path("profiles/<str:location_id>/", lambda r, location_id: d3_views.profile(
+    r, location_id,
+    indicator_value_aggregator=IndicatorValueAggregator(),
+    template_path="my_app/profile.html",
+), name="profile")
 
-        return super(ProfileView, self).dispatch(*args, **kwargs)
-
-    def get_context_data(self, *args, **kwargs):
-        return d3_views.build_profile_context(self.request, self.location_slug, MyIndicatorValueAggregator)
+# Custom (aggregated) location profile
+path("profiles/custom/<slug:location_slug>/", lambda r, location_slug: d3_views.custom_profile(
+    r, location_slug,
+    indicator_value_aggregator=IndicatorValueAggregator(),
+    template_path="my_app/profile.html",
+), name="custom_profile")
 ```
 
 ### Location Search Widget

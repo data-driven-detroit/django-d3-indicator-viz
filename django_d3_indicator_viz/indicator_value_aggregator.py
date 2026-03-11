@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from math import sqrt
 
 class AggregationResult:
@@ -16,7 +15,7 @@ class AggregationResult:
     values_aggregated = 0
 
 
-class IndicatorValueAggregator(ABC):
+class IndicatorValueAggregator:
     """
     Class to aggregate indicator values.
     Provides functions to aggregate different types of indicator values.
@@ -183,13 +182,11 @@ class IndicatorValueAggregator(ABC):
 
         return result
 
-    @abstractmethod
     def aggregate_index_values(self, index_values):
-        pass
+        return AggregationResult()
 
-    @abstractmethod
     def aggregate_index_moe_values(self, index_values, index_moe_values):
-        pass
+        return AggregationResult()
 
     def __aggregate_weighted_averages(self, values, weights):
         """
