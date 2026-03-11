@@ -756,6 +756,36 @@ def get_section(request, indicator_value_aggregator=None):
     )
 
 
+def get_custom_section(request, indicator_value_aggregator=None):
+    after = request.GET.get("after")
+    next_section = Section.objects.filter(sort_order__gt=after).first()
+
+    if not next_section:
+        return HttpResponse("")
+
+    primary_loc_id = request.GET.get('primary_loc_id')
+    parent_loc_ids = request.GET.get('parent_loc_ids', '')
+    lst_parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
+
+    location = CustomLocation.objects.get(slug__iexact=primary_loc_id)
+    parent_locations = Location.objects.filter(id__in=lst_parent_loc_ids)
+
+    return render(
+        request, "django_d3_indicator_viz/section.html",
+        {
+            "section": roll_section(
+                next_section, location, parent_locations,
+                custom_location=location,
+                aggregator=indicator_value_aggregator,
+            ),
+            "primary_loc_id": primary_loc_id,
+            "parent_loc_ids": parent_loc_ids,
+            "sibling_loc_ids": "",
+            "is_custom_location": True,
+        }
+    )
+
+
 def location_search(request):
     q = request.GET.get('q', '').strip()
     if len(q) < 2:

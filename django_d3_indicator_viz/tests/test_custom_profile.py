@@ -9,7 +9,6 @@ from django_d3_indicator_viz.aggregation import (
 )
 from django_d3_indicator_viz.indicator_value_aggregator import (
     IndicatorValueAggregator,
-    aggregation_result,
 )
 
 
@@ -47,6 +46,7 @@ def _make_data_visual(indicator_id=1, indicator_type="count", rate_per=None):
     dv = MagicMock()
     dv.indicator.id = indicator_id
     dv.indicator.indicator_type = indicator_type
+    dv.indicator.rate_per = rate_per
     dv.rate_per = rate_per
     return dv
 
