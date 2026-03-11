@@ -40,7 +40,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates count margin of error values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(moe_values)
         result.values_aggregated = len([value for value in moe_values if value is not None])
         valid_moe_values = [value for value in moe_values if value is not None]
@@ -53,7 +53,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates percentage values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
                                         and universe_values[count_values.index(value)] is not None])
@@ -72,7 +72,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates percentage margin of error values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
                                         and universe_values[count_values.index(value)] is not None 
@@ -125,7 +125,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates rate values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
                                         and universe_values[count_values.index(value)] is not None])
@@ -144,7 +144,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates rate margin of error values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
                                         and universe_values[count_values.index(value)] is not None
@@ -195,7 +195,7 @@ class IndicatorValueAggregator(ABC):
         """
         Aggregates weighted average values.
         """
-        result = aggregation_result()
+        result = AggregationResult()
         result.values_considered = len(values)
         result.values_aggregated = len([value for value in values if value is not None 
                                         and weights[values.index(value)] is not None])
