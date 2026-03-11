@@ -172,6 +172,38 @@ class IndicatorDataVisualFactory(DjangoModelFactory):
     columns = FuzzyInteger(1, 3)
 
 
+class CustomLocationFactory(DjangoModelFactory):
+    """Factory for CustomLocation model."""
+
+    class Meta:
+        model = 'django_d3_indicator_viz.CustomLocation'
+
+    name = factory.Sequence(lambda n: f"Custom Location {n}")
+    slug = factory.Sequence(lambda n: f"custom-location-{n}")
+    location_type = factory.SubFactory(LocationTypeFactory)
+    color = factory.Faker('hex_color')
+
+    @factory.lazy_attribute
+    def geometry(self):
+        coords = (
+            (-84.0, 42.0),
+            (-84.0, 42.1),
+            (-83.9, 42.1),
+            (-83.9, 42.0),
+            (-84.0, 42.0),
+        )
+        polygon = Polygon(coords, srid=4326)
+        return MultiPolygon([polygon], srid=4326)
+
+    @factory.post_generation
+    def locations(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            for location in extracted:
+                self.locations.add(location)
+
+
 class IndicatorDataVisualSourceFactory(DjangoModelFactory):
     """Factory for IndicatorDataVisualSource (through model)."""
 

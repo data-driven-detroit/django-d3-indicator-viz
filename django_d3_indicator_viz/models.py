@@ -104,15 +104,25 @@ class Section(models.Model):
             ).prefetch_related('indicatordatavisualsource_set')
             aggregated_values = []
             for dv in data_visuals:
-                # Get the primary source for this data visual so we only
-                # aggregate values from the correct source (and so the
-                # resulting source_id matches what get_visual_metadata returns)
-                primary_source_rel = dv.indicatordatavisualsource_set.first()
-                if not primary_source_rel:
+                # Find the first source (by priority) that has actual data
+                # for this indicator's constituent locations. This mirrors
+                # get_visual_metadata's fallback behavior so source_ids match.
+                source_rels = dv.indicatordatavisualsource_set.all()
+                if not source_rels:
                     continue
-                primary_source_id = primary_source_rel.source_id
-
-                source_filtered_qs = constituent_qs.filter(source_id=primary_source_id)
+                primary_source_id = None
+                source_filtered_qs = None
+                for source_rel in source_rels:
+                    candidate_qs = constituent_qs.filter(
+                        source_id=source_rel.source_id,
+                        indicator_id=dv.indicator_id,
+                    )
+                    if candidate_qs.exists():
+                        primary_source_id = source_rel.source_id
+                        source_filtered_qs = candidate_qs
+                        break
+                if primary_source_id is None:
+                    continue
                 aggregated = aggregate_indicator_values(
                     custom_location, dv, source_filtered_qs, aggregator,
                     source_id=primary_source_id,
@@ -826,8 +836,24 @@ def assemble_custom_header_data(custom_location, aggregator):
     results = []
 
     for hdv in header_data_visuals:
-        primary_source = hdv.indicatordatavisualsource_set.first()
-        source_id = primary_source.source_id if primary_source else None
+        # Find the first source (by priority) that has actual data,
+        # mirroring get_visual_metadata's fallback behavior.
+        source_rels = hdv.indicatordatavisualsource_set.all()
+        primary_source = None
+        source_id = None
+        for source_rel in source_rels:
+            if IndicatorValue.objects.filter(
+                indicator_id=hdv.indicator_id,
+                location_id__in=constituent_ids,
+                source_id=source_rel.source_id,
+            ).exists():
+                primary_source = source_rel
+                source_id = source_rel.source_id
+                break
+        if source_id is None and source_rels:
+            # Fall back to configured primary if no data exists for any source
+            primary_source = source_rels.first()
+            source_id = primary_source.source_id if primary_source else None
 
         indicator_values = IndicatorValue.objects.filter(
             indicator_id=hdv.indicator_id,
