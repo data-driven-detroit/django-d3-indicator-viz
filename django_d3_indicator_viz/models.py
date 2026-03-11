@@ -54,7 +54,7 @@ class Section(models.Model):
             from .aggregation import aggregate_indicator_values, build_indicator_values_dict_list
 
             constituent_ids = custom_location.get_constituent_ids()
-            comparison_locations = [loc for loc in locations if str(loc.id) not in [str(cid) for cid in constituent_ids]]
+            comparison_locations = [loc for loc in locations if isinstance(loc, Location) and str(loc.id) not in [str(cid) for cid in constituent_ids]]
 
             # Query constituent location values
             constituent_qs = IndicatorValue.objects.filter(
