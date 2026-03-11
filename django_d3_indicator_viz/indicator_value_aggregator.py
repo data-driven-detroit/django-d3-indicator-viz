@@ -90,7 +90,8 @@ class IndicatorValueAggregator(ABC):
             universe_moe_sum_squares = sum(moe ** 2 for moe in valid_universe_moe_values)
             
         
-            result.value = round(sqrt((count_moe_sum_squares - (aggregate_percentage_value / 100) ** 2 * universe_moe_sum_squares)) / sum(valid_universe_values) * 100, 2)
+            radicand = count_moe_sum_squares - (aggregate_percentage_value / 100) ** 2 * universe_moe_sum_squares
+            result.value = round(sqrt(abs(radicand)) / sum(valid_universe_values) * 100, 2)
 
         return result
 
