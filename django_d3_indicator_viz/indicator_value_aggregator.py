@@ -237,7 +237,8 @@ class IndicatorValueAggregator(ABC):
                         and weights[weight_moes.index(moe)] is not None
                         and value_moes[weight_moes.index(moe)] is not None]
         if sum(valid_weights) == 0:
-            return None
+            result.value = None
+            return result
         else:
             numerator = sum(value * weight for value, weight in zip(valid_values, valid_weights))
             denominator = sum(valid_weights)
