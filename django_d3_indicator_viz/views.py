@@ -11,7 +11,6 @@ from .models import (
     Category,
     ColorScale,
     IndicatorDataVisual,
-    IndicatorDataVisualSource,
     Indicator,
     IndicatorValue,
     Location,
@@ -23,17 +22,14 @@ from .models import (
     assemble_custom_header_data,
 )
 from .serializers import (
-    CategorySerializer,
     CustomLocationSerializer,
-    DataVisualSerializer,
-    IndicatorValueSerializer,
     IndicatorFilterOptionSerializer,
     LocationSerializer,
     LocationTypeSerializer,
     ColorScaleSerializer,
 )
 from django_d3_indicator_viz.indicator_value_aggregator import (
-    aggregation_result,
+    AggregationResult,
     IndicatorValueAggregator,
 )
 from django_d3_indicator_viz.aggregation import (
