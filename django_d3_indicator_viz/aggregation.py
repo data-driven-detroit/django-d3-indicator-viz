@@ -20,7 +20,8 @@ def build_indicator_values_dict_list(indicator_values):
 
 
 def aggregate_indicator_values(
-    custom_location, data_visual, indicator_values, indicator_value_aggregator
+    custom_location, data_visual, indicator_values, indicator_value_aggregator,
+    source_id=None,
 ):
     grouped_values = {}
     for iv in build_indicator_values_dict_list(indicator_values):
@@ -33,19 +34,21 @@ def aggregate_indicator_values(
     aggregated_values = []
     for (filter_option_id, start_date), ivs in grouped_values.items():
         aggregated_value = aggregate_indicator_value_set(
-            custom_location, data_visual, ivs, indicator_value_aggregator
+            custom_location, data_visual, ivs, indicator_value_aggregator,
+            source_id=source_id,
         )
         aggregated_values.append(aggregated_value)
     return aggregated_values
 
 
 def aggregate_indicator_value_set(
-    custom_location, data_visual, indicator_values, indicator_value_aggregator
+    custom_location, data_visual, indicator_values, indicator_value_aggregator,
+    source_id=None,
 ):
     aggregate_value = {
         "location_id": str(custom_location.id),
         "indicator_id": data_visual.indicator.id,
-        "source_id": (
+        "source_id": source_id or (
             indicator_values[0]["source_id"] if indicator_values else None
         ),
         "filter_option_id": (
@@ -170,7 +173,7 @@ def aggregate_indicator_value_set(
         aggregate_result = indicator_value_aggregator.aggregate_rate_values(
             [iv["count"] for iv in indicator_values],
             [iv["universe"] for iv in indicator_values],
-            data_visual.rate_per,
+            data_visual.indicator.rate_per,
         )
         aggregate_moe_result = (
             indicator_value_aggregator.aggregate_rate_moe_values(
@@ -178,7 +181,7 @@ def aggregate_indicator_value_set(
                 [iv["universe"] for iv in indicator_values],
                 [iv["count_moe"] for iv in indicator_values],
                 [iv["universe_moe"] for iv in indicator_values],
-                data_visual.rate_per,
+                data_visual.indicator.rate_per,
             )
         )
         aggregate_value["value"] = aggregate_result.value

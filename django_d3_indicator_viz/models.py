@@ -101,11 +101,21 @@ class Section(models.Model):
             # Aggregate constituent values per data visual
             data_visuals = IndicatorDataVisual.objects.filter(
                 indicator__category__section_id=self.id
-            )
+            ).prefetch_related('indicatordatavisualsource_set')
             aggregated_values = []
             for dv in data_visuals:
+                # Get the primary source for this data visual so we only
+                # aggregate values from the correct source (and so the
+                # resulting source_id matches what get_visual_metadata returns)
+                primary_source_rel = dv.indicatordatavisualsource_set.first()
+                if not primary_source_rel:
+                    continue
+                primary_source_id = primary_source_rel.source_id
+
+                source_filtered_qs = constituent_qs.filter(source_id=primary_source_id)
                 aggregated = aggregate_indicator_values(
-                    custom_location, dv, constituent_qs, aggregator
+                    custom_location, dv, source_filtered_qs, aggregator,
+                    source_id=primary_source_id,
                 )
                 if aggregated:
                     for av in aggregated:
