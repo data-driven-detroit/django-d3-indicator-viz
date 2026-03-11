@@ -533,13 +533,8 @@ def profile(request, location_id, indicator_value_aggregator=None,
     try:
         location = Location.objects.get(id=location_id)
     except Location.DoesNotExist:
-        try:
-            location = CustomLocation.objects.get(slug__iexact=location_id)
-            is_custom_location = True
-            custom_location = location
-        except CustomLocation.DoesNotExist:
-            from django.http import Http404
-            raise Http404
+        from django.http import Http404
+        raise Http404
 
     location_type = location.location_type
 
@@ -625,6 +620,92 @@ def profile(request, location_id, indicator_value_aggregator=None,
             "primary_loc_id": primary_loc_id,
             "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
             "sibling_loc_ids": "", # ",".join(loc.id for loc in all_siblings),
+            "header_data": header_data,
+            "location": location,
+            "location_type": location_type,
+            "parent_locations": parent_locations,
+            "location_geojson": location_geojson,
+            "sibling_locations_geojson": display_siblings_geojson,
+            "is_custom_location": is_custom_location,
+        }
+    )
+
+
+def custom_profile(request, location_slug, indicator_value_aggregator=None,
+                   template_path="django_d3_indicators_viz/profile.html"):
+    is_custom_location = True
+
+    try:
+        location = CustomLocation.objects.get(slug__iexact=location_slug)
+    except CustomLocation.DoesNotExist:
+        from django.http import Http404
+        raise Http404
+
+    custom_location = location
+    location_type = location.location_type
+
+    # Serialize location geometry
+    location_geojson = serialize(
+        "geojson",
+        Location.objects.filter(id__in=location.get_constituent_ids()),
+        geometry_field="geometry",
+        fields=("id", "name"),
+    )
+
+    # Both Location and CustomLocation have get_parents()
+    parent_locations = location.get_parents()
+
+    # The display siblings only focusing on the bounding box that roughly
+    # covers the map, where all siblings skips the geometry for a speed-up
+    display_siblings = location.get_siblings(nearby=True)
+
+    display_siblings_geojson = serialize(
+        "geojson",
+        display_siblings,
+        geometry_field="geometry",
+        fields=("id", "name", "location_type"),
+    )
+
+    # These are needed globally and can't be called from within the tree.
+    filter_options = IndicatorFilterOption.objects.all()
+    color_scales = ColorScale.objects.all()
+    location_types = LocationType.objects.all()
+
+    header_data = assemble_custom_header_data(location, indicator_value_aggregator)
+
+    # Get the first section, but as an iterator, not individually.
+    section = Section.objects.all().order_by('sort_order').first()
+
+    sections = [roll_section(
+        section, location, parent_locations,
+        custom_location=custom_location,
+        aggregator=indicator_value_aggregator,
+    )]
+
+    # Build profile data for JavaScript (locations, filter options, etc.)
+    primary_data = CustomLocationSerializer(location).data
+
+    profile_data = {
+        "filterOptions": IndicatorFilterOptionSerializer(filter_options, many=True).data,
+        "colorScales": ColorScaleSerializer(color_scales, many=True).data,
+        "locationTypes": LocationTypeSerializer(location_types, many=True).data,
+        "locations": {
+            "primary": primary_data,
+            "parents": LocationSerializer(parent_locations, many=True).data,
+            "siblings": [],
+        },
+    }
+
+    primary_loc_id = location.slug
+
+    return render(
+        request, template_path,
+        {
+            "sections": sections,
+            "profile_data_json": json.dumps(profile_data),
+            "primary_loc_id": primary_loc_id,
+            "parent_loc_ids": ",".join(loc.id for loc in parent_locations),
+            "sibling_loc_ids": "",
             "header_data": header_data,
             "location": location,
             "location_type": location_type,

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from math import sqrt
 
-class aggregation_result:
+class AggregationResult:
     '''
     Class to hold aggregation results.
     '''
@@ -15,19 +15,20 @@ class aggregation_result:
     # The number of values that were aggregated.
     values_aggregated = 0
 
+
 class IndicatorValueAggregator(ABC):
-    '''
+    """
     Class to aggregate indicator values.
     Provides functions to aggregate different types of indicator values.
     See Section 8 of the ACS General Handbook for more information on the calculations.
     https://www.census.gov/content/dam/Census/library/publications/2020/acs/acs_general_handbook_2020.pdf
-    '''
+    """
 
     def aggregate_count_values(self, count_values):
-        '''
+        """
         Aggregates count values.
-        '''
-        result = aggregation_result()
+        """
+        result = AggregationResult()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None])
         valid_values = [value for value in count_values if value is not None]
@@ -36,9 +37,9 @@ class IndicatorValueAggregator(ABC):
         return result
 
     def aggregate_count_moe_values(self, moe_values):
-        '''
+        """
         Aggregates count margin of error values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(moe_values)
         result.values_aggregated = len([value for value in moe_values if value is not None])
@@ -47,10 +48,11 @@ class IndicatorValueAggregator(ABC):
 
         return result
 
+
     def aggregate_percentage_values(self, count_values, universe_values):
-        '''
+        """
         Aggregates percentage values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
@@ -67,9 +69,9 @@ class IndicatorValueAggregator(ABC):
         return result
 
     def aggregate_percentage_moe_values(self, count_values, universe_values, count_moe_values, universe_moe_values):
-        '''
+        """
         Aggregates percentage margin of error values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
@@ -96,33 +98,33 @@ class IndicatorValueAggregator(ABC):
         return result
 
     def aggregate_median_values(self, median_values, universe_values):
-        '''
+        """
         Aggregates median values.
-        '''
+        """
         return self.__aggregate_weighted_averages(median_values, universe_values)
 
     def aggregate_median_moe_values(self, median_values, universe_values, median_moe_values, universe_moe_values):
-        '''
+        """
         Aggregates median margin of error values.
-        '''
+        """
         return self.__aggregate_weighted_average_moes(median_values, universe_values, median_moe_values, universe_moe_values)
 
     def aggregate_average_values(self, average_values, universe_values):
-        '''
+        """
         Aggregates average values.
-        '''
+        """
         return self.__aggregate_weighted_averages(average_values, universe_values)
 
     def aggregate_average_moe_values(self, average_values, universe_values, average_moe_values, universe_moe_values):
-        '''
+        """
         Aggregates average margin of error values.
-        '''
+        """
         return self.__aggregate_weighted_average_moes(average_values, universe_values, average_moe_values, universe_moe_values)
 
     def aggregate_rate_values(self, count_values, universe_values, rate_per):
-        '''
+        """
         Aggregates rate values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
@@ -139,9 +141,9 @@ class IndicatorValueAggregator(ABC):
         return result
 
     def aggregate_rate_moe_values(self, count_values, universe_values, count_moe_values, universe_moe_values, rate_per):
-        '''
+        """
         Aggregates rate margin of error values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(count_values)
         result.values_aggregated = len([value for value in count_values if value is not None 
@@ -190,9 +192,9 @@ class IndicatorValueAggregator(ABC):
         pass
 
     def __aggregate_weighted_averages(self, values, weights):
-        '''
+        """
         Aggregates weighted average values.
-        '''
+        """
         result = aggregation_result()
         result.values_considered = len(values)
         result.values_aggregated = len([value for value in values if value is not None 
@@ -211,10 +213,10 @@ class IndicatorValueAggregator(ABC):
         return result
 
     def __aggregate_weighted_average_moes(self, values, weights, value_moes, weight_moes):
-        '''
+        """
         Aggregates weighted average margin of error values.
-        '''
-        result = aggregation_result()
+        """
+        result = AggregationResult()
         result.values_considered = len(values)
         result.values_aggregated = len([value for value in values if value is not None 
                                         and weights[values.index(value)] is not None 

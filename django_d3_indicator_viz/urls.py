@@ -20,6 +20,7 @@ from .views import *
 
 urlpatterns = [
     path('profile/<str:location_id>/', profile, name='profile'),
+    path('custom-profile/<str:location_slug>/', custom_profile, name='custom_profile'),
     path('api/section-data/<str:location_id>/<int:section_id>/', section_data, name='section_data'),
     path('api/track-copy/', track_copy, name='track_copy'),
     path('api/location-search/', location_search, name='location_search'),

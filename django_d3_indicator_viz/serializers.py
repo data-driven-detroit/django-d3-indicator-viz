@@ -84,6 +84,7 @@ class LocationTypeSerializer(serializers.ModelSerializer):
 
 
 class CustomLocationSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
     location_type_id = serializers.PrimaryKeyRelatedField(source='location_type', read_only=True)
 
     class Meta:
