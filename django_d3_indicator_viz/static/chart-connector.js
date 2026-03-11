@@ -107,9 +107,10 @@ function drawChart(container, allValues, categoryScales) {
         rate_per: container.dataset.ratePer ? parseInt(container.dataset.ratePer) : null,
     };
 
-    // Filter values for this indicator and source
+    // Filter values for this indicator and source (coerce types — JSON values
+    // may be strings while dataset attributes are parsed as numbers, or vice-versa)
     const indicatorValues = allValues.filter(v =>
-        v.indicator_id === indicatorId && v.source_id === sourceId
+        Number(v.indicator_id) === indicatorId && Number(v.source_id) === sourceId
     );
 
     if (!indicatorValues.length) {
@@ -120,8 +121,8 @@ function drawChart(container, allValues, categoryScales) {
     // Get primary location
     const primaryLocation = window.profileData.locations.primary;
 
-    // Filter for primary location
-    const primaryValues = indicatorValues.filter(v => v.location_id === primaryLocation.id);
+    // Filter for primary location (coerce to string for safe comparison)
+    const primaryValues = indicatorValues.filter(v => String(v.location_id) === String(primaryLocation.id));
 
     // Get comparison locations if needed
     let compareLocations = [];
@@ -135,8 +136,8 @@ function drawChart(container, allValues, categoryScales) {
 
     // Filter for comparison locations
     if (compareLocations.length > 0) {
-        const compareLocationIds = compareLocations.map(loc => loc.id);
-        compareValues = indicatorValues.filter(v => compareLocationIds.includes(v.location_id));
+        const compareLocationIds = compareLocations.map(loc => String(loc.id));
+        compareValues = indicatorValues.filter(v => compareLocationIds.includes(String(v.location_id)));
     }
 
     // Get color scale if specified
