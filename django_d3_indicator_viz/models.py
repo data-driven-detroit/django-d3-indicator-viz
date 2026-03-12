@@ -51,7 +51,7 @@ class Section(models.Model):
         ).values('priority')[:1]
 
         if custom_location and aggregator:
-            from .aggregation import aggregate_indicator_values, build_indicator_values_dict_list
+            from .indicator_value_aggregator import aggregate_indicator_values
 
             constituent_ids = custom_location.get_constituent_ids()
             comparison_locations = [loc for loc in locations if isinstance(loc, Location) and str(loc.id) not in [str(cid) for cid in constituent_ids]]
@@ -854,7 +854,7 @@ def assemble_header_data(location_id):
 
 
 def assemble_custom_header_data(custom_location, aggregator):
-    from .aggregation import aggregate_indicator_values
+    from .indicator_value_aggregator import aggregate_indicator_values
     from types import SimpleNamespace
 
     header_data_visuals = IndicatorDataVisual.objects.filter(

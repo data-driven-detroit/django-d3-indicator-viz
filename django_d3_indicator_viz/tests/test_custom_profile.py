@@ -2,13 +2,11 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 from types import SimpleNamespace
 
-from django_d3_indicator_viz.aggregation import (
+from django_d3_indicator_viz.indicator_value_aggregator import (
+    IndicatorValueAggregator,
     build_indicator_values_dict_list,
     aggregate_indicator_values,
     aggregate_indicator_value_set,
-)
-from django_d3_indicator_viz.indicator_value_aggregator import (
-    IndicatorValueAggregator,
 )
 
 
