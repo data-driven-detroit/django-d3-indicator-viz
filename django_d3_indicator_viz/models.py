@@ -511,7 +511,11 @@ class Indicator(models.Model):
                 data_visual=data_visual
             ).order_by('priority')
 
-            print(f"[get_visual_metadata] indicator={self.name}, constituent_ids={list(constituent_ids)}, source_rels_count={source_rels.count()}")
+            # Debug: what location_ids actually exist for this indicator?
+            all_loc_ids = list(IndicatorValue.objects.filter(
+                indicator=self,
+            ).values_list('location_id', flat=True).distinct()[:10])
+            print(f"[get_visual_metadata] indicator={self.name} (id={self.id}), constituent_ids={list(constituent_ids)}, source_rels_count={source_rels.count()}, sample_location_ids_in_db={all_loc_ids}")
             for source_rel in source_rels:
                 count = IndicatorValue.objects.filter(
                     indicator=self,
