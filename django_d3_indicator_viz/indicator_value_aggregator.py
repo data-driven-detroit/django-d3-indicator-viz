@@ -242,6 +242,9 @@ class IndicatorValueAggregator:
             numerator = sum(value * weight for value, weight in zip(valid_values, valid_weights))
             denominator = sum(valid_weights)
             weighted_average = numerator / denominator
+            if numerator == 0:
+                result.value = 0
+                return result
             moe = weighted_average * sqrt(
                 # numerator term
                 (
@@ -252,6 +255,7 @@ class IndicatorValueAggregator:
                                 for v, e, w, we in zip(
                                     valid_values, valid_value_moes, valid_weights, valid_weight_moes
                                 )
+                                if v != 0 and w != 0
                             ]
                         )
                     )

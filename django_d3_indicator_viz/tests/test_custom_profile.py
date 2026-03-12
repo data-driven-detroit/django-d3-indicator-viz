@@ -153,6 +153,57 @@ class TestAggregateIndicatorValueSetPercentage(TestCase):
         self.assertAlmostEqual(result["value"], 14.84, places=2)
 
 
+class TestAggregateIndicatorValueSetMedianZeroValue(TestCase):
+
+    def setUp(self):
+        self.aggregator = IndicatorValueAggregator()
+
+    def test_median_aggregation_with_zero_value_no_crash(self):
+        """A constituent with value=0 should not cause ZeroDivisionError in MOE calc."""
+        ivs = [
+            {"location_id": "A", "indicator_id": 1, "source_id": 1,
+             "filter_option_id": None, "start_date": "2020-01-01",
+             "end_date": "2020-12-31", "value": 0, "value_moe": 5,
+             "count": 10, "count_moe": 1, "universe": 200, "universe_moe": 20,
+             "active_data": True},
+            {"location_id": "B", "indicator_id": 1, "source_id": 1,
+             "filter_option_id": None, "start_date": "2020-01-01",
+             "end_date": "2020-12-31", "value": 30, "value_moe": 3,
+             "count": 50, "count_moe": 5, "universe": 300, "universe_moe": 30,
+             "active_data": True},
+        ]
+        custom_loc = MagicMock()
+        custom_loc.id = "custom-1"
+        dv = _make_data_visual(indicator_id=1, indicator_type="median")
+
+        # Should not raise ZeroDivisionError
+        result = aggregate_indicator_value_set(custom_loc, dv, ivs, self.aggregator)
+        self.assertIsNotNone(result["value"])
+        self.assertIsNotNone(result["value_moe"])
+
+    def test_median_aggregation_with_zero_universe_no_crash(self):
+        """A constituent with universe=0 (weight) should not cause ZeroDivisionError."""
+        ivs = [
+            {"location_id": "A", "indicator_id": 1, "source_id": 1,
+             "filter_option_id": None, "start_date": "2020-01-01",
+             "end_date": "2020-12-31", "value": 10, "value_moe": 1,
+             "count": 10, "count_moe": 1, "universe": 0, "universe_moe": 0,
+             "active_data": True},
+            {"location_id": "B", "indicator_id": 1, "source_id": 1,
+             "filter_option_id": None, "start_date": "2020-01-01",
+             "end_date": "2020-12-31", "value": 30, "value_moe": 3,
+             "count": 50, "count_moe": 5, "universe": 300, "universe_moe": 30,
+             "active_data": True},
+        ]
+        custom_loc = MagicMock()
+        custom_loc.id = "custom-1"
+        dv = _make_data_visual(indicator_id=1, indicator_type="median")
+
+        result = aggregate_indicator_value_set(custom_loc, dv, ivs, self.aggregator)
+        self.assertIsNotNone(result["value"])
+        self.assertIsNotNone(result["value_moe"])
+
+
 class TestAggregateIndicatorValueSetRate(TestCase):
 
     def setUp(self):
