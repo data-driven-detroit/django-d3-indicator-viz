@@ -511,7 +511,14 @@ class Indicator(models.Model):
                 data_visual=data_visual
             ).order_by('priority')
 
+            print(f"[get_visual_metadata] indicator={self.name}, constituent_ids={list(constituent_ids)}, source_rels_count={source_rels.count()}")
             for source_rel in source_rels:
+                count = IndicatorValue.objects.filter(
+                    indicator=self,
+                    location_id__in=constituent_ids,
+                    source_id=source_rel.source_id,
+                ).count()
+                print(f"  source={source_rel.source_id} ({source_rel.source.name}), priority={source_rel.priority}, matching_values={count}")
                 result = IndicatorValue.objects.filter(
                     indicator=self,
                     location_id__in=constituent_ids,
@@ -535,6 +542,7 @@ class Indicator(models.Model):
                             result.end_date = date_range['max_end']
 
                     return result
+            print(f"  -> returning None for {self.name}")
             return None
 
         # Regular location path (existing window-function logic)
