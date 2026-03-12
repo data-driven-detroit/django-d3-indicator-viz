@@ -123,26 +123,45 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
-                # For non-timeseries charts, filter to the data visual's
-                # configured date range so all constituents with data for
-                # that period are included (not just those matching the max).
+                # For non-timeseries charts, constrain to the data visual's
+                # configured date range, then pick the latest date within it.
                 if dv.data_visual_type not in ('line', 'multiline'):
                     source_filtered_qs = source_filtered_qs.filter(
-                        start_date=dv.start_date,
-                        end_date=dv.end_date,
+                        start_date__gte=dv.start_date,
+                        end_date__lte=dv.end_date,
                     )
+                    latest_date = source_filtered_qs.order_by('-start_date').values_list('start_date', flat=True).first()
+                    if latest_date:
+                        source_filtered_qs = source_filtered_qs.filter(start_date=latest_date)
                 aggregated = aggregate_indicator_values(
                     custom_location, dv, source_filtered_qs, aggregator,
                     source_id=primary_source_id,
                 )
-                if aggregated:
+                if not aggregated:
+                    # No data at all — still emit a null-valued row so the
+                    # BAN renders (with null) instead of showing "No data available".
+                    aggregated = [{
+                        "location_id": str(custom_location.id),
+                        "indicator_id": dv.indicator_id,
+                        "source_id": primary_source_id,
+                        "filter_option_id": None,
+                        "start_date": dv.start_date.isoformat() if dv.start_date else None,
+                        "end_date": dv.end_date.isoformat() if dv.end_date else None,
+                        "value": None,
+                        "value_moe": None,
+                        "count": None,
+                        "count_moe": None,
+                        "universe": None,
+                        "universe_moe": None,
+                    }]
+                else:
                     for av in aggregated:
                         # Convert dates to isoformat strings to match standard shape
                         if hasattr(av.get("start_date", None), 'isoformat'):
                             av["start_date"] = av["start_date"].isoformat()
                         if hasattr(av.get("end_date", None), 'isoformat'):
                             av["end_date"] = av["end_date"].isoformat()
-                    aggregated_values.extend(aggregated)
+                aggregated_values.extend(aggregated)
 
             return aggregated_values + comparison_values
 

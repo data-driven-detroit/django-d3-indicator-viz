@@ -266,6 +266,11 @@ class IndicatorValueAggregator:
         return result
 
 
+def _coalesce(val):
+    """Treat None as 0 for numeric aggregation fields."""
+    return 0 if val is None else val
+
+
 def build_indicator_values_dict_list(indicator_values):
     return [
         {
@@ -275,12 +280,12 @@ def build_indicator_values_dict_list(indicator_values):
             "filter_option_id": iv.filter_option_id,
             "start_date": iv.start_date,
             "end_date": iv.end_date,
-            "value": iv.value,
-            "value_moe": iv.value_moe,
-            "count": iv.count,
-            "count_moe": iv.count_moe,
-            "universe": iv.universe,
-            "universe_moe": iv.universe_moe,
+            "value": _coalesce(iv.value),
+            "value_moe": _coalesce(iv.value_moe),
+            "count": _coalesce(iv.count),
+            "count_moe": _coalesce(iv.count_moe),
+            "universe": _coalesce(iv.universe),
+            "universe_moe": _coalesce(iv.universe_moe),
             "active_data": iv.active_data,
         }
         for iv in indicator_values
