@@ -4,6 +4,7 @@
  * Simple connector between template data and chart drawing code.
  * Finds chart containers, filters data, and calls the appropriate chart class.
  */
+console.log('[chart-connector] module loading');
 
 import Ban from './ban.js';
 import ColumnChart from './columnchart.js';
@@ -60,6 +61,7 @@ function computeCategoryScales(section, allValues) {
 function drawCharts(container = document) {
     // Find all sections with indicator values
     let sections = Array.from(container.querySelectorAll('article[data-indicator-values]'));
+    console.log('[chart-connector] drawCharts called, sections found:', sections.length);
 
     // If the container itself is an article with indicator values, include it
     if (container.matches && container.matches('article[data-indicator-values]')) {
@@ -78,6 +80,7 @@ function drawCharts(container = document) {
 
         // Find all chart containers in this section
         const chartContainers = section.querySelectorAll('.chart-container[data-indicator-id]');
+        console.log('[chart-connector] section:', section.id, 'chartContainers:', chartContainers.length, 'allValues:', allValues.length);
 
         chartContainers.forEach(chartContainer => {
             drawChart(chartContainer, allValues, categoryScales);
