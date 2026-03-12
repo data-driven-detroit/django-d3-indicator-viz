@@ -7,7 +7,6 @@ from .indicator_value_aggregator import IndicatorValueAggregator
 
 from .models import (
     Section,
-    Category,
     ColorScale,
     Indicator,
     Location,
