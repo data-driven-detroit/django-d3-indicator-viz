@@ -511,34 +511,7 @@ class Indicator(models.Model):
                 data_visual=data_visual
             ).order_by('priority')
 
-            # Debug: check what data exists for this indicator + these constituents
-            total_for_indicator = IndicatorValue.objects.filter(indicator=self).count()
-            total_for_constituents_any_source = IndicatorValue.objects.filter(
-                indicator=self, location_id__in=constituent_ids,
-            ).count()
-            # Check without indicator filter
-            constituent_any_indicator = IndicatorValue.objects.filter(
-                location_id__in=constituent_ids,
-            ).count()
-            print(f"[get_visual_metadata] indicator={self.name} (id={self.id}), constituent_ids={list(constituent_ids)}")
-            # What sources do the matching rows actually use?
-            actual_sources = list(IndicatorValue.objects.filter(
-                indicator=self, location_id__in=constituent_ids,
-            ).values_list('source_id', 'source__name').distinct())
-            # What location types have data for this indicator?
-            sample_locs = list(IndicatorValue.objects.filter(
-                indicator=self,
-            ).values_list('location__location_type__name', flat=True).distinct())
-            print(f"  total_for_indicator={total_for_indicator}, constituent_match={total_for_constituents_any_source}, constituent_any_indicator={constituent_any_indicator}")
-            print(f"  actual_sources_in_data={actual_sources}")
-            print(f"  location_types_with_data={sample_locs}")
             for source_rel in source_rels:
-                count = IndicatorValue.objects.filter(
-                    indicator=self,
-                    location_id__in=constituent_ids,
-                    source_id=source_rel.source_id,
-                ).count()
-                print(f"  source={source_rel.source_id} ({source_rel.source.name}), priority={source_rel.priority}, matching_values={count}")
                 result = IndicatorValue.objects.filter(
                     indicator=self,
                     location_id__in=constituent_ids,
@@ -562,7 +535,15 @@ class Indicator(models.Model):
                             result.end_date = date_range['max_end']
 
                     return result
-            print(f"  -> returning None for {self.name}")
+            # Only log failures
+            configured_sources = list(source_rels.values_list('source_id', 'source__name'))
+            actual_sources = list(IndicatorValue.objects.filter(
+                indicator=self, location_id__in=constituent_ids,
+            ).values_list('source_id', 'source__name').distinct())
+            loc_types = list(IndicatorValue.objects.filter(
+                indicator=self,
+            ).values_list('location__location_type__name', flat=True).distinct())
+            print(f"[FAIL] {self.name} (id={self.id}): configured_sources={configured_sources}, actual_sources_for_zctas={actual_sources}, loc_types_with_data={loc_types}")
             return None
 
         # Regular location path (existing window-function logic)
