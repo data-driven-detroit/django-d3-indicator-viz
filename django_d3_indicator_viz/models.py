@@ -516,15 +516,12 @@ class Indicator(models.Model):
             total_for_constituents_any_source = IndicatorValue.objects.filter(
                 indicator=self, location_id__in=constituent_ids,
             ).count()
-            zcta_count = IndicatorValue.objects.filter(
-                indicator=self, location_id__startswith='8600000US',
-            ).count()
             # Check without indicator filter
             constituent_any_indicator = IndicatorValue.objects.filter(
                 location_id__in=constituent_ids,
             ).count()
             print(f"[get_visual_metadata] indicator={self.name} (id={self.id}), constituent_ids={list(constituent_ids)}")
-            print(f"  total_for_indicator={total_for_indicator}, zcta_rows_for_indicator={zcta_count}, constituent_match={total_for_constituents_any_source}, constituent_any_indicator={constituent_any_indicator}")
+            print(f"  total_for_indicator={total_for_indicator}, constituent_match={total_for_constituents_any_source}, constituent_any_indicator={constituent_any_indicator}")
             for source_rel in source_rels:
                 count = IndicatorValue.objects.filter(
                     indicator=self,
