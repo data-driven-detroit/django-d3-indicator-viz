@@ -525,8 +525,13 @@ class Indicator(models.Model):
             actual_sources = list(IndicatorValue.objects.filter(
                 indicator=self, location_id__in=constituent_ids,
             ).values_list('source_id', 'source__name').distinct())
+            # What location types have data for this indicator?
+            sample_locs = list(IndicatorValue.objects.filter(
+                indicator=self,
+            ).values_list('location__location_type__name', flat=True).distinct())
             print(f"  total_for_indicator={total_for_indicator}, constituent_match={total_for_constituents_any_source}, constituent_any_indicator={constituent_any_indicator}")
             print(f"  actual_sources_in_data={actual_sources}")
+            print(f"  location_types_with_data={sample_locs}")
             for source_rel in source_rels:
                 count = IndicatorValue.objects.filter(
                     indicator=self,
