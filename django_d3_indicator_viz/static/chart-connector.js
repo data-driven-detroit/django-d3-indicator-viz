@@ -113,8 +113,6 @@ function drawChart(container, allValues, categoryScales) {
     );
 
     if (!indicatorValues.length) {
-        console.warn('[chart-debug] No data:', container.id, {indicatorId, sourceId, totalValues: allValues.length,
-            availableKeys: [...new Set(allValues.map(v => `${v.indicator_id}:${v.source_id}`))]});
         container.innerHTML = '<p>No data available</p>';
         return;
     }
@@ -124,13 +122,6 @@ function drawChart(container, allValues, categoryScales) {
 
     // Filter for primary location (coerce to string for safe comparison)
     const primaryValues = indicatorValues.filter(v => String(v.location_id) === String(primaryLocation.id));
-
-    if (!primaryValues.length && visualType === 'ban') {
-        console.warn('[chart-debug] BAN no primary match:', container.id, {
-            primaryLocationId: primaryLocation.id,
-            locationIdsInValues: [...new Set(indicatorValues.map(v => `${v.location_id}(${typeof v.location_id})`))],
-        });
-    }
 
     // Get comparison locations if needed
     let compareLocations = [];

@@ -123,12 +123,14 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
-                # For non-timeseries charts, only aggregate the latest date
-                # (mirrors the rn=1 window function in the regular path)
+                # For non-timeseries charts, filter to the data visual's
+                # configured date range so all constituents with data for
+                # that period are included (not just those matching the max).
                 if dv.data_visual_type not in ('line', 'multiline'):
-                    latest_date = source_filtered_qs.order_by('-start_date').values_list('start_date', flat=True).first()
-                    if latest_date:
-                        source_filtered_qs = source_filtered_qs.filter(start_date=latest_date)
+                    source_filtered_qs = source_filtered_qs.filter(
+                        start_date=dv.start_date,
+                        end_date=dv.end_date,
+                    )
                 aggregated = aggregate_indicator_values(
                     custom_location, dv, source_filtered_qs, aggregator,
                     source_id=primary_source_id,
