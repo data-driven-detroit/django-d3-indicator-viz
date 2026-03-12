@@ -132,7 +132,7 @@ class IndicatorValueAggregator:
                                 and universe_values[count_values.index(value)] is not None]
         valid_universe_values = [value for value in universe_values if value is not None
                                 and count_values[universe_values.index(value)] is not None]
-        if sum(valid_universe_values) == 0:
+        if rate_per is None or sum(valid_universe_values) == 0:
             result.value = None
         else:
             result.value = round(sum(valid_count_values) / sum(valid_universe_values) * rate_per, 2)
