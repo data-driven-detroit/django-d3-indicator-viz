@@ -195,7 +195,7 @@ export default class DonutChart {
             return {
                 ...item,
                 value: item.value,
-                name: this.filterOptions.find(o => o.id === item.filter_option_id).name
+                name: this.filterOptions.find(o => o.id === item.filter_option_id)?.name ?? ''
             }
         });
 
