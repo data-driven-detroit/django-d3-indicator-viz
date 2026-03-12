@@ -244,3 +244,55 @@ class TestEndToEndChartRendering:
         all_values = json.loads(section_data["indicator_values"])
         parent_values = [v for v in all_values if v["location_id"] == parent_loc.id]
         assert len(parent_values) >= 1, "Parent comparison location values missing from JSON"
+
+    def test_mismatched_dv_and_iv_dates(self, base_setup):
+        """
+        DV has an old date range but actual data is newer.
+        Should still aggregate the newer data (not return "No data").
+        Regression test: a date range filter on DV dates would exclude this data.
+        """
+        s = base_setup
+        source = IndicatorSourceFactory(name="Stale-DV-Source")
+        indicator = IndicatorFactory(category=s["category"], indicator_type="count")
+        # DV configured with old date range
+        dv = IndicatorDataVisualFactory(
+            indicator=indicator,
+            data_visual_type="ban",
+            start_date=date(2018, 1, 1),
+            end_date=date(2020, 12, 31),
+        )
+        IndicatorDataVisualSourceFactory(data_visual=dv, source=source, priority=0)
+
+        # Actual data is from 2022 — outside the DV's configured range
+        for loc in [s["loc_a"], s["loc_b"]]:
+            IndicatorValueFactory(
+                indicator=indicator, location=loc, source=source,
+                count=100, count_moe=10, universe=1000, universe_moe=100,
+                start_date=date(2022, 1, 1), end_date=date(2022, 12, 31),
+            )
+
+        section_data = roll_section(
+            s["section"], s["custom_location"], [],
+            custom_location=s["custom_location"],
+            aggregator=IndicatorValueAggregator(),
+        )
+        results = simulate_js_filter(section_data)
+
+        assert len(results) == 1
+        assert results[0]["matched"], (
+            f"Source mismatch: html_source_id={results[0]['html_source_id']}, "
+            f"json_source_ids={results[0]['json_source_ids']}"
+        )
+
+        # Verify aggregated value is not null (data was actually found)
+        all_values = json.loads(section_data["indicator_values"])
+        custom_values = [
+            v for v in all_values
+            if v["indicator_id"] == indicator.id and v["source_id"] == source.id
+            and str(v["location_id"]) == str(s["custom_location"].id)
+        ]
+        assert len(custom_values) == 1
+        assert custom_values[0]["value"] is not None, (
+            "Aggregated value should not be null — data exists but dates are "
+            "outside the DV's configured range"
+        )

@@ -123,13 +123,10 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
-                # For non-timeseries charts, constrain to the data visual's
-                # configured date range, then pick the latest date within it.
+                # For non-timeseries charts, pick only the latest date period.
+                # Note: we intentionally do NOT filter by dv.start_date/end_date
+                # because those fields can be stale relative to actual data.
                 if dv.data_visual_type not in ('line', 'multiline'):
-                    source_filtered_qs = source_filtered_qs.filter(
-                        start_date__gte=dv.start_date,
-                        end_date__lte=dv.end_date,
-                    )
                     latest_date = source_filtered_qs.order_by('-start_date').values_list('start_date', flat=True).first()
                     if latest_date:
                         source_filtered_qs = source_filtered_qs.filter(start_date=latest_date)
