@@ -123,6 +123,12 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
+                # For non-timeseries charts, only aggregate the latest date
+                # (mirrors the rn=1 window function in the regular path)
+                if dv.data_visual_type not in ('line', 'multiline'):
+                    latest_date = source_filtered_qs.order_by('-start_date').values_list('start_date', flat=True).first()
+                    if latest_date:
+                        source_filtered_qs = source_filtered_qs.filter(start_date=latest_date)
                 aggregated = aggregate_indicator_values(
                     custom_location, dv, source_filtered_qs, aggregator,
                     source_id=primary_source_id,
@@ -535,15 +541,6 @@ class Indicator(models.Model):
                             result.end_date = date_range['max_end']
 
                     return result
-            # Only log failures
-            configured_sources = list(source_rels.values_list('source_id', 'source__name'))
-            actual_sources = list(IndicatorValue.objects.filter(
-                indicator=self, location_id__in=constituent_ids,
-            ).values_list('source_id', 'source__name').distinct())
-            loc_types = list(IndicatorValue.objects.filter(
-                indicator=self,
-            ).values_list('location__location_type__name', flat=True).distinct())
-            print(f"[FAIL] {self.name} (id={self.id}): configured_sources={configured_sources}, actual_sources_for_zctas={actual_sources}, loc_types_with_data={loc_types}")
             return None
 
         # Regular location path (existing window-function logic)
