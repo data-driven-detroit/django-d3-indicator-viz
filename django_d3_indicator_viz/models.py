@@ -503,20 +503,49 @@ class Indicator(models.Model):
             # We filter out nones in the views
             return None
 
+        # For custom locations, iterate sources in priority order to match
+        # get_indicator_values' source selection algorithm.
+        if hasattr(location, 'get_constituent_ids'):
+            constituent_ids = location.get_constituent_ids()
+            source_rels = IndicatorDataVisualSource.objects.filter(
+                data_visual=data_visual
+            ).order_by('priority')
+
+            for source_rel in source_rels:
+                result = IndicatorValue.objects.filter(
+                    indicator=self,
+                    location_id__in=constituent_ids,
+                    source_id=source_rel.source_id,
+                ).select_related('filter_option', 'location', 'source', 'indicator').first()
+                if result:
+                    result.data_visual_type = data_visual.data_visual_type
+                    result.columns = data_visual.columns
+                    result.location_comparison_type = data_visual.location_comparison_type
+                    result.color_scale_id = data_visual.color_scale_id
+
+                    if data_visual.data_visual_type in ['line', 'multiline']:
+                        date_range = IndicatorValue.objects.filter(
+                            indicator=self,
+                            location_id__in=constituent_ids,
+                            source=result.source,
+                        ).aggregate(min_start=Min('start_date'), max_end=Max('end_date'))
+                        if date_range['min_start']:
+                            result.start_date = date_range['min_start']
+                        if date_range['max_end']:
+                            result.end_date = date_range['max_end']
+
+                    return result
+            return None
+
+        # Regular location path (existing window-function logic)
         priority_subquery = IndicatorDataVisualSource.objects.filter(
             data_visual=data_visual,
             source=OuterRef('source')
         ).values('priority')[:1]
 
-        # Duck-type: CustomLocation has get_constituent_ids, Location does not
-        if hasattr(location, 'get_constituent_ids'):
-            location_filter = {'location_id__in': location.get_constituent_ids()}
-        else:
-            location_filter = {'location': location}
-
         base_query = IndicatorValue.objects.filter(
             indicator=self,
-            **location_filter,
+            location=location,
         ).annotate(
             source_priority=priority_subquery,
             rn=Window(

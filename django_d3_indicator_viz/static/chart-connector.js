@@ -107,6 +107,21 @@ function drawChart(container, allValues, categoryScales) {
         rate_per: container.dataset.ratePer ? parseInt(container.dataset.ratePer) : null,
     };
 
+    // --- DIAGNOSTIC: remove after debugging ---
+    console.log('[chart-debug]', {
+        chartContainer: container.id,
+        filterInputs: { indicatorId, sourceId },
+        filterInputTypes: { indicatorId: typeof indicatorId, sourceId: typeof sourceId },
+        uniqueKeysInJSON: [...new Set(allValues.map(v =>
+            `ind=${v.indicator_id}(${typeof v.indicator_id}) src=${v.source_id}(${typeof v.source_id})`
+        ))],
+        matchCount: allValues.filter(v =>
+            Number(v.indicator_id) === indicatorId && Number(v.source_id) === sourceId
+        ).length,
+        totalValues: allValues.length,
+    });
+    // --- END DIAGNOSTIC ---
+
     // Filter values for this indicator and source (coerce types — JSON values
     // may be strings while dataset attributes are parsed as numbers, or vice-versa)
     const indicatorValues = allValues.filter(v =>
