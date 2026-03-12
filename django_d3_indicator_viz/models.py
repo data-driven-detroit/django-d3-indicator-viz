@@ -511,11 +511,20 @@ class Indicator(models.Model):
                 data_visual=data_visual
             ).order_by('priority')
 
-            # Debug: what location_ids actually exist for this indicator?
-            all_loc_ids = list(IndicatorValue.objects.filter(
-                indicator=self,
-            ).values_list('location_id', flat=True).distinct()[:10])
-            print(f"[get_visual_metadata] indicator={self.name} (id={self.id}), constituent_ids={list(constituent_ids)}, source_rels_count={source_rels.count()}, sample_location_ids_in_db={all_loc_ids}")
+            # Debug: check what data exists for this indicator + these constituents
+            total_for_indicator = IndicatorValue.objects.filter(indicator=self).count()
+            total_for_constituents_any_source = IndicatorValue.objects.filter(
+                indicator=self, location_id__in=constituent_ids,
+            ).count()
+            zcta_count = IndicatorValue.objects.filter(
+                indicator=self, location_id__startswith='8600000US',
+            ).count()
+            # Check without indicator filter
+            constituent_any_indicator = IndicatorValue.objects.filter(
+                location_id__in=constituent_ids,
+            ).count()
+            print(f"[get_visual_metadata] indicator={self.name} (id={self.id}), constituent_ids={list(constituent_ids)}")
+            print(f"  total_for_indicator={total_for_indicator}, zcta_rows_for_indicator={zcta_count}, constituent_match={total_for_constituents_any_source}, constituent_any_indicator={constituent_any_indicator}")
             for source_rel in source_rels:
                 count = IndicatorValue.objects.filter(
                     indicator=self,
