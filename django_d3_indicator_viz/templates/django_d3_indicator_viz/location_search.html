@@ -67,8 +67,9 @@
 </style>
 
 <script>
+var _thisScript = document.currentScript;
 (function() {
-  var wrapper = document.querySelector('.ddiv-search-wrapper');
+  var wrapper = _thisScript.parentElement.querySelector('.ddiv-search-wrapper');
   var input = wrapper.querySelector('.ddiv-search-input');
   var dropdown = wrapper.querySelector('.ddiv-search-dropdown');
   var searchUrl = "{% url 'location_search' %}";
