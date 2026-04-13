@@ -225,6 +225,7 @@ export default class ColumnChart {
                     barWidth: '85%',
                     label: {
                         show: true,
+                        distance: 6,
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
                             let isActive = params.data.active_data !== false;
