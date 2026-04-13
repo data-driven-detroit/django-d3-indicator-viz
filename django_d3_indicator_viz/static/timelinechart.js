@@ -77,16 +77,25 @@ export default class TimeLineChart {
         compareSeriesMeta.reverse();
         compareSeriesData.reverse();
 
-        // For 'line' mode, only use the aggregate (null filter option) data so that
-        // constituent-level breakdowns on custom geographies don't produce multiple
-        // y-values at the same x-date and draw chaotic zig-zag lines.
-        const primaryData = this.indicatorData.filter(d => !d.filter_option_id);
-        const filteredCompareData = compareSeriesData.map(
-            series => series.filter(d => !d.filter_option_id)
-        );
+        // For 'line' mode, we need exactly one value per date per location.
+        // Custom location aggregates often include multiple filter option breakdowns
+        // (no null aggregate row), which causes zig-zag lines when plotted as one
+        // series. Prefer null filter_option_id (aggregate); if none exist, fall back
+        // to the first filter option so the chart still renders something.
+        const pickOneFilterOption = (data) => {
+            const hasNull = data.some(d => d.filter_option_id === null || d.filter_option_id === undefined);
+            if (hasNull) {
+                return data.filter(d => d.filter_option_id === null || d.filter_option_id === undefined);
+            }
+            const firstId = data.length > 0 ? data[0].filter_option_id : null;
+            return data.filter(d => d.filter_option_id === firstId);
+        };
 
         let allLocationMeta = [this.location, ...compareSeriesMeta];
-        let allSeriesData = [primaryData, ...filteredCompareData];
+        let allSeriesData = [
+            pickOneFilterOption(this.indicatorData),
+            ...compareSeriesData.map(pickOneFilterOption)
+        ];
 
         let groups = allSeriesData.map((data, index) => {
             let loc = allLocationMeta[index];

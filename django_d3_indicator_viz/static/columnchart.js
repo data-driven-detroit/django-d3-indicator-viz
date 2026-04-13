@@ -15,10 +15,10 @@ function getLabelPosition(value, isDesktop) {
  * positions the label correctly for both positive and negative bars.
  * ECharts ignores a function at series.label.position; per-item config works.
  */
-function withLabelPositions(data, isDesktop) {
+function withLabelPositions(data, isDesktop, distance = 6) {
     return data.map(item => ({
         ...item,
-        label: { position: getLabelPosition(item.value, isDesktop) }
+        label: { position: getLabelPosition(item.value, isDesktop), distance }
     }));
 }
 
@@ -225,7 +225,6 @@ export default class ColumnChart {
                     barWidth: '85%',
                     label: {
                         show: true,
-                        distance: 6,
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
                             let isActive = params.data.active_data !== false;
