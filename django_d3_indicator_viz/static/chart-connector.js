@@ -35,18 +35,21 @@ function computeCategoryScales(section, allValues) {
             keys.add(`${c.dataset.indicatorId}:${c.dataset.sourceId}`);
         });
 
-        // Find global max across all matching values
+        // Find global min/max across all matching values
+        let globalMin = 0;  // stays 0 unless data goes negative
         let globalMax = 0;
         allValues.forEach(v => {
             if (keys.has(`${v.indicator_id}:${v.source_id}`) && v.value != null) {
                 globalMax = Math.max(globalMax, v.value);
+                globalMin = Math.min(globalMin, v.value);
             }
         });
 
-        // Round up to nearest 5 for clean tick marks
+        // Round to nearest 5 for clean tick marks
         const roundedMax = Math.ceil(globalMax / 5) * 5;
+        const roundedMin = globalMin < 0 ? Math.floor(globalMin / 5) * 5 : 0;
 
-        scales.set(categoryId, { min: 0, max: roundedMax });
+        scales.set(categoryId, { min: roundedMin, max: roundedMax });
     });
 
     return scales;
