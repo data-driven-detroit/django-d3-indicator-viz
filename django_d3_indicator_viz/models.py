@@ -540,7 +540,7 @@ class Indicator(models.Model):
                     indicator=self,
                     location_id__in=constituent_ids,
                     source_id=source_rel.source_id,
-                ).select_related('filter_option', 'location', 'source', 'indicator').first()
+                ).order_by('-end_date').select_related('filter_option', 'location', 'source', 'indicator').first()
                 if result:
                     result.data_visual_type = data_visual.data_visual_type
                     result.columns = data_visual.columns

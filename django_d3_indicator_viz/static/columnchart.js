@@ -197,7 +197,14 @@ export default class ColumnChart {
                     barWidth: '85%',
                     label: {
                         show: true,
-                        position: window.innerWidth >= 1200 ? 'top' : 'right',
+                        position: (params) => {
+                            const val = params.data?.value ?? params.value;
+                            if (window.innerWidth >= 1200) {
+                                return val < 0 ? 'bottom' : 'top';
+                            } else {
+                                return val < 0 ? 'left' : 'right';
+                            }
+                        },
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
                             let isActive = params.data.active_data !== false;
@@ -212,7 +219,20 @@ export default class ColumnChart {
                         disabled: true
                     },
                     cursor: 'default',
-
+                    // Zero baseline — only attach to first series to avoid duplicating the line
+                    ...(index === 0 ? {
+                        markLine: {
+                            silent: true,
+                            symbol: 'none',
+                            lineStyle: {
+                                color: '#cccccc',
+                                width: 1,
+                                type: 'solid',
+                            },
+                            label: { show: false },
+                            data: [window.innerWidth >= 1200 ? { yAxis: 0 } : { xAxis: 0 }]
+                        }
+                    } : {}),
                 }
             })
         }
