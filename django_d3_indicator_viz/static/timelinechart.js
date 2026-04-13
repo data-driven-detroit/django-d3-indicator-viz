@@ -77,8 +77,16 @@ export default class TimeLineChart {
         compareSeriesMeta.reverse();
         compareSeriesData.reverse();
 
+        // For 'line' mode, only use the aggregate (null filter option) data so that
+        // constituent-level breakdowns on custom geographies don't produce multiple
+        // y-values at the same x-date and draw chaotic zig-zag lines.
+        const primaryData = this.indicatorData.filter(d => !d.filter_option_id);
+        const filteredCompareData = compareSeriesData.map(
+            series => series.filter(d => !d.filter_option_id)
+        );
+
         let allLocationMeta = [this.location, ...compareSeriesMeta];
-        let allSeriesData = [this.indicatorData, ...compareSeriesData];
+        let allSeriesData = [primaryData, ...filteredCompareData];
 
         let groups = allSeriesData.map((data, index) => {
             let loc = allLocationMeta[index];
