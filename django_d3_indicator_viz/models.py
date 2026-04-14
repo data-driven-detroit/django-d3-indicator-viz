@@ -98,11 +98,19 @@ class Section(models.Model):
                     } for iv in comp_qs
                 ]
 
+            # Index comparison values by (indicator_id, source_id) so we
+            # can pull the ones matching the source selected for aggregation.
+            comp_by_indicator_source = {}
+            for cv in comparison_values:
+                key = (cv["indicator_id"], cv["source_id"])
+                comp_by_indicator_source.setdefault(key, []).append(cv)
+
             # Aggregate constituent values per data visual
             data_visuals = IndicatorDataVisual.objects.filter(
                 indicator__category__section_id=self.id
             ).prefetch_related('indicatordatavisualsource_set')
             aggregated_values = []
+            matched_comparison_values = []
             for dv in data_visuals:
                 # Find the first source (by priority) that has actual data
                 # for this indicator's constituent locations. This mirrors
@@ -123,6 +131,11 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
+
+                # Collect comparison values that use the same source
+                matched_comparison_values.extend(
+                    comp_by_indicator_source.get((dv.indicator_id, primary_source_id), [])
+                )
                 # For non-timeseries charts, pick only the latest date period.
                 # Note: we intentionally do NOT filter by dv.start_date/end_date
                 # because those fields can be stale relative to actual data.
@@ -160,7 +173,7 @@ class Section(models.Model):
                             av["end_date"] = av["end_date"].isoformat()
                 aggregated_values.extend(aggregated)
 
-            return aggregated_values + comparison_values
+            return aggregated_values + matched_comparison_values
 
         qs = IndicatorValue.objects.filter(
             location__in=locations,
