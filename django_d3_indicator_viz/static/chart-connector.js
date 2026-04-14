@@ -23,6 +23,11 @@ function computeCategoryScales(section, allValues) {
     const scales = new Map();
     const categories = section.querySelectorAll('.section-container[data-category-id]');
 
+    // Only use primary location values for scale computation — comparison
+    // locations (parents/siblings) can have wildly different magnitudes
+    const primaryId = String(window.profileData.locations.primary.id);
+    const primaryValues = allValues.filter(v => String(v.location_id) === primaryId);
+
     categories.forEach(category => {
         const categoryId = category.dataset.categoryId;
         const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"]');
@@ -35,21 +40,21 @@ function computeCategoryScales(section, allValues) {
             keys.add(`${c.dataset.indicatorId}:${c.dataset.sourceId}`);
         });
 
-        // Find global min/max across all matching values
-        let globalMin = 0;  // stays 0 unless data goes negative
+        // Find global max across primary location values
         let globalMax = 0;
-        allValues.forEach(v => {
+        primaryValues.forEach(v => {
             if (keys.has(`${v.indicator_id}:${v.source_id}`) && v.value != null) {
                 globalMax = Math.max(globalMax, v.value);
-                globalMin = Math.min(globalMin, v.value);
             }
         });
 
-        // Round to nearest 5 for clean tick marks
-        const roundedMax = Math.ceil(globalMax / 5) * 5;
-        const roundedMin = globalMin < 0 ? Math.floor(globalMin / 5) * 5 : 0;
+        // Add 15% headroom so bar labels don't clip at the top
+        const withHeadroom = globalMax * 1.15;
 
-        scales.set(categoryId, { min: roundedMin, max: roundedMax });
+        // Round up to nearest 5 for clean tick marks
+        const roundedMax = Math.ceil(withHeadroom / 5) * 5;
+
+        scales.set(categoryId, { min: 0, max: roundedMax });
     });
 
     return scales;
