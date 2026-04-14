@@ -25,13 +25,13 @@ function computeCategoryScales(section, allValues) {
 
     categories.forEach(category => {
         const categoryId = category.dataset.categoryId;
-        const pctContainers = category.querySelectorAll('.chart-container[data-indicator-type="percentage"]');
+        const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"]');
 
-        if (pctContainers.length === 0) return;
+        if (columnContainers.length === 0) return;
 
-        // Collect all indicator/source pairs for percentage charts in this category
+        // Collect all indicator/source pairs for column charts in this category
         const keys = new Set();
-        pctContainers.forEach(c => {
+        columnContainers.forEach(c => {
             keys.add(`${c.dataset.indicatorId}:${c.dataset.sourceId}`);
         });
 
@@ -165,9 +165,9 @@ function drawChart(container, allValues, categoryScales) {
         color_scale_id: colorScaleId,
     };
 
-    // Look up shared axis scale for percentage indicators in this category
+    // Look up shared axis scale for column charts in this category
     let axisScale = null;
-    if (indicator.indicator_type === 'percentage') {
+    if (visualType === 'column') {
         const categoryEl = container.closest('[data-category-id]');
         if (categoryEl && categoryScales) {
             axisScale = categoryScales.get(categoryEl.dataset.categoryId) || null;

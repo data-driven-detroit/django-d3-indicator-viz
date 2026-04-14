@@ -95,9 +95,13 @@ export default class TimeLineChart {
                     + 's';
             }
 
+            let sortedData = data
+                .slice()
+                .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+
             return {
                 name,
-                data,
+                data: sortedData,
                 z: isPrimary ? 3 : 2,
                 symbolSize: isPrimary ? 8 : 6,
             };
