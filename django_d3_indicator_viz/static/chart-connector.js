@@ -40,21 +40,25 @@ function computeCategoryScales(section, allValues) {
             keys.add(`${c.dataset.indicatorId}:${c.dataset.sourceId}`);
         });
 
-        // Find global max across primary location values
+        // Find global min/max across primary location values
         let globalMax = 0;
+        let globalMin = 0;
         primaryValues.forEach(v => {
             if (keys.has(`${v.indicator_id}:${v.source_id}`) && v.value != null) {
                 globalMax = Math.max(globalMax, v.value);
+                globalMin = Math.min(globalMin, v.value);
             }
         });
 
-        // Add 15% headroom so bar labels don't clip at the top
-        const withHeadroom = globalMax * 1.15;
+        // Add 15% headroom so bar labels don't clip
+        const maxWithHeadroom = globalMax * 1.15;
+        const minWithHeadroom = globalMin * 1.15;
 
-        // Round up to nearest 5 for clean tick marks
-        const roundedMax = Math.ceil(withHeadroom / 5) * 5;
+        // Round to nearest 5 for clean tick marks
+        const roundedMax = Math.ceil(maxWithHeadroom / 5) * 5;
+        const roundedMin = globalMin < 0 ? Math.floor(minWithHeadroom / 5) * 5 : 0;
 
-        scales.set(categoryId, { min: 0, max: roundedMax });
+        scales.set(categoryId, { min: roundedMin, max: roundedMax });
     });
 
     return scales;
