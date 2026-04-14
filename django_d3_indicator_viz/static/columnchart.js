@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, DataVisualComparisonMode } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, DataVisualComparisonMode } from "./utils.js";
 
 /**
  * Returns the ECharts label position for a bar given its value sign and orientation.
@@ -81,7 +81,7 @@ export default class ColumnChart {
         // create a series for each location
         let seriesNames = [this.location.name];
         let seriesData = {};
-        seriesData[this.location.id] = [].concat(this.indicatorData);
+        seriesData[this.location.id] = sortByFilterOption(this.indicatorData, this.filterOptions);
         if (this.dataVisualComparisonMode === DataVisualComparisonMode.DATA_VISUAL) {
             this.compareData.forEach(item => {
                 // Skip items with null values

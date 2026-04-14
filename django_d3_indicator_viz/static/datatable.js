@@ -1,4 +1,4 @@
-import { formatData, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
+import { formatData, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption } from "./utils.js";
 
 /**
  * The DataTable visualization.
@@ -62,10 +62,13 @@ export default class DataTable {
         // set up the table body
         let tbody = document.createElement('tbody');
 
-        // Sort data chronologically (oldest to newest) for consistent display
-        let sortedData = [].concat(this.indicatorData).sort((a, b) =>
-            new Date(a.end_date) - new Date(b.end_date)
-        );
+        // Sort data by filter option order, then chronologically
+        let sortedData = sortByFilterOption(this.indicatorData, this.filterOptions).sort((a, b) => {
+            let aOrder = this.filterOptions.find(fo => fo.id === a.filter_option_id)?.sort_order ?? 9999;
+            let bOrder = this.filterOptions.find(fo => fo.id === b.filter_option_id)?.sort_order ?? 9999;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return new Date(a.end_date) - new Date(b.end_date);
+        });
 
         let filterOptions = sortedData.map(item => {
             let option = this.filterOptions.find(o => o.id === item.filter_option_id)?.name;

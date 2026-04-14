@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption } from "./utils.js";
 
 /**
  * The Donut chart visualization.
@@ -190,8 +190,8 @@ export default class DonutChart {
             this.container.style.height = (30 * this.indicatorData.length) + 60 + 'px';
         }
 
-        // transform the data for the chart
-        let data = this.indicatorData.map(item => {
+        // transform the data for the chart (sorted by filter option order)
+        let data = sortByFilterOption(this.indicatorData, this.filterOptions).map(item => {
             return {
                 ...item,
                 value: item.value,

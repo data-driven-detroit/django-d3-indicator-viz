@@ -347,6 +347,20 @@ function addHighMoeNotice(container) {
 }
 
 /**
+ * Sorts indicator data items by their filter option's sort_order.
+ * Items without a matching filter option are placed at the end.
+ */
+function sortByFilterOption(data, filterOptions) {
+    let sortOrderMap = {};
+    filterOptions.forEach(fo => { sortOrderMap[fo.id] = fo.sort_order; });
+    return [].concat(data).sort((a, b) => {
+        let aOrder = sortOrderMap[a.filter_option_id] ?? 9999;
+        let bOrder = sortOrderMap[b.filter_option_id] ?? 9999;
+        return aOrder - bOrder;
+    });
+}
+
+/**
  * Exports utility functions for data visualization.
  */
 export {
@@ -361,6 +375,7 @@ export {
     parseLocalDate,
     hasHighMoe,
     addHighMoeNotice,
+    sortByFilterOption,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };

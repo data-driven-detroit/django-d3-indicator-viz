@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, parseLocalDate } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, parseLocalDate, sortByFilterOption } from "./utils.js";
 
 /**
  * Combined time-series line chart visualization.
@@ -131,11 +131,12 @@ export default class TimeLineChart {
      * Build series groups for 'multiline' mode — grouped by filter option.
      */
     _buildMultilineGroups() {
-        let uniqueFilterOptionIds = [...new Set(this.indicatorData.map(d => d.filter_option_id))];
+        let sortedData = sortByFilterOption(this.indicatorData, this.filterOptions);
+        let uniqueFilterOptionIds = [...new Set(sortedData.map(d => d.filter_option_id))];
         let groups = [];
 
         uniqueFilterOptionIds.forEach((filterOptionId, index) => {
-            let filteredData = this.indicatorData
+            let filteredData = sortedData
                 .filter(d => d.filter_option_id === filterOptionId)
                 .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
