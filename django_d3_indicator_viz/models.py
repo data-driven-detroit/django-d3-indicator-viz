@@ -62,47 +62,14 @@ class Section(models.Model):
                 indicator__category__section_id=self.id
             ).select_related('filter_option', 'location', 'source', 'indicator')
 
-            # Query comparison location values (parents/siblings)
-            comparison_values = []
-            if comparison_locations:
-                comp_qs = IndicatorValue.objects.filter(
-                    location__in=comparison_locations,
-                    indicator__category__section_id=self.id
-                ).annotate(
-                    source_priority=priority_subquery,
-                    rn=Window(
-                        expression=RowNumber(),
-                        partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id')],
-                        order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
-                    ),
-                    data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
-                ).filter(
-                    Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
-                ).select_related('filter_option', 'location', 'source', 'indicator')
-
-                comparison_values = [
-                    {
-                        "id": iv.id,
-                        "indicator_id": iv.indicator.id,
-                        "location_id": iv.location.id,
-                        "source_id": iv.source.id,
-                        "filter_option_id": iv.filter_option.id if iv.filter_option else None,
-                        "start_date": iv.start_date.isoformat(),
-                        "end_date": iv.end_date.isoformat(),
-                        "value": iv.value,
-                        "value_moe": iv.value_moe,
-                        "count": iv.count,
-                        "count_moe": iv.count_moe,
-                        "universe": iv.universe,
-                        "universe_moe": iv.universe_moe,
-                    } for iv in comp_qs
-                ]
-
-            # Aggregate constituent values per data visual
+            # Aggregate constituent values per data visual, and query
+            # comparison values using the same source determined by
+            # constituent data priority.
             data_visuals = IndicatorDataVisual.objects.filter(
                 indicator__category__section_id=self.id
             ).prefetch_related('indicatordatavisualsource_set')
             aggregated_values = []
+            comparison_values = []
             for dv in data_visuals:
                 # Find the first source (by priority) that has actual data
                 # for this indicator's constituent locations. This mirrors
@@ -123,6 +90,37 @@ class Section(models.Model):
                         break
                 if primary_source_id is None:
                     continue
+
+                # Query comparison values using the same source
+                if comparison_locations:
+                    comp_qs = IndicatorValue.objects.filter(
+                        location__in=comparison_locations,
+                        indicator_id=dv.indicator_id,
+                        source_id=primary_source_id,
+                    ).select_related('filter_option', 'location', 'source', 'indicator')
+
+                    if dv.data_visual_type not in ('line', 'multiline'):
+                        comp_latest = comp_qs.order_by('-start_date').values_list('start_date', flat=True).first()
+                        if comp_latest:
+                            comp_qs = comp_qs.filter(start_date=comp_latest)
+
+                    comparison_values.extend([
+                        {
+                            "id": iv.id,
+                            "indicator_id": iv.indicator.id,
+                            "location_id": iv.location.id,
+                            "source_id": iv.source.id,
+                            "filter_option_id": iv.filter_option.id if iv.filter_option else None,
+                            "start_date": iv.start_date.isoformat(),
+                            "end_date": iv.end_date.isoformat(),
+                            "value": iv.value,
+                            "value_moe": iv.value_moe,
+                            "count": iv.count,
+                            "count_moe": iv.count_moe,
+                            "universe": iv.universe,
+                            "universe_moe": iv.universe_moe,
+                        } for iv in comp_qs
+                    ])
 
                 # For non-timeseries charts, pick only the latest date period.
                 # Note: we intentionally do NOT filter by dv.start_date/end_date
