@@ -1,6 +1,28 @@
 import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, DataVisualComparisonMode } from "./utils.js";
 
 /**
+ * Returns the ECharts label position for a bar given its value sign and orientation.
+ * @param {number}  value     - the data point value
+ * @param {boolean} isDesktop - true when width >= 1200 (vertical bars)
+ */
+function getLabelPosition(value, isDesktop) {
+    if (isDesktop) return value < 0 ? 'bottom' : 'top';
+    return value < 0 ? 'left' : 'right';
+}
+
+/**
+ * Enriches each data item with a per-item label.position override so ECharts
+ * positions the label correctly for both positive and negative bars.
+ * ECharts ignores a function at series.label.position; per-item config works.
+ */
+function withLabelPositions(data, isDesktop, distance = 6) {
+    return data.map(item => ({
+        ...item,
+        label: { position: getLabelPosition(item.value, isDesktop), distance }
+    }));
+}
+
+/**
  * The Column chart visualization.
  */
 export default class ColumnChart {
@@ -54,6 +76,8 @@ export default class ColumnChart {
             return;
         }
 
+        const isDesktop = window.innerWidth >= 1200;
+
         // create a series for each location
         let seriesNames = [this.location.name];
         let seriesData = {};
@@ -83,18 +107,18 @@ export default class ColumnChart {
         // set up the container
         this.container.classList.add('column-chart-container');
         if (window.innerWidth < 768) {
-            this.container.style.height = (seriesData.length * seriesData[0].length * 60) 
-                + (seriesData.length * 30) 
+            this.container.style.height = (seriesData.length * seriesData[0].length * 60)
+                + (seriesData.length * 30)
                 + 'px';
-        } else if (window.innerWidth < 1200) { 
-            this.container.style.height = (seriesData.length * seriesData[0].length * 30) 
-                + (seriesData.length * 30) 
+        } else if (!isDesktop) {
+            this.container.style.height = (seriesData.length * seriesData[0].length * 30)
+                + (seriesData.length * 30)
                 + 'px';
         } else {
             // Desktop screens >= 1200px
             this.container.style.height = '200px';
         }
-        if (window.innerWidth < 1200) {
+        if (!isDesktop) {
             seriesData = seriesData.map(series => series.reverse());
         }
 
@@ -110,7 +134,7 @@ export default class ColumnChart {
             data: seriesData[0].map(
                 item => this.filterOptions.find(f => f.id === item.filter_option_id).name
             ),
-            show: window.innerWidth >= 768 ? true : false,
+            show: window.innerWidth >= 768,
             boundaryGap: true,
             axisLabel: {
                 fontSize: (this.chartOptions.textStyle?.fontSize || 12) * 0.75 + 'px',
@@ -118,7 +142,7 @@ export default class ColumnChart {
                 width: 80, // window.innerWidth >= 768 ? 120 : 65,
                 overflow: 'break', // break, breakAll, ... with another 
                 // rotate the axis label 45% if the screen width is less than 1720px
-                rotate: window.innerWidth >= 1200 && window.innerWidth < 1720 && seriesData[0].length > 12 ? 45 : 0
+                rotate: isDesktop && window.innerWidth < 1720 && seriesData[0].length > 12 ? 45 : 0
             },
             axisTick: {
                 show: false
@@ -140,13 +164,13 @@ export default class ColumnChart {
             valueAxis.min = this.axisScale.min;
             valueAxis.max = this.axisScale.max;
         }
-        let grid = { containLabel: true};
-        if (window.innerWidth >= 1200) {
+        let grid = { containLabel: true };
+        if (isDesktop) {
             grid.left = '0px';
             grid.right = '0px';
             grid.top = '10px';
             grid.bottom = '10px';
-        } else if (window.innerWidth < 1200 && window.innerWidth >= 768) {
+        } else if (window.innerWidth >= 768) {
             grid.top = '20px';
             grid.bottom = '20px';
         } else {
@@ -166,11 +190,11 @@ export default class ColumnChart {
                 left: '0',
                 icon: 'rect',
                 selectedMode: false,
-                itemGap: window.innerWidth >= 768 ? 40 : 10,
+                itemGap: isDesktop ? 40 : 10,
                 textStyle: {
                     fontWeight: 'bold',
                 },
-                orient: window.innerWidth >= 768 ? 'horizontal' : 'vertical'
+                orient: isDesktop ? 'horizontal' : 'vertical'
             },
             tooltip: {
                 show: 'true',
@@ -185,26 +209,22 @@ export default class ColumnChart {
                     }
                 }
             },
-            xAxis: window.innerWidth < 1200 ? valueAxis : categoryAxis,
-            yAxis: window.innerWidth < 1200 ? categoryAxis : valueAxis,
+            xAxis: isDesktop ? categoryAxis : valueAxis,
+            yAxis: isDesktop ? valueAxis : categoryAxis,
             series: seriesData.map((data, index) => {
                 return {
                     name: seriesNames[index],
                     type: 'bar',
                     colorBy: 'data',
-                    data: data,
+                    // withLabelPositions sets per-item label.position for correct
+                    // placement above/below (desktop) or right/left (mobile) based
+                    // on value sign. Series-level label.position is intentionally
+                    // omitted — ECharts ignores a function there; per-item wins.
+                    data: withLabelPositions(data, isDesktop),
                     // NOTE (Mike): Sean, this is where you can adjust the width of bars
                     barWidth: '85%',
                     label: {
                         show: true,
-                        position: (params) => {
-                            const val = params.data?.value ?? params.value;
-                            if (window.innerWidth >= 1200) {
-                                return val < 0 ? 'bottom' : 'top';
-                            } else {
-                                return val < 0 ? 'left' : 'right';
-                            }
-                        },
                         fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                         formatter: (params) =>{
                             let isActive = params.data.active_data !== false;
@@ -230,7 +250,7 @@ export default class ColumnChart {
                                 type: 'solid',
                             },
                             label: { show: false },
-                            data: [window.innerWidth >= 1200 ? { yAxis: 0 } : { xAxis: 0 }]
+                            data: [isDesktop ? { yAxis: 0 } : { xAxis: 0 }]
                         }
                     } : {}),
                 }
