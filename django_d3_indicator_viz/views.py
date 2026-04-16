@@ -1,6 +1,7 @@
 from django.core.serializers import serialize
 from django.db.models import Q
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.http import HttpResponse, JsonResponse
 
 from .indicator_value_aggregator import IndicatorValueAggregator
@@ -274,9 +275,14 @@ def custom_profile(request, location_slug, indicator_value_aggregator=None,
 def get_section(request, indicator_value_aggregator=None):
     indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     after = request.GET.get("after")
-    next_section = Section.objects.filter(sort_order__gt=after).first()
+    fetch_all = request.GET.get("all") == "true"
 
-    if not next_section:
+    remaining = Section.objects.filter(sort_order__gt=after).order_by("sort_order")
+    if not fetch_all:
+        remaining = remaining[:1]
+    sections_list = list(remaining)
+
+    if not sections_list:
         return HttpResponse("")
 
     primary_loc_id = request.GET.get('primary_loc_id')
@@ -286,7 +292,6 @@ def get_section(request, indicator_value_aggregator=None):
 
     # If you hit '', you'll get a list with [''] on split, so handle that case
     lst_parent_loc_ids = parent_loc_ids.split(",") if parent_loc_ids else []
-    lst_sibling_loc_ids = sibling_loc_ids.split(",") if sibling_loc_ids else []
 
     is_custom_location = False
     custom_location = None
@@ -299,28 +304,58 @@ def get_section(request, indicator_value_aggregator=None):
 
     parent_locations = Location.objects.filter(id__in=lst_parent_loc_ids)
 
-    return render(
-        request, "django_d3_indicator_viz/section.html",
-        {
-            "section": roll_section(
-                next_section, location, parent_locations,
-                custom_location=custom_location,
-                aggregator=indicator_value_aggregator,
-            ),
-            "primary_loc_id": primary_loc_id,
-            "parent_loc_ids": parent_loc_ids,
-            "sibling_loc_ids": "",
-            "is_custom_location": is_custom,
-        }
-    )
+    if not fetch_all:
+        # Single section (normal chain behavior)
+        return render(
+            request, "django_d3_indicator_viz/section.html",
+            {
+                "section": roll_section(
+                    sections_list[0], location, parent_locations,
+                    custom_location=custom_location,
+                    aggregator=indicator_value_aggregator,
+                ),
+                "primary_loc_id": primary_loc_id,
+                "parent_loc_ids": parent_loc_ids,
+                "sibling_loc_ids": "",
+                "is_custom_location": is_custom,
+                "chain_next": True,
+            }
+        )
+
+    # Batch: render all remaining sections, only last gets chain_next
+    html_parts = []
+    for i, section in enumerate(sections_list):
+        is_last = (i == len(sections_list) - 1)
+        html_parts.append(render_to_string(
+            "django_d3_indicator_viz/section.html",
+            {
+                "section": roll_section(
+                    section, location, parent_locations,
+                    custom_location=custom_location,
+                    aggregator=indicator_value_aggregator,
+                ),
+                "primary_loc_id": primary_loc_id,
+                "parent_loc_ids": parent_loc_ids,
+                "sibling_loc_ids": "",
+                "is_custom_location": is_custom,
+                "chain_next": is_last,
+            },
+            request=request,
+        ))
+    return HttpResponse("".join(html_parts))
 
 
 def get_custom_section(request, indicator_value_aggregator=None):
     indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     after = request.GET.get("after")
-    next_section = Section.objects.filter(sort_order__gt=after).first()
+    fetch_all = request.GET.get("all") == "true"
 
-    if not next_section:
+    remaining = Section.objects.filter(sort_order__gt=after).order_by("sort_order")
+    if not fetch_all:
+        remaining = remaining[:1]
+    sections_list = list(remaining)
+
+    if not sections_list:
         return HttpResponse("")
 
     primary_loc_id = request.GET.get('primary_loc_id')
@@ -330,20 +365,45 @@ def get_custom_section(request, indicator_value_aggregator=None):
     location = CustomLocation.objects.get(slug__iexact=primary_loc_id)
     parent_locations = Location.objects.filter(id__in=lst_parent_loc_ids)
 
-    return render(
-        request, "django_d3_indicator_viz/section.html",
-        {
-            "section": roll_section(
-                next_section, location, parent_locations,
-                custom_location=location,
-                aggregator=indicator_value_aggregator,
-            ),
-            "primary_loc_id": primary_loc_id,
-            "parent_loc_ids": parent_loc_ids,
-            "sibling_loc_ids": "",
-            "is_custom_location": True,
-        }
-    )
+    if not fetch_all:
+        # Single section (normal chain behavior)
+        return render(
+            request, "django_d3_indicator_viz/section.html",
+            {
+                "section": roll_section(
+                    sections_list[0], location, parent_locations,
+                    custom_location=location,
+                    aggregator=indicator_value_aggregator,
+                ),
+                "primary_loc_id": primary_loc_id,
+                "parent_loc_ids": parent_loc_ids,
+                "sibling_loc_ids": "",
+                "is_custom_location": True,
+                "chain_next": True,
+            }
+        )
+
+    # Batch: render all remaining sections, only last gets chain_next
+    html_parts = []
+    for i, section in enumerate(sections_list):
+        is_last = (i == len(sections_list) - 1)
+        html_parts.append(render_to_string(
+            "django_d3_indicator_viz/section.html",
+            {
+                "section": roll_section(
+                    section, location, parent_locations,
+                    custom_location=location,
+                    aggregator=indicator_value_aggregator,
+                ),
+                "primary_loc_id": primary_loc_id,
+                "parent_loc_ids": parent_loc_ids,
+                "sibling_loc_ids": "",
+                "is_custom_location": True,
+                "chain_next": is_last,
+            },
+            request=request,
+        ))
+    return HttpResponse("".join(html_parts))
 
 
 def location_search(request):

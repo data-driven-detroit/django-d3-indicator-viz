@@ -901,13 +901,27 @@ def assemble_custom_header_data(custom_location, aggregator):
             primary_source = source_rels.first()
             source_id = primary_source.source_id if primary_source else None
 
-        indicator_values = IndicatorValue.objects.filter(
+        # Use the most recent date range with actual data, like the
+        # non-custom assemble_header_data does, instead of relying on the
+        # data visual's configured dates which may be ahead of loaded data.
+        latest = IndicatorValue.objects.filter(
             indicator_id=hdv.indicator_id,
             location_id__in=constituent_ids,
             source_id=source_id,
-            start_date=hdv.start_date,
-            end_date=hdv.end_date,
-        )
+        ).order_by('-end_date').values('start_date', 'end_date').first()
+
+        if latest:
+            indicator_values = IndicatorValue.objects.filter(
+                indicator_id=hdv.indicator_id,
+                location_id__in=constituent_ids,
+                source_id=source_id,
+                start_date=latest['start_date'],
+                end_date=latest['end_date'],
+            )
+            actual_end_date = latest['end_date']
+        else:
+            indicator_values = IndicatorValue.objects.none()
+            actual_end_date = hdv.end_date
 
         aggregated = aggregate_indicator_values(
             custom_location, hdv, indicator_values, aggregator
@@ -920,7 +934,7 @@ def assemble_custom_header_data(custom_location, aggregator):
             indicator=SimpleNamespace(name=hdv.indicator.name),
             source=SimpleNamespace(name=primary_source.source.name) if primary_source else None,
             value=agg_value["value"] if agg_value else None,
-            end_date=hdv.end_date,
+            end_date=actual_end_date,
         ))
 
     return results

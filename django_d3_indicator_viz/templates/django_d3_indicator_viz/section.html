@@ -2,10 +2,12 @@
 
 <article id="{{ section.anchor }}" data-indicator-values='{{ section.indicator_values|safe }}'>
     <header class="section-contents"
+        {% if chain_next %}
         hx-get="{% if is_custom_location %}{% url "custom_next_section" %}{% else %}{% url "next_section" %}{% endif %}?after={{ section.sort_order }}&primary_loc_id={{ primary_loc_id }}&parent_loc_ids={{ parent_loc_ids }}"
         hx-trigger="load"
         hx-swap="afterend"
         hx-target="closest article"
+        {% endif %}
     >
         <h1>{{ section.name }}</h1>
     </header>

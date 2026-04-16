@@ -4,7 +4,7 @@
 </script>
 <main id="sections-container" data-profile-data="{{ profile_data_json|safe }}">
     {% for section in sections %}
-    {% include "django_d3_indicator_viz/section.html" %}
+    {% include "django_d3_indicator_viz/section.html" with chain_next=True %}
     {% endfor %}
     {% block content %}{% endblock %}
 </main>
