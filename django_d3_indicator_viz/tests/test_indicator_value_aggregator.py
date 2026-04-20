@@ -216,5 +216,45 @@ class IndicatorValueAggregatorTests(TestCase):
         self.assertEqual(result.values_considered, 4)
         self.assertEqual(result.values_aggregated, 3)
 
+    # ── All-None cases: aggregating only null inputs should yield None,
+    # not zero. This covers the "every constituent geography is missing
+    # this indicator" case for custom-location rollups.
+
+    def test_aggregate_count_values_all_none(self):
+        result = self.aggregator.aggregate_count_values([None, None, None])
+        self.assertIsNone(result.value)
+        self.assertEqual(result.values_considered, 3)
+        self.assertEqual(result.values_aggregated, 0)
+
+    def test_aggregate_count_moe_values_all_none(self):
+        result = self.aggregator.aggregate_count_moe_values([None, None, None])
+        self.assertIsNone(result.value)
+        self.assertEqual(result.values_considered, 3)
+        self.assertEqual(result.values_aggregated, 0)
+
+    def test_aggregate_percentage_values_all_none(self):
+        result = self.aggregator.aggregate_percentage_values(
+            [None, None, None], [None, None, None]
+        )
+        self.assertIsNone(result.value)
+
+    def test_aggregate_median_values_all_none(self):
+        result = self.aggregator.aggregate_median_values(
+            [None, None, None], [None, None, None]
+        )
+        self.assertIsNone(result.value)
+
+    def test_aggregate_average_values_all_none(self):
+        result = self.aggregator.aggregate_average_values(
+            [None, None, None], [None, None, None]
+        )
+        self.assertIsNone(result.value)
+
+    def test_aggregate_rate_values_all_none(self):
+        result = self.aggregator.aggregate_rate_values(
+            [None, None, None], [None, None, None], rate_per=1000
+        )
+        self.assertIsNone(result.value)
+
     if __name__ == '__main__':
         unittest.main()

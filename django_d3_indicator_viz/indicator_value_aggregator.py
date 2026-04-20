@@ -26,24 +26,36 @@ class IndicatorValueAggregator:
     def aggregate_count_values(self, count_values):
         """
         Aggregates count values.
+
+        Returns None when every input is None (no data to aggregate).
+        A mix of None and numeric values drops the Nones and sums the rest.
         """
         result = AggregationResult()
         result.values_considered = len(count_values)
-        result.values_aggregated = len([value for value in count_values if value is not None])
         valid_values = [value for value in count_values if value is not None]
-        result.value = sum(valid_values)
-        
+        result.values_aggregated = len(valid_values)
+        if not valid_values:
+            result.value = None
+        else:
+            result.value = sum(valid_values)
+
         return result
 
     def aggregate_count_moe_values(self, moe_values):
         """
         Aggregates count margin of error values.
+
+        Returns None when every input is None; otherwise sums-of-squares
+        over the non-None MOEs (ACS Handbook, Section 8).
         """
         result = AggregationResult()
         result.values_considered = len(moe_values)
-        result.values_aggregated = len([value for value in moe_values if value is not None])
         valid_moe_values = [value for value in moe_values if value is not None]
-        result.value = round(sqrt(sum(moe ** 2 for moe in valid_moe_values)), 2)
+        result.values_aggregated = len(valid_moe_values)
+        if not valid_moe_values:
+            result.value = None
+        else:
+            result.value = round(sqrt(sum(moe ** 2 for moe in valid_moe_values)), 2)
 
         return result
 
@@ -270,12 +282,14 @@ class IndicatorValueAggregator:
         return result
 
 
-def _coalesce(val):
-    """Treat None as 0 for numeric aggregation fields."""
-    return 0 if val is None else val
-
-
 def build_indicator_values_dict_list(indicator_values):
+    """Convert IndicatorValue ORM rows to plain dicts for the aggregator.
+
+    Numeric fields (value/count/universe + MOEs) pass through unchanged —
+    Nones are preserved so the per-function `is not None` filters can
+    distinguish "all null" (aggregate to None) from "partial null" (drop the
+    affected row from the rollup).
+    """
     return [
         {
             "location_id": iv.location_id,
@@ -284,12 +298,12 @@ def build_indicator_values_dict_list(indicator_values):
             "filter_option_id": iv.filter_option_id,
             "start_date": iv.start_date,
             "end_date": iv.end_date,
-            "value": _coalesce(iv.value),
-            "value_moe": _coalesce(iv.value_moe),
-            "count": _coalesce(iv.count),
-            "count_moe": _coalesce(iv.count_moe),
-            "universe": _coalesce(iv.universe),
-            "universe_moe": _coalesce(iv.universe_moe),
+            "value": iv.value,
+            "value_moe": iv.value_moe,
+            "count": iv.count,
+            "count_moe": iv.count_moe,
+            "universe": iv.universe,
+            "universe_moe": iv.universe_moe,
             "active_data": iv.active_data,
         }
         for iv in indicator_values
