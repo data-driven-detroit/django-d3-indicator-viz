@@ -462,7 +462,7 @@ switch (visual.data_visual_type) {
 - **Chart classes** (echarts-based):
   - `Ban` - Big number displays
   - `ColumnChart` - Column/bar charts
-  - `LineChart` - Time series line charts
+  - `TimeLineChart` - Time-series line and multiline charts
   - `MinMedMaxChart` - Min/median/max displays
   - `DonutChart` - Donut/pie charts
   - `DataTable` - Data tables

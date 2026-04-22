@@ -6,8 +6,6 @@
  */
 import Ban from './ban.js';
 import ColumnChart from './columnchart.js';
-import LineChart from './linechart.js';
-import MultiLineChart from './multilinechart.js';
 import TimeLineChart from './timelinechart.js';
 import MinMedMaxChart from './minmedmaxchart.js';
 import DonutChart from './donutchart.js';

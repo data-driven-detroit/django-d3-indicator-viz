@@ -89,6 +89,7 @@ Where ```{dataVisualType}``` may be one of the following:
 - column
 - donut
 - line
+- multiline
 - min_med_max
 - datatable
 
@@ -97,23 +98,7 @@ For example,
 ```<div id="indicator-17-column-container"></div>```
 
 #### JavaScript
-To populate the data visual containers, simply create a new ```Visuals``` instance, passing in the context variables from the view.
-```javascript
-import Visuals from "../visuals.js";
-const visuals = new Visuals(
-    {{ data_visuals_json|safe }},
-    '{{ location.id|safe }}',
-    {{ indicators_json|safe }},
-    {{ locations_json|safe }},
-    {{ parent_locations_json|safe }},
-    {{ location_types_json|safe }},
-    {{ filter_options_json|safe }},
-    {{ indicator_values_json|safe }},
-    {{ color_scales_json|safe }},
-    {{ utils.DataVisualComparisonMode.TOOLTIP }}
-    {} // additional echarts options as needed
-);
-```
+Chart rendering is handled by `chart-connector.js`, which reads configuration from DOM data attributes on each `*-container` element. Import it once from your template (see `chart_roll.html` for the canonical pattern); it hooks into `htmx:load` so HTMX-swapped sections render automatically on arrival.
 
 #### CSS
 The following CSS classes are automatically added to data visual containers. These CSS classes may be used to apply styles to the containers, such as the container height.
