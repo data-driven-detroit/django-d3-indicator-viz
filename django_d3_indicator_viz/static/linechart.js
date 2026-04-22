@@ -75,7 +75,7 @@ export default class LineChart {
         // and in theory we could have logic to allow for different resolutions.
         // which is a TODO
         let compareSeriesData = Object.values(compareGroups).map(
-            j => j.map(i => [parseLocalDate(i.start_date), i])
+            j => j.map(i => [parseLocalDate(i.end_date), i])
         )
         
         // Reverse these so the right items show up on the line charts.
@@ -88,9 +88,12 @@ export default class LineChart {
             ...compareSeriesMeta
         ];
 
-        // Use start_date for axis positioning
+        // Use end_date for axis positioning — for ACS 5-year estimates the
+        // data is conventionally labelled by the window's closing year
+        // (e.g. the "2020–2024 ACS 5-year" is referred to as the 2024 release).
+        // end_date also matches the year shown in the 'Show data' table.
         let seriesData = [
-            this.indicatorData.map(i => [parseLocalDate(i.start_date), i]),
+            this.indicatorData.map(i => [parseLocalDate(i.end_date), i]),
             ...compareSeriesData,
         ]
 

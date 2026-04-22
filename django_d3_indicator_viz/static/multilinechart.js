@@ -69,10 +69,11 @@ export default class MultiLineChart {
 
         // Create a series for each filter option
         uniqueFilterOptionIds.forEach(filterOptionId => {
-            // Get data for this filter option, sorted chronologically
+            // Get data for this filter option, sorted chronologically by end_date
+            // (see the series data mapping below for why we anchor on end_date).
             let filteredData = this.indicatorData
                 .filter(d => d.filter_option_id === filterOptionId)
-                .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+                .sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
 
             // Skip filter options that have no valid (non-null) values
             let hasValidData = filteredData.some(d => d.value !== null && d.value !== undefined);
@@ -211,8 +212,13 @@ export default class MultiLineChart {
                 return {
                     name: seriesNames[index],
                     type: 'line',
+                    // Anchor each point on end_date — for ACS 5-year estimates
+                    // the data is conventionally labelled by the window's
+                    // closing year (the "2020–2024 5-year" release is called
+                    // the 2024 release), which also matches the 'Show data'
+                    // table's label.
                     data: data.map(item => ({
-                        value: [parseLocalDate(item.start_date), item.value],
+                        value: [parseLocalDate(item.end_date), item.value],
                         item: item
                     })),
                     z: 3 - index,  // First series on top
