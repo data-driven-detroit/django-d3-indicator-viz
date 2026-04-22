@@ -114,7 +114,7 @@ export default class TimeLineChart {
 
             let sortedData = data
                 .slice()
-                .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+                .sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
 
             return {
                 name,
@@ -138,7 +138,7 @@ export default class TimeLineChart {
         uniqueFilterOptionIds.forEach((filterOptionId, index) => {
             let filteredData = sortedData
                 .filter(d => d.filter_option_id === filterOptionId)
-                .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+                .sort((a, b) => new Date(a.end_date) - new Date(b.end_date));
 
             // Skip filter options that have no valid (non-null) values
             let hasValidData = filteredData.some(d => d.value !== null && d.value !== undefined);
@@ -305,8 +305,12 @@ export default class TimeLineChart {
             series: groups.map(group => ({
                 name: group.name,
                 type: 'line',
+                // Anchor each point on end_date. ACS 5-year estimates are
+                // conventionally labelled by the window's closing year
+                // (e.g. the "2020–2024" release is the 2024 release), which
+                // also matches what the 'Show data' table shows.
                 data: group.data.map(item => ({
-                    value: [parseLocalDate(item.start_date), item.value],
+                    value: [parseLocalDate(item.end_date), item.value],
                     item: item
                 })),
                 z: group.z,
