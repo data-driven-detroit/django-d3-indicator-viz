@@ -851,18 +851,27 @@ def assemble_header_data(location_id):
     # They have no category and hence to section so they don't get pulled with
     # the first-section query.
 
-    # Use database-specific date extraction
-    # PostgreSQL uses EXTRACT, SQLite uses strftime
+    # Correlated subquery: priority for the IDVS row whose data_visual matches
+    # the IV's indicator AND whose source matches the IV's source. Without the
+    # source match, every IV gets fanned out to one row per IDVS for the
+    # indicator and DISTINCT ON picks the lowest priority regardless of which
+    # source the IV actually belongs to.
+    priority_subquery = IndicatorDataVisualSource.objects.filter(
+        data_visual=OuterRef('indicator__indicatordatavisual'),
+        source=OuterRef('source'),
+    ).values('priority')[:1]
 
     return IndicatorValue.objects.filter(
         location_id=location_id,
         indicator__category_id__isnull=True,
     ).select_related(
         'indicator', 'source'
+    ).annotate(
+        source_priority=priority_subquery,
     ).order_by(
         'location_id',
         'indicator_id',
-        'indicator__indicatordatavisual__indicatordatavisualsource__priority',
+        F('source_priority').asc(nulls_last=True),
         '-end_date',
     ).distinct(
         'location_id',

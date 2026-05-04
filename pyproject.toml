@@ -1,6 +1,6 @@
 [project]
 name = "django-d3-indicator-viz"
-version = "0.1.9"
+version = "0.1.10"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
