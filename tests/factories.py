@@ -134,6 +134,7 @@ class IndicatorValueFactory(DjangoModelFactory):
     location = factory.SubFactory(LocationFactory)
     source = factory.SubFactory(IndicatorSourceFactory)
     filter_option = None  # Optional, can be set explicitly
+    filter_option_2 = None  # Optional, for stacked charts
     start_date = date(2018, 1, 1)
     end_date = date(2022, 12, 31)
     value = FuzzyDecimal(0.0, 100000.0, precision=2)

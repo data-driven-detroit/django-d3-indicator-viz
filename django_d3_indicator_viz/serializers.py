@@ -61,8 +61,9 @@ class IndicatorValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = IndicatorValue
         fields = ['id', 'indicator', 'location', 'source', 'filter_option',
-                  'start_date', 'end_date', 'value', 'value_moe', 'count',
-                  'count_moe', 'universe', 'universe_moe', 'active_data']
+                  'filter_option_2', 'start_date', 'end_date', 'value',
+                  'value_moe', 'count', 'count_moe', 'universe',
+                  'universe_moe', 'active_data']
 
 
 class IndicatorFilterOptionSerializer(serializers.ModelSerializer):

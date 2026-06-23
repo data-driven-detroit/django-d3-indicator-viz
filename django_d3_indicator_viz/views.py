@@ -79,7 +79,8 @@ def roll_section(section, primary_location, comparison_locations, custom_locatio
 
 
 def profile(request, location_id, indicator_value_aggregator=None,
-            template_path="django_d3_indicators_viz/profile.html"):
+            template_path="django_d3_indicators_viz/profile.html",
+            extra_context=None):
     indicator_value_aggregator = indicator_value_aggregator or IndicatorValueAggregator()
     is_custom_location = False
     custom_location = None
@@ -166,9 +167,7 @@ def profile(request, location_id, indicator_value_aggregator=None,
 
     primary_loc_id = location.slug if is_custom_location else location_id
 
-    return render(
-        request, template_path,
-        {
+    context = {
             "sections": sections,
             "profile_data_json": json.dumps(profile_data),
             "primary_loc_id": primary_loc_id,
@@ -182,6 +181,12 @@ def profile(request, location_id, indicator_value_aggregator=None,
             "sibling_locations_geojson": display_siblings_geojson,
             "is_custom_location": is_custom_location,
         }
+    if extra_context:
+        context.update(extra_context)
+
+    return render(
+        request, template_path,
+        context
     )
 
 

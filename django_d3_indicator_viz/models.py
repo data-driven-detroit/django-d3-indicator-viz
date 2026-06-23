@@ -97,7 +97,7 @@ class Section(models.Model):
                         location__in=comparison_locations,
                         indicator_id=dv.indicator_id,
                         source_id=primary_source_id,
-                    ).select_related('filter_option', 'location', 'source', 'indicator')
+                    ).select_related('filter_option', 'filter_option_2', 'location', 'source', 'indicator')
 
                     if dv.data_visual_type not in ('line', 'multiline'):
                         comp_latest = comp_qs.order_by('-start_date').values_list('start_date', flat=True).first()
@@ -111,6 +111,7 @@ class Section(models.Model):
                             "location_id": iv.location.id,
                             "source_id": iv.source.id,
                             "filter_option_id": iv.filter_option.id if iv.filter_option else None,
+                            "filter_option_2_id": iv.filter_option_2.id if iv.filter_option_2 else None,
                             "start_date": iv.start_date.isoformat(),
                             "end_date": iv.end_date.isoformat(),
                             "value": iv.value,
@@ -141,6 +142,7 @@ class Section(models.Model):
                         "indicator_id": dv.indicator_id,
                         "source_id": primary_source_id,
                         "filter_option_id": None,
+                        "filter_option_2_id": None,
                         "start_date": dv.start_date.isoformat() if dv.start_date else None,
                         "end_date": dv.end_date.isoformat() if dv.end_date else None,
                         "value": None,
@@ -168,7 +170,7 @@ class Section(models.Model):
             source_priority=priority_subquery,
             rn=Window(
                 expression=RowNumber(),
-                partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id')],
+                partition_by=[F('indicator_id'), F('location_id'), F('filter_option_id'), F('filter_option_2_id')],
                 # FIXME(Mike): Ordering by date desc flips the order for the line chart so we may need
                 # to sort again after this somewhere -- for now we're handling it in the js.
                 order_by=[F('source_priority').asc(nulls_last=True), F('start_date').desc()]
@@ -176,7 +178,7 @@ class Section(models.Model):
             data_visual_type=F('indicator__indicatordatavisual__data_visual_type')
         ).filter(
             Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
-        ).select_related('filter_option', 'location', 'source', 'indicator')
+        ).select_related('filter_option', 'filter_option_2', 'location', 'source', 'indicator')
 
         return [
             {
@@ -185,6 +187,7 @@ class Section(models.Model):
                 "location_id": iv.location.id,
                 "source_id": iv.source.id,
                 "filter_option_id": iv.filter_option.id if iv.filter_option else None,
+                "filter_option_2_id": iv.filter_option_2.id if iv.filter_option_2 else None,
                 "start_date": iv.start_date.isoformat(),
                 "end_date": iv.end_date.isoformat(),
                 "value": iv.value,
@@ -533,7 +536,7 @@ class Indicator(models.Model):
                     indicator=self,
                     location_id__in=constituent_ids,
                     source_id=source_rel.source_id,
-                ).order_by('-end_date').select_related('filter_option', 'location', 'source', 'indicator').first()
+                ).order_by('-end_date').select_related('filter_option', 'filter_option_2', 'location', 'source', 'indicator').first()
                 if result:
                     result.data_visual_type = data_visual.data_visual_type
                     result.columns = data_visual.columns
@@ -576,7 +579,7 @@ class Indicator(models.Model):
             color_scale_id=Value(data_visual.color_scale_id, output_field=models.IntegerField()),
         ).filter(
             Q(rn=1) | Q(data_visual_type='line') | Q(data_visual_type='multiline')
-        ).select_related('filter_option', 'location', 'source', 'indicator')
+        ).select_related('filter_option', 'filter_option_2', 'location', 'source', 'indicator')
 
         result = base_query.first()
 
@@ -659,6 +662,13 @@ class IndicatorValue(models.Model):
         IndicatorFilterOption, on_delete=models.CASCADE, null=True, blank=True
     )
 
+    # The secondary filter option for stacked charts (defines stack segments)
+    filter_option_2 = models.ForeignKey(
+        IndicatorFilterOption, on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='indicator_values_secondary',
+    )
+
     # The location that this indicator value represents
     location = models.ForeignKey(Location, on_delete=models.CASCADE)
 
@@ -704,6 +714,7 @@ class IndicatorValue(models.Model):
             "end_date",
             "indicator",
             "filter_option",
+            "filter_option_2",
             "location",
         )
 
@@ -719,6 +730,7 @@ class DataVisualType(models.TextChoices):
     MIN_MED_MAX = "min_med_max",
     LINE = "line",
     MULTILINE = "multiline",
+    STACKED_COLUMN = "stacked_column",
 
     def __str__(self):
         return self.name

@@ -296,6 +296,7 @@ def build_indicator_values_dict_list(indicator_values):
             "indicator_id": iv.indicator_id,
             "source_id": iv.source_id,
             "filter_option_id": iv.filter_option_id,
+            "filter_option_2_id": iv.filter_option_2_id,
             "start_date": iv.start_date,
             "end_date": iv.end_date,
             "value": iv.value,
@@ -318,7 +319,7 @@ def aggregate_indicator_values(
     for iv in build_indicator_values_dict_list(indicator_values):
         if iv["indicator_id"] != data_visual.indicator.id:
             continue
-        key = (iv["filter_option_id"], iv["start_date"])
+        key = (iv["filter_option_id"], iv.get("filter_option_2_id"), iv["start_date"])
         if key not in grouped_values:
             grouped_values[key] = []
         grouped_values[key].append(iv)
@@ -344,6 +345,11 @@ def aggregate_indicator_value_set(
         ),
         "filter_option_id": (
             indicator_values[0]["filter_option_id"]
+            if indicator_values
+            else None
+        ),
+        "filter_option_2_id": (
+            indicator_values[0].get("filter_option_2_id")
             if indicator_values
             else None
         ),

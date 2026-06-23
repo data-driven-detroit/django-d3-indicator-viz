@@ -6,6 +6,7 @@
  */
 import Ban from './ban.js';
 import ColumnChart from './columnchart.js';
+import StackedColumnChart from './stackedcolumnchart.js';
 import TimeLineChart from './timelinechart.js';
 import MinMedMaxChart from './minmedmaxchart.js';
 import DonutChart from './donutchart.js';
@@ -28,7 +29,7 @@ function computeCategoryScales(section, allValues) {
 
     categories.forEach(category => {
         const categoryId = category.dataset.categoryId;
-        const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"]');
+        const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"], .chart-container[data-visual-type="stacked_column"]');
 
         if (columnContainers.length === 0) return;
 
@@ -177,7 +178,7 @@ function drawChart(container, allValues, categoryScales) {
 
     // Look up shared axis scale for column charts in this category
     let axisScale = null;
-    if (visualType === 'column') {
+    if (visualType === 'column' || visualType === 'stacked_column') {
         const categoryEl = container.closest('[data-category-id]');
         if (categoryEl && categoryScales) {
             axisScale = categoryScales.get(categoryEl.dataset.categoryId) || null;
@@ -202,6 +203,23 @@ function drawChart(container, allValues, categoryScales) {
 
         case 'column':
             new ColumnChart(
+                visual,
+                container,
+                indicator,
+                primaryLocation,
+                primaryValues,  // Array of values
+                compareLocations,
+                compareValues,
+                window.profileData.filterOptions,
+                window.profileData.colorScales,
+                comparisonType,
+                chartOptions,
+                axisScale
+            );
+            break;
+
+        case 'stacked_column':
+            new StackedColumnChart(
                 visual,
                 container,
                 indicator,
@@ -271,7 +289,7 @@ function drawChart(container, allValues, categoryScales) {
     }
 
     // Create data table for chart types that support it (not ban or min_med_max)
-    if (['column', 'line', 'multiline', 'donut'].includes(visualType)) {
+    if (['column', 'stacked_column', 'line', 'multiline', 'donut'].includes(visualType)) {
         const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
         if (tableContainer) {
             new DataTable(
