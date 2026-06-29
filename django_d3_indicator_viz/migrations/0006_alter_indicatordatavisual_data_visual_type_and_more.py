@@ -16,6 +16,25 @@ class Migration(migrations.Migration):
             name='data_visual_type',
             field=models.TextField(blank=True, choices=[('ban', 'Ban'), ('column', 'Column'), ('donut', 'Donut'), ('min_med_max', 'Min Med Max'), ('line', 'Line'), ('multiline', 'Multiline')], null=True),
         ),
+        # Ensure the location table has a PRIMARY KEY constraint on id.
+        # When earlier migrations were faked (e.g. on a database restored
+        # from a dump), the PK constraint may be missing, which prevents
+        # creating foreign keys that reference location.id.
+        migrations.RunSQL(
+            sql="""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint
+                        WHERE conrelid = 'location'::regclass
+                          AND contype = 'p'
+                    ) THEN
+                        ALTER TABLE location ADD PRIMARY KEY (id);
+                    END IF;
+                END $$;
+            """,
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.CreateModel(
             name='CopyDataEvent',
             fields=[
