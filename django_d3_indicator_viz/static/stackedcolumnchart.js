@@ -148,6 +148,7 @@ export default class StackedColumnChart {
                     fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                     formatter: (params) => {
                         if (params.data.value === null || params.data.value === undefined) return '';
+                        if (params.data.value < 20) return '';
                         let isActive = params.data.active_data !== false;
                         return formatData(params.data.value, this.indicator.formatter, true, isActive);
                     }
