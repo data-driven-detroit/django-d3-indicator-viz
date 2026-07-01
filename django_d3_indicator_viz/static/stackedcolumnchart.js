@@ -1,6 +1,25 @@
 import { formatData, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption } from "./utils.js";
 
 /**
+ * Returns black or white depending on which has better contrast against
+ * the given background hex color, using perceived luminance.
+ * @param {string} hex - A hex color string (e.g. '#3a7bd5' or '3a7bd5')
+ * @returns {string} '#000' or '#fff'
+ */
+function contrastTextColor(hex) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+    // Perceived luminance (ITU-R BT.601)
+    let luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+    return luminance > 150 ? '#000' : '#fff';
+}
+
+/**
  * The Stacked Column chart visualization.
  *
  * Uses filter_option_id for x-axis categories and filter_option_2_id
@@ -92,9 +111,16 @@ export default class StackedColumnChart {
         // Check if all data is inactive
         let allDataInactive = this.indicatorData.every(item => item.active_data === false);
 
+        // Resolve colors for contrast-aware labels
+        let colors = allDataInactive
+            ? ['#CCCCCC', '#999999', '#777777', '#555555']
+            : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors;
+
         // Build series - one per stack segment (filter_option_2)
-        let series = seenSegmentIds.map((segmentId) => {
+        let series = seenSegmentIds.map((segmentId, segmentIndex) => {
             let segmentName = this.filterOptions.find(f => f.id === segmentId)?.name ?? 'Unknown';
+            let seriesColor = colors[segmentIndex % colors.length];
+            let labelColor = contrastTextColor(seriesColor);
 
             // For each category, find the matching data point
             let seriesData = seenCategoryIds.map(categoryId => {
@@ -116,7 +142,15 @@ export default class StackedColumnChart {
                 data: seriesData,
                 barWidth: '85%',
                 label: {
-                    show: false
+                    show: true,
+                    position: 'inside',
+                    color: labelColor,
+                    fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
+                    formatter: (params) => {
+                        if (params.data.value === null || params.data.value === undefined) return '';
+                        let isActive = params.data.active_data !== false;
+                        return formatData(params.data.value, this.indicator.formatter, true, isActive);
+                    }
                 },
                 emphasis: {
                     disabled: true
@@ -194,9 +228,7 @@ export default class StackedColumnChart {
 
         let option = {
             ...this.chartOptions,
-            color: allDataInactive
-                ? ['#CCCCCC', '#999999', '#777777', '#555555']
-                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+            color: colors,
             grid: grid,
             legend: {
                 show: hasLegend,
