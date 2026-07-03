@@ -9,6 +9,7 @@ import ColumnChart from './columnchart.js';
 import StackedColumnChart from './stackedcolumnchart.js';
 import TimeLineChart from './timelinechart.js';
 import MinMedMaxChart from './minmedmaxchart.js';
+import QuartileLineChart from './quartilelinechart.js';
 import DonutChart from './donutchart.js';
 import DataTable from './datatable.js';
 
@@ -268,6 +269,22 @@ function drawChart(container, allValues, categoryScales) {
             );
             break;
 
+        case 'quartile_line':
+            new QuartileLineChart(
+                visual,
+                container,
+                indicator,
+                primaryLocation,
+                primaryValues,  // Array of quartile values
+                compareLocations,
+                compareValues,
+                window.profileData.filterOptions,
+                window.profileData.locationTypes,
+                window.profileData.colorScales,
+                chartOptions
+            );
+            break;
+
         case 'donut':
             new DonutChart(
                 visual,
@@ -289,7 +306,7 @@ function drawChart(container, allValues, categoryScales) {
     }
 
     // Create data table for chart types that support it (not ban or min_med_max)
-    if (['column', 'stacked_column', 'line', 'multiline', 'donut'].includes(visualType)) {
+    if (['column', 'stacked_column', 'quartile_line', 'line', 'multiline', 'donut'].includes(visualType)) {
         const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
         if (tableContainer) {
             new DataTable(

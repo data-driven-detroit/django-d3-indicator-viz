@@ -150,7 +150,10 @@ export default class StackedColumnChart {
                         if (params.data.value === null || params.data.value === undefined) return '';
                         if (params.data.value < 20) return '';
                         let isActive = params.data.active_data !== false;
-                        return formatData(params.data.value, this.indicator.formatter, true, isActive);
+                        let highMoe = hasHighMoe(params.data);
+                        if (highMoe) addHighMoeNotice(this.container);
+                        return formatData(params.data.value, this.indicator.formatter, true, isActive)
+                            + (highMoe ? '\u2020' : '');
                     }
                 },
                 emphasis: {

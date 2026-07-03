@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, parseLocalDate, sortByFilterOption } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, parseLocalDate, sortByFilterOption } from "./utils.js";
 
 /**
  * Combined time-series line chart visualization.
@@ -172,7 +172,10 @@ export default class TimeLineChart {
                 params.forEach(p => {
                     let item = p.data.item;
                     let isActive = item.active_data !== false;
-                    content += `<br/>${p.marker} ${p.seriesName}: ${formatData(item.value, this.indicator.formatter, shouldRound, isActive)}`;
+                    let highMoe = hasHighMoe(item);
+                    if (highMoe) addHighMoeNotice(this.container);
+                    content += `<br/>${p.marker} ${p.seriesName}: ${formatData(item.value, this.indicator.formatter, shouldRound, isActive)}`
+                        + (highMoe ? '\u2020' : '');
                 });
                 return content;
             };

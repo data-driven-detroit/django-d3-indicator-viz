@@ -731,6 +731,7 @@ class DataVisualType(models.TextChoices):
     LINE = "line",
     MULTILINE = "multiline",
     STACKED_COLUMN = "stacked_column",
+    QUARTILE_LINE = "quartile_line",
 
     def __str__(self):
         return self.name

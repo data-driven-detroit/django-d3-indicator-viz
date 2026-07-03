@@ -41,6 +41,7 @@ class Migration(migrations.Migration):
                     ('line', 'Line'),
                     ('multiline', 'Multiline'),
                     ('stacked_column', 'Stacked Column'),
+                    ('quartile_line', 'Quartile Line'),
                 ],
                 null=True,
             ),
