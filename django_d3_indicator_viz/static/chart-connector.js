@@ -97,7 +97,7 @@ function drawCharts(container = document) {
         } catch (err) {
             console.error('Could not read indicator values for section', section.id, err);
             section.querySelectorAll('.chart-container[data-indicator-id]')
-                .forEach(c => renderNoData(c));
+                .forEach(c => renderNoData(c, 'Chart unavailable'));
             section.dataset.chartsDrawn = 'true';
             return;
         }
@@ -118,7 +118,7 @@ function drawCharts(container = document) {
                     `(${chartContainer.dataset.visualType})`,
                     err
                 );
-                renderNoData(chartContainer);
+                renderNoData(chartContainer, 'Chart unavailable');
             }
         });
 
