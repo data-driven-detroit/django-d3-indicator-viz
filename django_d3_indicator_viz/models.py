@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Polygon, GEOSGeometry
 from django.db.models import Window, Prefetch, F, Q, OuterRef, Value, Min, Max
@@ -595,6 +597,32 @@ class Indicator(models.Model):
                 result.end_date = date_range['max_end']
 
         return result
+
+    def get_empty_visual_metadata(self):
+        """
+        A stand-in for get_visual_metadata when a location has no values.
+
+        Carries just enough of the data visual for the template to lay out a
+        'No data available' placeholder in the indicator's place, so a location
+        that's missing data doesn't silently lose the chart. Returns None when
+        the indicator has no data visual configured at all — there's nothing to
+        place in that case.
+        """
+        data_visual = self.indicatordatavisual_set.first()
+
+        if not data_visual:
+            return None
+
+        return SimpleNamespace(
+            data_visual_type=data_visual.data_visual_type,
+            columns=data_visual.columns,
+            location_comparison_type=data_visual.location_comparison_type,
+            color_scale_id=data_visual.color_scale_id,
+            source_id=None,
+            source=None,
+            start_date=None,
+            end_date=None,
+        )
 
 
 class IndicatorFilterType(models.Model):

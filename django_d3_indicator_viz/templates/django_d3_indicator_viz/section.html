@@ -11,7 +11,12 @@
     >
         <h1>{{ section.name }}</h1>
     </header>
-    {% for category in section.categories %}
+    {% if not section.has_data %}
+    <div class="section-container">
+        <p class="no-data-notice">No data available for this location.</p>
+    </div>
+    {% endif %}
+    {% for category in section.categories %}{% if section.has_data %}
     <div class="section-container"
          data-category-id="{{ category.id }}">
          <section class="stat-row">
@@ -27,7 +32,10 @@
             </div>
 
             <div class="section-visuals">
-                {% for indicator in category.indicators %}
+                {% if not category.has_data %}
+                <p class="no-data-notice">No data available for this location.</p>
+                {% endif %}
+                {% for indicator in category.indicators %}{% if category.has_data %}
                 {% with data_visual=indicator.visual_metadata %}
                 <div class="column-{{ data_visual.columns }} data-visual-container">
                     <h3 class="chart-title">
@@ -35,8 +43,9 @@
                         {% if indicator.indicator_type == 'rate' %}
                             (per {{ indicator.rate_per|intcomma }})
                         {% endif %}
-                        ({% if data_visual.data_visual_type == 'line' %}{{ data_visual.start_date.year }} - {% endif %}{{ data_visual.end_date.year }})
+                        {% if indicator.has_data %}({% if data_visual.data_visual_type == 'line' %}{{ data_visual.start_date.year }} - {% endif %}{{ data_visual.end_date.year }}){% endif %}
                     </h3>
+                    {% if indicator.has_data %}
                     <div class="chart-container"
                          {% comment %} This is a lot -- drop these into json? (probably no){% endcomment %}
                         data-indicator-id="{{ indicator.id }}"
@@ -52,12 +61,16 @@
                     {% if data_visual.data_visual_type not in 'ban,min_med_max' %}
                     <button class="show-data-button" data-indicator-id="{{ indicator.id }}" data-category-id="{{ category.id }}" data-datavisual-type="{{ data_visual.data_visual_type }}">Show data</button>
                     {% endif %}
+                    {% else %}
+                    {% comment %} Nothing for this location, but the chart keeps its place in the roll. {% endcomment %}
+                    <p class="no-data-notice">No data available</p>
+                    {% endif %}
                 </div>
                 {% endwith %}
-                {% endfor %}
+                {% endif %}{% endfor %}
             </div>
         </section>
-        {% for indicator in category.indicators %}
+        {% for indicator in category.indicators %}{% if indicator.has_data %}
         {% with data_visual=indicator.visual_metadata %}
         <section id="indicator-{{ indicator.id }}-datatable-container" data-category-id="{{ category.id }}" data-indicator-id="{{ indicator.id }}" class="data-drawer" style="display: none;">
             <h3 class="chart-title">
@@ -73,7 +86,7 @@
             {% endif %}
         </section>
         {% endwith %}
-        {% endfor %}
+        {% endif %}{% endfor %}
     </div>
-    {% endfor %}
+    {% endif %}{% endfor %}
 </article>

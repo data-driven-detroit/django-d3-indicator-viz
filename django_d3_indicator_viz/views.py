@@ -30,19 +30,30 @@ import json
 
 def roll_indicators(category, location):
     """
-    Annoying that this is necessary, but we're handling the case where 
-    there isn't a data visual associated with an indicator.
+    Rolls up every indicator in a category that has a data visual configured.
+
+    An indicator with no values for this location still gets an entry, flagged
+    has_data=False and carrying a stub of its data visual, so the template can
+    render a 'No data available' placeholder rather than dropping the chart and
+    leaving a hole in the roll. Indicators with no data visual at all are still
+    skipped — there's nothing to lay out for them.
     """
     result = []
     for indicator in category.indicator_set.all():
         meta = indicator.get_visual_metadata(location)
-        if not meta: continue
+        has_data = meta is not None
+        if not has_data:
+            meta = indicator.get_empty_visual_metadata()
+            if not meta:
+                print(f"{indicator.name} doesn't have a data visual set.")
+                continue
         result.append(
             {
                 "id": indicator.id,
                 "name": indicator.name,
                 "rate_per": indicator.rate_per,
                 "visual_metadata": meta,
+                "has_data": has_data,
                 "formatter": indicator.formatter,
                 "type": indicator.indicator_type,
                 "qualifier": indicator.qualifier
@@ -51,23 +62,36 @@ def roll_indicators(category, location):
     return result
 
 
+def roll_category(category, location):
+    """
+    Pre computing a category, tracking whether anything in it has data so the
+    template can collapse an entirely empty category to a single notice.
+    """
+    indicators = roll_indicators(category, location)
+    return {
+        "id": category.id,
+        "name": category.name,
+        "about": category.about,
+        "anchor": category.anchor,
+        "indicators": indicators,
+        "has_data": any(indicator["has_data"] for indicator in indicators),
+    }
+
+
 def roll_section(section, primary_location, comparison_locations, custom_location=None, aggregator=None):
     """
     Pre computing some things.
     """
+    categories = [
+        roll_category(category, primary_location)
+        for category in section.category_set.all()
+    ]
     return {
         "name": section.name,
         "anchor": section.anchor,
         "sort_order": section.sort_order,
-        "categories": [
-            {
-                "id": category.id,
-                "name": category.name,
-                "about": category.about,
-                "anchor": category.anchor,
-                "indicators": roll_indicators(category, primary_location)
-            } for category in section.category_set.all()
-        ],
+        "categories": categories,
+        "has_data": any(category["has_data"] for category in categories),
         "indicator_values": json.dumps(
             section.get_indicator_values(
                 [primary_location, *comparison_locations],
