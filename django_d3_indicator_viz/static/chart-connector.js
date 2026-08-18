@@ -7,11 +7,13 @@
 import Ban from './ban.js';
 import ColumnChart from './columnchart.js';
 import StackedColumnChart from './stackedcolumnchart.js';
+import GroupedColumnChart from './groupedcolumnchart.js';
 import TimeLineChart from './timelinechart.js';
 import MinMedMaxChart from './minmedmaxchart.js';
 import QuartileLineChart from './quartilelinechart.js';
 import DonutChart from './donutchart.js';
 import DataTable from './datatable.js';
+import { renderNoData } from './utils.js';
 
 
 /**
@@ -25,12 +27,12 @@ function computeCategoryScales(section, allValues) {
 
     // Only use primary location values for scale computation — comparison
     // locations (parents/siblings) can have wildly different magnitudes
-    const primaryId = String(window.profileData.locations.primary.id);
+    const primaryId = String(window.profileData?.locations?.primary?.id);
     const primaryValues = allValues.filter(v => String(v.location_id) === primaryId);
 
     categories.forEach(category => {
         const categoryId = category.dataset.categoryId;
-        const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"], .chart-container[data-visual-type="stacked_column"]');
+        const columnContainers = category.querySelectorAll('.chart-container[data-visual-type="column"], .chart-container[data-visual-type="stacked_column"], .chart-container[data-visual-type="grouped_column"]');
 
         if (columnContainers.length === 0) return;
 
@@ -81,17 +83,43 @@ function drawCharts(container = document) {
         // Skip if already drawn
         if (section.dataset.chartsDrawn === 'true') return;
 
-        // Parse indicator values
-        const allValues = JSON.parse(section.dataset.indicatorValues);
+        // A section that can't be read at all still shouldn't take out the
+        // sections after it — batch loads (?all=true) hand us every section
+        // in one call.
+        let allValues;
+        let categoryScales;
+        try {
+            // Parse indicator values
+            allValues = JSON.parse(section.dataset.indicatorValues || '[]');
 
-        // Compute shared y-axis scales for percentage indicators per category
-        const categoryScales = computeCategoryScales(section, allValues);
+            // Compute shared y-axis scales for percentage indicators per category
+            categoryScales = computeCategoryScales(section, allValues);
+        } catch (err) {
+            console.error('Could not read indicator values for section', section.id, err);
+            section.querySelectorAll('.chart-container[data-indicator-id]')
+                .forEach(c => renderNoData(c));
+            section.dataset.chartsDrawn = 'true';
+            return;
+        }
 
         // Find all chart containers in this section
         const chartContainers = section.querySelectorAll('.chart-container[data-indicator-id]');
 
         chartContainers.forEach(chartContainer => {
-            drawChart(chartContainer, allValues, categoryScales);
+            // One bad chart must not stop the charts that follow it, so every
+            // container gets its own error boundary and falls back to a
+            // no-data notice.
+            try {
+                drawChart(chartContainer, allValues, categoryScales);
+            } catch (err) {
+                console.error(
+                    'Could not draw chart for indicator',
+                    chartContainer.dataset.indicatorId,
+                    `(${chartContainer.dataset.visualType})`,
+                    err
+                );
+                renderNoData(chartContainer);
+            }
         });
 
         // Mark as drawn
@@ -125,7 +153,8 @@ function drawChart(container, allValues, categoryScales) {
     );
 
     if (!indicatorValues.length) {
-        container.innerHTML = '<p>No data available</p>';
+        renderNoData(container);
+        renderNoDataTable(indicatorId);
         return;
     }
 
@@ -179,7 +208,7 @@ function drawChart(container, allValues, categoryScales) {
 
     // Look up shared axis scale for column charts in this category
     let axisScale = null;
-    if (visualType === 'column' || visualType === 'stacked_column') {
+    if (visualType === 'column' || visualType === 'stacked_column' || visualType === 'grouped_column') {
         const categoryEl = container.closest('[data-category-id]');
         if (categoryEl && categoryScales) {
             axisScale = categoryScales.get(categoryEl.dataset.categoryId) || null;
@@ -221,6 +250,23 @@ function drawChart(container, allValues, categoryScales) {
 
         case 'stacked_column':
             new StackedColumnChart(
+                visual,
+                container,
+                indicator,
+                primaryLocation,
+                primaryValues,  // Array of values
+                compareLocations,
+                compareValues,
+                window.profileData.filterOptions,
+                window.profileData.colorScales,
+                comparisonType,
+                chartOptions,
+                axisScale
+            );
+            break;
+
+        case 'grouped_column':
+            new GroupedColumnChart(
                 visual,
                 container,
                 indicator,
@@ -306,32 +352,62 @@ function drawChart(container, allValues, categoryScales) {
     }
 
     // Create data table for chart types that support it (not ban or min_med_max)
-    if (['column', 'stacked_column', 'quartile_line', 'line', 'multiline', 'donut'].includes(visualType)) {
+    if (['column', 'stacked_column', 'grouped_column', 'quartile_line', 'line', 'multiline', 'donut'].includes(visualType)) {
         const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
         if (tableContainer) {
-            new DataTable(
-                visual,
-                tableContainer,
-                indicator,
-                primaryLocation,
-                primaryValues,
-                compareLocations,
-                compareValues,
-                window.profileData.filterOptions,
-                chartOptions
-            );
+            // The drawer is secondary to the chart — never let it take out the
+            // chart that was just drawn or the ones still queued behind it.
+            try {
+                new DataTable(
+                    visual,
+                    tableContainer,
+                    indicator,
+                    primaryLocation,
+                    primaryValues,
+                    compareLocations,
+                    compareValues,
+                    window.profileData.filterOptions,
+                    chartOptions
+                );
+            } catch (err) {
+                console.error('Could not draw data table for indicator', indicatorId, err);
+                renderNoDataTable(indicatorId);
+            }
         }
     }
 }
 
+/**
+ * Put a no-data notice in an indicator's data drawer, leaving the drawer's
+ * heading and source line in place.
+ */
+function renderNoDataTable(indicatorId) {
+    const tableContainer = document.getElementById(`indicator-${indicatorId}-datatable-container`);
+    const table = tableContainer?.querySelector('table');
+    if (!table) return;
+    table.innerHTML = '';
+    const row = table.insertRow();
+    const cell = row.insertCell();
+    cell.className = 'no-data-notice';
+    cell.textContent = 'No data available';
+}
+
 // Listen for HTMX events - htmx:load fires on the newly loaded content
 document.body.addEventListener('htmx:load', function(evt) {
-    drawCharts(evt.detail.elt);
+    try {
+        drawCharts(evt.detail.elt);
+    } catch (err) {
+        console.error('Chart drawing failed for loaded content', err);
+    }
 });
 
 // Draw on page load
 document.addEventListener('DOMContentLoaded', function() {
-    drawCharts();
+    try {
+        drawCharts();
+    } catch (err) {
+        console.error('Chart drawing failed on page load', err);
+    }
 });
 
 // Export for manual usage

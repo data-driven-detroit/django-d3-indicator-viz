@@ -1,34 +1,26 @@
 import { formatData, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, renderNoData, DEFAULT_COLORS, redrawOnResize } from "./utils.js";
 
 /**
- * Returns black or white depending on which has better contrast against
- * the given background hex color, using perceived luminance.
- * @param {string} hex - A hex color string (e.g. '#3a7bd5' or '3a7bd5')
- * @returns {string} '#000' or '#fff'
+ * Returns the ECharts label position for a bar given its value sign and orientation.
+ * @param {number}  value     - the data point value
+ * @param {boolean} isDesktop - true when width >= 1200 (vertical bars)
  */
-function contrastTextColor(hex) {
-    hex = hex.replace('#', '');
-    if (hex.length === 3) {
-        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-    }
-    let r = parseInt(hex.substring(0, 2), 16);
-    let g = parseInt(hex.substring(2, 4), 16);
-    let b = parseInt(hex.substring(4, 6), 16);
-    // Perceived luminance (ITU-R BT.601)
-    let luminance = (0.299 * r + 0.587 * g + 0.114 * b);
-    return luminance > 150 ? '#000' : '#fff';
+function getLabelPosition(value, isDesktop) {
+    if (isDesktop) return value < 0 ? 'bottom' : 'top';
+    return value < 0 ? 'left' : 'right';
 }
 
 /**
- * The Stacked Column chart visualization.
+ * The Grouped Column chart visualization.
  *
- * Uses filter_option_id for x-axis categories and filter_option_2_id
- * for stack segments within each bar.
+ * Uses filter_option_id for x-axis categories and filter_option_2_id for the
+ * bars within each category, drawn side-by-side rather than stacked. Same data
+ * shape as the stacked column chart — only the layout differs.
  */
-export default class StackedColumnChart {
+export default class GroupedColumnChart {
 
     /**
-     * Creates a Stacked Column chart visualization.
+     * Creates a Grouped Column chart visualization.
      *
      * @param {Object} visual the visual object
      * @param {Element} container the container element
@@ -67,7 +59,7 @@ export default class StackedColumnChart {
     }
 
     /**
-     * Draws a stacked column chart visual.
+     * Draws a grouped column chart visual.
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
@@ -91,8 +83,8 @@ export default class StackedColumnChart {
             id => this.filterOptions.find(f => f.id === id)?.name ?? 'Unknown'
         );
 
-        // Build stack segments from filter_option_2_id (secondary filter)
-        // Sort by filter option sort_order for consistent legend/stack ordering
+        // Build the bars within each group from filter_option_2_id (secondary filter)
+        // Sort by filter option sort_order for consistent legend/bar ordering
         let seenSegmentIds = [];
         sortedData.forEach(d => {
             if (d.filter_option_2_id != null && !seenSegmentIds.includes(d.filter_option_2_id)) {
@@ -109,17 +101,16 @@ export default class StackedColumnChart {
         // Check if all data is inactive
         let allDataInactive = this.indicatorData.every(item => item.active_data === false);
 
-        // Resolve colors for contrast-aware labels
         let colors = allDataInactive
             ? ['#CCCCCC', '#999999', '#777777', '#555555']
             : this.colorScales.find(scale => scale.id === this.visual.color_scale_id)?.colors
                 || DEFAULT_COLORS;
 
-        // Build series - one per stack segment (filter_option_2)
+        let hasLegend = seenSegmentIds.length > 1;
+
+        // Build series - one per bar within the group (filter_option_2)
         let series = seenSegmentIds.map((segmentId, segmentIndex) => {
             let segmentName = this.filterOptions.find(f => f.id === segmentId)?.name ?? 'Unknown';
-            let seriesColor = colors[segmentIndex % colors.length];
-            let labelColor = contrastTextColor(seriesColor);
 
             // For each category, find the matching data point
             let seriesData = seenCategoryIds.map(categoryId => {
@@ -129,7 +120,9 @@ export default class StackedColumnChart {
                 if (item) {
                     let highMoe = hasHighMoe(item);
                     if (highMoe) addHighMoeNotice(this.container);
-                    return item;
+                    // Labels sit outside the bar, so position depends on the value sign.
+                    // ECharts ignores a function at series.label.position; per-item wins.
+                    return { ...item, label: { position: getLabelPosition(item.value, isDesktop), distance: 6 } };
                 }
                 return { value: null };
             });
@@ -137,39 +130,55 @@ export default class StackedColumnChart {
             return {
                 name: segmentName,
                 type: 'bar',
-                stack: 'total',
                 data: seriesData,
-                barWidth: '85%',
+                // Bar widths are left to ECharts so any number of segments fits the
+                // band; the gaps control how tight each group reads. ECharts resolves
+                // these per axis rather than per series, so every series repeats the
+                // same values to keep the result independent of series order.
+                barCategoryGap: '30%',
+                barGap: '10%',
                 label: {
                     show: true,
-                    position: 'inside',
-                    color: labelColor,
                     fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
                     formatter: (params) => {
                         if (params.data.value === null || params.data.value === undefined) return '';
-                        if (params.data.value < 20) return '';
                         let isActive = params.data.active_data !== false;
                         let highMoe = hasHighMoe(params.data);
                         if (highMoe) addHighMoeNotice(this.container);
                         return formatData(params.data.value, this.indicator.formatter, true, isActive)
-                            + (highMoe ? '\u2020' : '');
+                            + (highMoe ? '†' : '')
+                            + (showAggregateNotice(params.data) ? '*' : '');
                     }
                 },
                 emphasis: {
                     disabled: true
                 },
                 cursor: 'default',
+                // Zero baseline — only attach to first series to avoid duplicating the line
+                ...(segmentIndex === 0 ? {
+                    markLine: {
+                        silent: true,
+                        symbol: 'none',
+                        lineStyle: {
+                            color: '#cccccc',
+                            width: 1,
+                            type: 'solid',
+                        },
+                        label: { show: false },
+                        data: [isDesktop ? { yAxis: 0 } : { xAxis: 0 }]
+                    }
+                } : {}),
             };
         });
 
-        let hasLegend = seenSegmentIds.length > 1;
-
-        // set up the container
+        // set up the container - height grows with the total number of bars when
+        // they are drawn horizontally
+        let barCount = seenCategoryIds.length * Math.max(seenSegmentIds.length, 1);
         this.container.classList.add('column-chart-container');
         if (window.innerWidth < 768) {
-            this.container.style.height = (seenCategoryIds.length * 60) + (hasLegend ? 60 : 30) + 'px';
+            this.container.style.height = (barCount * 40) + (hasLegend ? 60 : 30) + 'px';
         } else if (!isDesktop) {
-            this.container.style.height = (seenCategoryIds.length * 30) + (hasLegend ? 60 : 30) + 'px';
+            this.container.style.height = (barCount * 24) + (hasLegend ? 60 : 30) + 'px';
         } else {
             this.container.style.height = hasLegend ? '240px' : '200px';
         }
@@ -249,6 +258,7 @@ export default class StackedColumnChart {
                 show: true,
                 trigger: 'axis',
                 triggerOn: 'mousemove',
+                axisPointer: { type: 'shadow' },
                 formatter: params => {
                     let content = `<strong>${params[0].name}</strong>`;
                     params.forEach(p => {
@@ -268,12 +278,13 @@ export default class StackedColumnChart {
             series: series
         };
 
-        // Mobile: add label series for category names (same pattern as columnchart.js)
+        // Mobile: add label series for category names (same pattern as columnchart.js).
+        // Pinned to 1px so it claims almost none of the group's band width.
         if (window.innerWidth < 768) {
             let labelSeries = {
                 name: '',
                 type: 'bar',
-                stack: 'total-label',
+                barWidth: 1,
                 data: categories.map(name => ({ value: 0, label: { name } })),
                 label: {
                     show: true,

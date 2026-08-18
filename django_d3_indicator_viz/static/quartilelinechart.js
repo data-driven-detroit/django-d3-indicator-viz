@@ -1,4 +1,4 @@
-import { formatData, hasHighMoe, addHighMoeNotice, sortByFilterOption } from "./utils.js";
+import { formatData, hasHighMoe, addHighMoeNotice, sortByFilterOption, renderNoData, redrawOnResize } from "./utils.js";
 
 /**
  * The Quartile Line chart visualization.
@@ -39,9 +39,8 @@ export default class QuartileLineChart {
 
         this.draw();
 
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        // redraw the visualization on window resize
+        redrawOnResize(this);
     }
 
     /**
@@ -49,7 +48,7 @@ export default class QuartileLineChart {
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
 
@@ -70,7 +69,7 @@ export default class QuartileLineChart {
         }, []);
 
         if (validIndices.length < 2) {
-            this.container.innerHTML = 'Insufficient data';
+            renderNoData(this.container, 'Insufficient data available');
             return;
         }
 

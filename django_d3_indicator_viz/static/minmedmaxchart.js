@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, renderNoData, redrawOnResize } from "./utils.js";
 
 /**
  * The Min/Median/Max chart visualization.
@@ -37,9 +37,7 @@ export default class MinMedMaxChart {
         this.draw();
 
         // redraw the visualization on window resize
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        redrawOnResize(this);
     }
 
     /**
@@ -47,7 +45,7 @@ export default class MinMedMaxChart {
      */
     draw() {
         if (!this.indicatorData) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
         

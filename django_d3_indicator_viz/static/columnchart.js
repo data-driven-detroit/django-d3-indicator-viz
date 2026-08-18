@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, DataVisualComparisonMode } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, DataVisualComparisonMode, renderNoData, DEFAULT_COLORS, redrawOnResize } from "./utils.js";
 
 /**
  * Returns the ECharts label position for a bar given its value sign and orientation.
@@ -62,9 +62,7 @@ export default class ColumnChart {
         this.draw();
 
         // redraw the visualization on window resize
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        redrawOnResize(this);
     }
 
     /**
@@ -72,7 +70,7 @@ export default class ColumnChart {
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
 
@@ -132,7 +130,8 @@ export default class ColumnChart {
         let categoryAxis = {
             type: 'category',
             data: seriesData[0].map(
-                item => this.filterOptions.find(f => f.id === item.filter_option_id).name
+                item => this.filterOptions.find(f => f.id === item.filter_option_id)?.name
+                    ?? String(item.end_date ?? '').substring(0, 4)
             ),
             show: window.innerWidth >= 768,
             boundaryGap: true,
@@ -182,7 +181,8 @@ export default class ColumnChart {
             ...this.chartOptions, // This upacks the options set in the chartloader.js file
             color: allDataInactive
                 ? ['#CCCCCC', '#999999', '#777777', '#555555']
-                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id)?.colors
+                    || DEFAULT_COLORS,
             grid: grid,
             legend: {
                 show: seriesData.length > 1,

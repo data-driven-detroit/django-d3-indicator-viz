@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, parseLocalDate, sortByFilterOption } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, parseLocalDate, sortByFilterOption, renderNoData, DEFAULT_COLORS, redrawOnResize } from "./utils.js";
 
 /**
  * Combined time-series line chart visualization.
@@ -43,9 +43,7 @@ export default class TimeLineChart {
         this.draw();
 
         // redraw the visualization on window resize
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        redrawOnResize(this);
     }
 
     /**
@@ -98,18 +96,23 @@ export default class TimeLineChart {
         ];
 
         let groups = allSeriesData.map((data, index) => {
+            // A comparison series can carry a location id that isn't in
+            // compareLocations; name it from what we have rather than throwing.
             let loc = allLocationMeta[index];
-            let isPrimary = loc.id === this.location.id;
+            let isPrimary = !!loc && String(loc.id) === String(this.location.id);
 
             let name;
             if (isPrimary) {
                 name = this.location.name;
             } else if (this.visual.location_comparison_type === 'parents') {
-                name = this.compareLocations.find(l => l.id === loc.id).name;
+                name = this.compareLocations.find(l => String(l.id) === String(loc?.id))?.name
+                    ?? loc?.name
+                    ?? 'Comparison';
             } else {
-                name = 'Other '
-                    + this.locationTypes.find(lt => lt.id === this.location.location_type_id).name
-                    + 's';
+                let locationTypeName = this.locationTypes.find(
+                    lt => lt.id === this.location.location_type_id
+                )?.name;
+                name = locationTypeName ? 'Other ' + locationTypeName + 's' : 'Others';
             }
 
             let sortedData = data
@@ -198,7 +201,7 @@ export default class TimeLineChart {
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
 
@@ -206,7 +209,7 @@ export default class TimeLineChart {
 
         // If no valid series data after filtering, show no data
         if (groups.length === 0) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
 
@@ -241,7 +244,8 @@ export default class TimeLineChart {
             ...this.chartOptions,
             color: allDataInactive
                 ? ['#CCCCCC', '#999999', '#777777', '#555555']
-                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id)?.colors
+                    || DEFAULT_COLORS,
             grid: grid,
             legend: {
                 show: hasLegend,

@@ -39,7 +39,15 @@ export default class DataTable {
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
-            this.container.innerHTML = 'No data';
+            // Only the table is empty — the drawer's heading and source line
+            // still belong on the page.
+            let emptyTable = this.container.querySelector('table');
+            if (emptyTable) {
+                emptyTable.innerHTML = '';
+                let cell = emptyTable.insertRow().insertCell();
+                cell.className = 'no-data-notice';
+                cell.textContent = 'No data available';
+            }
             return;
         }
 
@@ -85,8 +93,9 @@ export default class DataTable {
                 option = year;
             }
 
-            // For stacked column charts, append the stack segment name
-            if (this.visual.data_visual_type === 'stacked_column' && item.filter_option_2_id) {
+            // For stacked and grouped column charts, append the secondary filter name
+            if (['stacked_column', 'grouped_column'].includes(this.visual.data_visual_type)
+                && item.filter_option_2_id) {
                 let filter2Name = this.filterOptions.find(o => o.id === item.filter_option_2_id)?.name;
                 if (filter2Name) {
                     option = option + ' - ' + filter2Name;

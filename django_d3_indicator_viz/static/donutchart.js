@@ -1,4 +1,4 @@
-import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption } from "./utils.js";
+import { formatData, buildTooltipContent, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, renderNoData, DEFAULT_COLORS, redrawOnResize } from "./utils.js";
 
 /**
  * The Donut chart visualization.
@@ -41,9 +41,7 @@ export default class DonutChart {
         this.draw();
 
         // redraw the visualization on window resize
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        redrawOnResize(this);
     }
 
     /**
@@ -173,7 +171,7 @@ export default class DonutChart {
      */
     draw() {
         if (!this.indicatorData || !this.indicatorData.length) {
-            this.container.innerHTML = 'No data';
+            renderNoData(this.container);
             return;
         }
 
@@ -213,7 +211,8 @@ export default class DonutChart {
             ...this.chartOptions,
             color: allDataInactive
                 ? ['#CCCCCC', '#999999', '#777777', '#555555']
-                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id).colors,
+                : this.colorScales.find(scale => scale.id === this.visual.color_scale_id)?.colors
+                    || DEFAULT_COLORS,
             grid: {
                 left: 0,
                 right: '80px',

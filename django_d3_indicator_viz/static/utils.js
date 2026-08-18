@@ -347,6 +347,62 @@ function addHighMoeNotice(container) {
 }
 
 /**
+ * Fallback palette for visuals whose configured color scale is missing — an
+ * unset or deleted color scale shouldn't stop a chart from drawing.
+ */
+const DEFAULT_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
+
+/**
+ * Renders a placeholder message in a visual's container.
+ *
+ * Used whenever a visual has nothing to draw (no values for the location, or
+ * the draw failed). It replaces whatever the container held so a partially
+ * drawn chart can't be left behind, and it never throws so callers can use it
+ * from an error path.
+ *
+ * @param {Element} container the container element
+ * @param {String} message the message to show
+ */
+function renderNoData(container, message = 'No data available') {
+    if (!container) return;
+    container.innerHTML = '';
+    let noticeEl = document.createElement('p');
+    noticeEl.className = 'no-data-notice';
+    noticeEl.textContent = message;
+    container.appendChild(noticeEl);
+    // A chart that drew (or half-drew) earlier may have left a pinned height
+    // behind; drop it so the notice takes only the room it needs.
+    container.style.height = null;
+    container.classList.remove(
+        'ban-container',
+        'column-chart-container',
+        'line-chart-container',
+        'donut-chart-container',
+        'min-med-max-container',
+        'quartile-line-container'
+    );
+}
+
+/**
+ * Redraws a visual whenever the window resizes.
+ *
+ * A redraw that fails falls back to the no-data notice rather than leaving a
+ * half-erased container behind.
+ *
+ * @param {Object} visual an object with draw() and container properties
+ */
+function redrawOnResize(visual) {
+    window.addEventListener('resize', () => {
+        try {
+            visual.draw();
+        } catch (err) {
+            console.error('Could not redraw visual', err);
+            renderNoData(visual.container);
+        }
+    });
+}
+
+/**
  * Sorts indicator data items by their filter option's sort_order.
  * Items without a matching filter option are placed at the end.
  */
@@ -375,7 +431,10 @@ export {
     parseLocalDate,
     hasHighMoe,
     addHighMoeNotice,
+    renderNoData,
+    redrawOnResize,
     sortByFilterOption,
+    DEFAULT_COLORS,
     DataVisualLocationComparisonType,
     DataVisualComparisonMode
 };

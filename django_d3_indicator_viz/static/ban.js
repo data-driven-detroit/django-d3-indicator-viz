@@ -1,4 +1,4 @@
-import { formatData, getComparisonPhrases, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice } from "./utils.js";
+import { formatData, getComparisonPhrases, showAggregateNotice, buildAggregateNotice, hasHighMoe, addHighMoeNotice, renderNoData, redrawOnResize } from "./utils.js";
 
 /**
  * The BAN (Big Ass Number) visualization.
@@ -34,9 +34,7 @@ export default class Ban {
         this.draw();
 
         // redraw the visualization on window resize
-        window.addEventListener('resize', () => {
-            this.draw();
-        });
+        redrawOnResize(this);
     }
 
     /**
@@ -54,7 +52,7 @@ export default class Ban {
             let valueEl = document.createElement('span');
             valueEl.className = 'ban-value';
             valueEl.style.fontSize = (this.chartOptions.textStyle?.fontSize || 16) * 3 + 'px';
-            valueEl.textContent = 'No data';
+            valueEl.textContent = 'No data available';
             valueContainerEl.appendChild(valueEl);
             this.container.appendChild(valueContainerEl);
             return;
