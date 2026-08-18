@@ -5,7 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.2.8",
+    # Django 6.1 raised the PostgreSQL floor to 15; capped so consumers on PG 14 resolve to 6.0.x
+    "django>=5.2.8,<6.1",
     "django-admin-sortable>=2.3",
     "django-admin-sortable2>=2.3",
     "django-filter>=25.2",
