@@ -1,5 +1,30 @@
 import { formatData, showAggregateNotice, hasHighMoe, addHighMoeNotice, sortByFilterOption, renderNoData, DEFAULT_COLORS, redrawOnResize } from "./utils.js";
 
+// Space between adjacent groups, as a share of the category band ECharts gives
+// each group. ECharts centres a group inside its band, so half of this also
+// lands before the first group and after the last one -- outerInsetPercent()
+// below cancels those two outer halves so the gap only reads between groups.
+const GROUP_GAP = 0.18;
+
+// Space between the bars inside a single group, as a share of the bar width.
+const BAR_GAP = '10%';
+
+/**
+ * How far to pull each end of the category axis outwards, as a percentage of
+ * the visible span, so the bars sit flush to the edges.
+ *
+ * For a plot span P over n groups each band is P/n wide, and ECharts leaves
+ * (GROUP_GAP / 2) * P/n empty at either end. Growing the span by d on both
+ * sides makes P = V + 2d for a visible span V, and solving
+ * d = GROUP_GAP * (V + 2d) / 2n gives d / V = GROUP_GAP / (2 * (n - GROUP_GAP)).
+ *
+ * @param {number} groupCount - number of category groups being drawn
+ */
+function outerInsetPercent(groupCount) {
+    if (!groupCount) return 0;
+    return 100 * GROUP_GAP / (2 * (groupCount - GROUP_GAP));
+}
+
 /**
  * Returns the ECharts label position for a bar given its value sign and orientation.
  * @param {number}  value     - the data point value
@@ -135,8 +160,8 @@ export default class GroupedColumnChart {
                 // band; the gaps control how tight each group reads. ECharts resolves
                 // these per axis rather than per series, so every series repeats the
                 // same values to keep the result independent of series order.
-                barCategoryGap: '30%',
-                barGap: '10%',
+                barCategoryGap: (GROUP_GAP * 100) + '%',
+                barGap: BAR_GAP,
                 label: {
                     show: true,
                     fontSize: (this.chartOptions.textStyle?.fontSize || 16) * 0.75 + 'px',
@@ -223,19 +248,38 @@ export default class GroupedColumnChart {
             valueAxis.max = this.axisScale.max;
         }
 
+        // Pull the ends of the category axis outwards by the half-gap ECharts
+        // leaves outside the first and last group, so the bars run edge to edge.
+        let outerInset = outerInsetPercent(seenCategoryIds.length);
+
         let grid = { containLabel: true };
         if (isDesktop) {
-            grid.left = '0px';
-            grid.right = '0px';
+            // Vertical bars: the category axis runs left to right, so the
+            // correction comes off the left and right edges.
+            grid.left = -outerInset + '%';
+            grid.right = -outerInset + '%';
             grid.top = '10px';
             grid.bottom = hasLegend ? '35px' : '10px';
-        } else if (window.innerWidth >= 768) {
-            grid.top = '20px';
-            grid.bottom = hasLegend ? '40px' : '20px';
         } else {
-            grid.top = '20px';
-            grid.bottom = hasLegend ? '60px' : '30px';
-            grid.left = '0px';
+            // Horizontal bars: the category axis runs top to bottom, so the
+            // same correction applies to the top and bottom instead. Those are
+            // in px because the legend and axis labels claim a fixed amount,
+            // and they are clamped at 0 so the bars can never ride over the
+            // legend -- a very short chart keeps a sliver of end gap.
+            let topPx = 20;
+            let bottomPx = window.innerWidth >= 768
+                ? (hasLegend ? 40 : 20)
+                : (hasLegend ? 60 : 30);
+            let containerHeight = parseInt(this.container.style.height, 10)
+                || this.container.clientHeight;
+            let plotHeight = containerHeight - topPx - bottomPx;
+            let insetPx = (outerInset / 100) * plotHeight;
+
+            grid.top = Math.max(0, topPx - insetPx) + 'px';
+            grid.bottom = Math.max(0, bottomPx - insetPx) + 'px';
+            if (window.innerWidth < 768) {
+                grid.left = '0px';
+            }
         }
 
         let option = {
